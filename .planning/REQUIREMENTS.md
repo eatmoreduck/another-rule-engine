@@ -98,45 +98,54 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| RCONF-01 | Phase 1 | Pending |
-| RCONF-02 | Phase 1 | Pending |
-| REXEC-01 | Phase 2 | Pending |
-| REXEC-03 | Phase 2 | Pending |
-| REXEC-04 | Phase 2 | Pending |
-| PERF-01 | Phase 2 | Pending |
-| PERF-02 | Phase 2 | Pending |
-| SEC-02 | Phase 2 | Pending |
-| VER-01 | Phase 3 | Pending |
-| VER-02 | Phase 3 | Pending |
-| TEST-01 | Phase 3 | Pending |
-| PERS-01 | Phase 3 | Pending |
-| PERS-02 | Phase 3 | Pending |
-| PERS-03 | Phase 3 | Pending |
-| MON-01 | Phase 4 | Pending |
-| MON-02 | Phase 4 | Pending |
-| SEC-01 | Phase 4 | Pending |
-| REXEC-02 | Phase 5 | Pending |
-| REXEC-05 | Phase 5 | Pending |
-| VER-03 | Phase 5 | Pending |
-| VER-04 | Phase 5 | Pending |
-| TEST-02 | Phase 5 | Pending |
-| MON-03 | Phase 5 | Pending |
-| MON-04 | Phase 5 | Pending |
-| TEST-03 | Phase 5 | Pending |
-| ADV-01 | Phase 6 | Pending |
-| ADV-02 | Phase 6 | Pending |
-| ADV-03 | Phase 6 | Pending |
+| RCONF-01 | Phase 3 | Pending |
+| RCONF-02 | Phase 3 | Pending |
 | RCONF-03 | Phase 7 | Pending |
 | RCONF-04 | Phase 7 | Pending |
-| UI-01 | Phase 8 | Pending |
-| UI-02 | Phase 8 | Pending |
-| UI-03 | Phase 8 | Pending |
+| REXEC-01 | Phase 1 | Pending |
+| REXEC-02 | Phase 5 | Pending |
+| REXEC-03 | Phase 1 | Pending |
+| REXEC-04 | Phase 1 | Pending |
+| REXEC-05 | Phase 5 | Pending |
+| VER-01 | Phase 2 | Pending |
+| VER-02 | Phase 2 | Pending |
+| VER-03 | Phase 5 | Pending |
+| VER-04 | Phase 5 | Pending |
+| PERS-01 | Phase 2 | Pending |
+| PERS-02 | Phase 2 | Pending |
+| PERS-03 | Phase 2 | Pending |
+| TEST-01 | Phase 6 | Pending |
+| TEST-02 | Phase 6 | Pending |
+| TEST-03 | Phase 6 | Pending |
+| MON-01 | Phase 4 | Pending |
+| MON-02 | Phase 4 | Pending |
+| MON-03 | Phase 6 | Pending |
+| MON-04 | Phase 6 | Pending |
+| ADV-01 | Phase 7 | Pending |
+| ADV-02 | Phase 7 | Pending |
+| ADV-03 | Phase 7 | Pending |
+| SEC-01 | Phase 4 | Pending |
+| SEC-02 | Phase 1 | Pending |
+| PERF-01 | Phase 1 | Pending |
+| PERF-02 | Phase 1 | Pending |
+| UI-01 | Phase 3 | Pending |
+| UI-02 | Phase 3 | Pending |
+| UI-03 | Phase 3 | Pending |
 
 **Coverage:**
 - v1 requirements: 27 total
 - Mapped to phases: 27
 - Unmapped: 0 ✓
 
+**Phase Distribution:**
+- Phase 1 (核心规则执行引擎): 6 requirements
+- Phase 2 (数据持久化与版本管理): 5 requirements
+- Phase 3 (规则配置界面): 5 requirements
+- Phase 4 (监控与安全增强): 3 requirements
+- Phase 5 (灰度发布与异步执行): 4 requirements
+- Phase 6 (测试验证与分析): 5 requirements
+- Phase 7 (高级功能与扩展): 5 requirements
+
 ---
 *Requirements defined: 2025-03-26*
-*Last updated: 2025-03-26 after initial definition*
+*Last updated: 2025-03-26 after roadmap creation*
