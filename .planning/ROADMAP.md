@@ -31,7 +31,41 @@
 4. 系统对规则执行进行超时控制，防止单个规则影响整体性能
 5. Groovy 脚本通过缓存机制避免重复编译，防止内存泄漏
 
-**Plans**: TBD
+**Plans**: 5 plans
+
+Plan 1: 项目基础架构搭建（Wave 1）
+- 创建 Gradle 多模块项目结构
+- 配置 Java 21 + Spring Boot 3.3.x + Groovy 4.0.22
+- 启用虚拟线程和核心依赖
+- 建立 Spring Boot 应用框架
+
+Plan 2: Groovy 脚本执行引擎（Wave 1）
+- 实现 GroovyScriptEngine 脚本执行引擎
+- 实现 ScriptCacheManager 脚本缓存管理
+- 实现 SecurityConfiguration 沙箱安全配置
+- 实现 ClassLoaderManager 类加载器管理
+- 单元测试覆盖
+
+Plan 3: 特征获取服务（Wave 2）
+- 实现 FeatureProviderService 特征获取服务
+- 实现 CaffeineCacheConfig 缓存配置
+- 实现三级策略（入参 → 外部 → 默认值）
+- 实现特征预加载和批量获取
+- 单元测试覆盖
+
+Plan 4: 规则执行服务（Wave 2）
+- 实现 RuleExecutionService 规则执行服务
+- 实现 Resilience4jConfig 配置
+- 实现 DecisionRequest/DecisionResponse 模型
+- 集成脚本执行和特征获取
+- 单元测试覆盖
+
+Plan 5: 同步决策 API（Wave 3）
+- 实现 DecisionController 决策 API 控制器
+- 配置 Actuator 和监控
+- 实现 POST /api/v1/decide 端点
+- 单元测试和集成测试
+- 性能验证（P95 < 50ms）
 
 ### Phase 2: 数据持久化与版本管理
 
@@ -145,7 +179,7 @@
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. 核心规则执行引擎 | 0/0 | Not started | - |
+| 1. 核心规则执行引擎 | 0/5 | Not started | - |
 | 2. 数据持久化与版本管理 | 0/0 | Not started | - |
 | 3. 规则配置界面 | 0/0 | Not started | - |
 | 4. 监控与安全增强 | 0/0 | Not started | - |
