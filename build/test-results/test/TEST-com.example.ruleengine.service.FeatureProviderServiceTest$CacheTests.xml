@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="缓存测试" tests="1" skipped="0" failures="0" errors="0" timestamp="2026-03-27T13:27:27" hostname="m1" time="0.003">
+  <properties/>
+  <testcase name="缓存命中: 从缓存获取特征" classname="com.example.ruleengine.service.FeatureProviderServiceTest$CacheTests" time="0.003"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

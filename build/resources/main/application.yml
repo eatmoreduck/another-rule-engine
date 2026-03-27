@@ -1,0 +1,56 @@
+# Source: RESEARCH.md 标准技术栈 + CONTEXT.md Claude's Discretion
+spring:
+  application:
+    name: rule-engine
+
+  # 注意：Java 17 不直接支持虚拟线程，需要 Java 21
+  # # D-03: 启用虚拟线程（Java 21 + Spring Boot 3.3）
+  # threads:
+  #   virtual:
+  #     enabled: true
+
+  # 缓存配置（D-13: Caffeine）
+  cache:
+    type: caffeine
+    caffeine:
+      spec: maximumSize=1000,expireAfterWrite=24h
+
+  # Actuator 配置
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+      base-path: /actuator
+  metrics:
+    export:
+      prometheus:
+        enabled: true
+    tags:
+      application: ${spring.application.name}
+    distribution:
+      percentiles-histogram:
+        http.server.requests: true
+      percentiles:
+        http.server.requests: 0.5, 0.95, 0.99  # P50, P95, P99
+      sla:
+        http.server.requests: 50ms, 100ms, 200ms  # 性能阈值
+
+# 服务器配置
+server:
+  port: 8080
+  tomcat:
+    threads:
+      max: 200  # 虚拟线程下可以设置更高的最大线程数
+      min-spare: 10
+    accept-count: 100
+    connection-timeout: 10s  # 10 秒连接超时
+
+# 日志配置
+logging:
+  level:
+    root: INFO
+    com.example.ruleengine: DEBUG
+    org.springframework.web: INFO
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n"

@@ -82,7 +82,35 @@ Plan 5: 同步决策 API（Wave 3）
 4. 用户可创建规则的新版本并查看所有历史版本
 5. 用户可一键回滚规则到任意历史版本
 
-**Plans**: TBD
+**Plans**: 5 plans
+
+**Wave 1 - 基础设施:**
+- Plan 02-01: 数据库基础设施搭建
+  - 创建数据库和表结构（rules, rule_versions, audit_logs）
+  - 配置 JPA 和 Flyway
+  - 创建 Rule Entity 和 Repository
+
+**Wave 2 - 核心功能:**
+- Plan 02-02: 规则版本管理
+  - 创建版本历史表和 Entity
+  - 实现 VersionManagementService（创建版本、回滚版本）
+  - 提供版本管理 REST API
+
+- Plan 02-03: 审计日志系统
+  - 创建审计日志表和 Entity
+  - 实现 AuditLogService
+  - 使用 AOP 和 @Auditable 注解自动记录日志
+
+**Wave 3 - 业务功能和优化:**
+- Plan 02-04: 规则生命周期管理
+  - 实现 RuleLifecycleService（创建、编辑、启用/禁用、删除）
+  - 集成 RuleExecutionService，从数据库加载规则
+  - 提供规则管理 REST API
+
+- Plan 02-05: 性能优化与缓存
+  - 设计三级缓存策略（编译脚本、规则元数据、Redis）
+  - 实现 RuleCacheService 和缓存预热
+  - 数据库查询优化和性能测试
 
 ### Phase 3: 规则配置界面
 
@@ -179,8 +207,8 @@ Plan 5: 同步决策 API（Wave 3）
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. 核心规则执行引擎 | 0/5 | Not started | - |
-| 2. 数据持久化与版本管理 | 0/0 | Not started | - |
+| 1. 核心规则执行引擎 | 5/5 | ✅ Complete | 2025-03-26 |
+| 2. 数据持久化与版本管理 | 0/5 | 📋 Planned | - |
 | 3. 规则配置界面 | 0/0 | Not started | - |
 | 4. 监控与安全增强 | 0/0 | Not started | - |
 | 5. 灰度发布与异步执行 | 0/0 | Not started | - |

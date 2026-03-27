@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="性能相关测试" tests="1" skipped="0" failures="0" errors="0" timestamp="2026-03-27T13:27:25" hostname="m1" time="1.21">
+  <properties/>
+  <testcase name="响应时间应记录" classname="com.example.ruleengine.service.FeatureProviderServiceTest$PerformanceTests" time="1.21"/>
+  <system-out><![CDATA[21:27:26.868 [ForkJoinPool.commonPool-worker-1] ERROR com.example.ruleengine.service.FeatureProviderService -- Failed to call external feature platform
+org.mockito.exceptions.misusing.PotentialStubbingProblem: 
+Strict stubbing argument mismatch. Please check:
+ - this invocation of 'postForObject' method:
+    restTemplate.postForObject(
+    "http://feature-platform/api/features",
+    [user_age],
+    interface java.util.Map
+);
+    -> at com.example.ruleengine.service.FeatureProviderService.fetchExternalFeatures(FeatureProviderService.java:150)
+ - has following stubbing(s) with different arguments:
+    1. restTemplate.postForObject(null, null, null);
+      -> at com.example.ruleengine.service.FeatureProviderServiceTest$PerformanceTests.shouldRecordFetchTime(FeatureProviderServiceTest.java:289)
+Typically, stubbing argument mismatch indicates user mistake when writing tests.
+Mockito fails early so that you can debug potential problem easily.
+However, there are legit scenarios when this exception generates false negative signal:
+  - stubbing the same method multiple times using 'given().will()' or 'when().then()' API
+    Please use 'will().given()' or 'doReturn().when()' API for stubbing.
+  - stubbed method is intentionally invoked with different arguments by code under test
+    Please use default or 'silent' JUnit Rule (equivalent of Strictness.LENIENT).
+For more information see javadoc for PotentialStubbingProblem class.
+	at org.springframework.web.client.RestTemplate.postForObject(RestTemplate.java:504)
+	at com.example.ruleengine.service.FeatureProviderService.fetchExternalFeatures(FeatureProviderService.java:150)
+	at com.example.ruleengine.service.FeatureProviderService.lambda$fetchExternalFeaturesWithTimeout$4(FeatureProviderService.java:127)
+	at java.base/java.util.concurrent.CompletableFuture$AsyncSupply.run(CompletableFuture.java:1768)
+	at java.base/java.util.concurrent.CompletableFuture$AsyncSupply.exec(CompletableFuture.java:1760)
+	at java.base/java.util.concurrent.ForkJoinTask.doExec(ForkJoinTask.java:373)
+	at java.base/java.util.concurrent.ForkJoinPool$WorkQueue.topLevelExec(ForkJoinPool.java:1182)
+	at java.base/java.util.concurrent.ForkJoinPool.scan(ForkJoinPool.java:1655)
+	at java.base/java.util.concurrent.ForkJoinPool.runWorker(ForkJoinPool.java:1622)
+	at java.base/java.util.concurrent.ForkJoinWorkerThread.run(ForkJoinWorkerThread.java:165)
+]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

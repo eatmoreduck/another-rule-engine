@@ -1,0 +1,19 @@
+spring:
+  application:
+    name: rule-engine-test
+
+  # 注意：Java 17 不直接支持虚拟线程
+  # threads:
+  #   virtual:
+  #     enabled: true
+
+  cache:
+    type: caffeine
+
+server:
+  port: 8080  # 测试时使用相同端口，由 @WebMvcTest 等注解控制
+
+logging:
+  level:
+    root: WARN
+    com.example.ruleengine: DEBUG
