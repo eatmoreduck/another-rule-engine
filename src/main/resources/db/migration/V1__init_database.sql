@@ -15,6 +15,7 @@ CREATE TABLE IF NOT EXISTS rules (
     updated_by VARCHAR(255),
     updated_at TIMESTAMP,
     enabled BOOLEAN NOT NULL DEFAULT TRUE,
+    opt_lock_version BIGINT DEFAULT 0,
     CONSTRAINT check_status CHECK (status IN ('DRAFT', 'ACTIVE', 'ARCHIVED', 'DELETED'))
 );
 

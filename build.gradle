@@ -33,7 +33,8 @@ dependencies {
 
     // 数据库
     runtimeOnly 'org.postgresql:postgresql:42.7.2'
-    implementation 'org.flywaydb:flyway-core:10.10.0'
+    implementation 'org.flywaydb:flyway-core:11.0.0'
+    implementation 'org.flywaydb:flyway-database-postgresql:11.0.0'
 
     // Groovy 支持（D-03: Groovy 4.0.22）
     implementation 'org.apache.groovy:groovy:4.0.22'
