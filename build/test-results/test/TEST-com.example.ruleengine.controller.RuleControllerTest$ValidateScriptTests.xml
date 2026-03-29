@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="POST /api/v1/rules/validate - 验证 Groovy 脚本" tests="5" skipped="0" failures="0" errors="0" timestamp="2026-03-29T09:22:51" hostname="m1" time="0.168">
+  <properties/>
+  <testcase name="包含变量引用的脚本应验证通过" classname="com.example.ruleengine.controller.RuleControllerTest$ValidateScriptTests" time="0.079"/>
+  <testcase name="无效的 Groovy 脚本应返回验证失败" classname="com.example.ruleengine.controller.RuleControllerTest$ValidateScriptTests" time="0.034"/>
+  <testcase name="有效的 Groovy 脚本应返回验证通过" classname="com.example.ruleengine.controller.RuleControllerTest$ValidateScriptTests" time="0.02"/>
+  <testcase name="简单的 return true 脚本应验证通过" classname="com.example.ruleengine.controller.RuleControllerTest$ValidateScriptTests" time="0.019"/>
+  <testcase name="脚本为空时应返回 400" classname="com.example.ruleengine.controller.RuleControllerTest$ValidateScriptTests" time="0.01"/>
+  <system-out><![CDATA[2026-03-29 17:22:51.947 [Test worker] DEBUG org.hibernate.SQL - 
+    delete 
+    from
+        rule_versions rv1_0
+Hibernate: 
+    delete 
+    from
+        rule_versions rv1_0
+2026-03-29 17:22:51.948 [Test worker] DEBUG org.hibernate.SQL - 
+    delete 
+    from
+        rules r1_0
+Hibernate: 
+    delete 
+    from
+        rules r1_0
+2026-03-29 17:22:51.952 [Test worker] INFO  c.e.r.controller.RuleController - 验证Groovy脚本
+2026-03-29 17:22:52.028 [Test worker] DEBUG org.hibernate.SQL - 
+    delete 
+    from
+        rule_versions rv1_0
+Hibernate: 
+    delete 
+    from
+        rule_versions rv1_0
+2026-03-29 17:22:52.030 [Test worker] DEBUG org.hibernate.SQL - 
+    delete 
+    from
+        rules r1_0
+Hibernate: 
+    delete 
+    from
+        rules r1_0
+2026-03-29 17:22:52.032 [Test worker] INFO  c.e.r.controller.RuleController - 验证Groovy脚本
+2026-03-29 17:22:52.065 [Test worker] DEBUG org.hibernate.SQL - 
+    delete 
+    from
+        rule_versions rv1_0
+Hibernate: 
+    delete 
+    from
+        rule_versions rv1_0
+2026-03-29 17:22:52.067 [Test worker] DEBUG org.hibernate.SQL - 
+    delete 
+    from
+        rules r1_0
+Hibernate: 
+    delete 
+    from
+        rules r1_0
+2026-03-29 17:22:52.069 [Test worker] INFO  c.e.r.controller.RuleController - 验证Groovy脚本
+2026-03-29 17:22:52.086 [Test worker] DEBUG org.hibernate.SQL - 
+    delete 
+    from
+        rule_versions rv1_0
+Hibernate: 
+    delete 
+    from
+        rule_versions rv1_0
+2026-03-29 17:22:52.088 [Test worker] DEBUG org.hibernate.SQL - 
+    delete 
+    from
+        rules r1_0
+Hibernate: 
+    delete 
+    from
+        rules r1_0
+2026-03-29 17:22:52.091 [Test worker] INFO  c.e.r.controller.RuleController - 验证Groovy脚本
+2026-03-29 17:22:52.106 [Test worker] DEBUG org.hibernate.SQL - 
+    delete 
+    from
+        rule_versions rv1_0
+Hibernate: 
+    delete 
+    from
+        rule_versions rv1_0
+2026-03-29 17:22:52.107 [Test worker] DEBUG org.hibernate.SQL - 
+    delete 
+    from
+        rules r1_0
+Hibernate: 
+    delete 
+    from
+        rules r1_0
+2026-03-29 17:22:52.109 [Test worker] WARN  o.s.w.s.m.s.DefaultHandlerExceptionResolver - Resolved [org.springframework.web.bind.MethodArgumentNotValidException: Validation failed for argument [0] in public org.springframework.http.ResponseEntity<com.example.ruleengine.model.dto.ValidateScriptResponse> com.example.ruleengine.controller.RuleController.validateScript(com.example.ruleengine.model.dto.ValidateScriptRequest): [Field error in object 'validateScriptRequest' on field 'groovyScript': rejected value []; codes [NotBlank.validateScriptRequest.groovyScript,NotBlank.groovyScript,NotBlank.java.lang.String,NotBlank]; arguments [org.springframework.context.support.DefaultMessageSourceResolvable: codes [validateScriptRequest.groovyScript,groovyScript]; arguments []; default message [groovyScript]]; default message [Groovy脚本不能为空]] ]
+]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

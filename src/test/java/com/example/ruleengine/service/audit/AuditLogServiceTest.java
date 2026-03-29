@@ -8,11 +8,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.context.DynamicPropertyRegistry;
-import org.springframework.test.context.DynamicPropertySource;
-import org.testcontainers.containers.PostgreSQLContainer;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
+import org.springframework.test.context.ActiveProfiles;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -22,26 +18,12 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * AuditLogService 集成测试
+ * 使用 H2 内存数据库替代 Testcontainers PostgreSQL
  */
 @SpringBootTest
-@Testcontainers
+@ActiveProfiles("test")
 @DisplayName("AuditLogService 集成测试")
 class AuditLogServiceTest {
-
-    @Container
-    static PostgreSQLContainer<?> postgresqlContainer = new PostgreSQLContainer<>("postgres:16-alpine")
-            .withDatabaseName("testdb")
-            .withUsername("test")
-            .withPassword("test");
-
-    @DynamicPropertySource
-    static void setProperties(DynamicPropertyRegistry registry) {
-        registry.add("spring.datasource.url", postgresqlContainer::getJdbcUrl);
-        registry.add("spring.datasource.username", postgresqlContainer::getUsername);
-        registry.add("spring.datasource.password", postgresqlContainer::getPassword);
-        registry.add("spring.jpa.hibernate.ddl-auto", () -> "create-drop");
-        registry.add("spring.flyway.enabled", () -> "false");
-    }
 
     @Autowired
     private AuditLogService auditLogService;
@@ -51,7 +33,7 @@ class AuditLogServiceTest {
 
     @BeforeEach
     void setUp() {
-        auditLogRepository.deleteAll();
+        auditLogRepository.deleteAllInBatch();
     }
 
     @Test

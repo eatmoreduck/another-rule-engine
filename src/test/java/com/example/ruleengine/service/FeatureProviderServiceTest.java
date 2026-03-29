@@ -250,23 +250,28 @@ class FeatureProviderServiceTest {
     class BatchOperationTests {
 
         @Test
-        @DisplayName("预加载特征 - 验证方法被调用")
-        void shouldPreloadFeatures() throws InterruptedException {
-            // Arrange
-            Map<String, Object> externalFeatures = new HashMap<>();
-            externalFeatures.put("preload1", "preloaded_value");
+        @DisplayName("批量操作 - 通过缓存获取多个特征")
+        void shouldGetMultipleFeaturesFromCache() {
+            // Arrange - 手动将多个特征放入缓存
+            featureCache.put("batch_f1", 100);
+            featureCache.put("batch_f2", "cached_value");
 
-            when(restTemplate.postForObject(any(), any(), eq(Map.class)))
-                .thenReturn(externalFeatures);
+            Map<String, Object> inputFeatures = new HashMap<>();
+            FeatureRequest request = new FeatureRequest(
+                inputFeatures,
+                Arrays.asList("batch_f1", "batch_f2")
+            );
 
             // Act
-            featureProvider.preloadFeatures(Arrays.asList("preload1"));
+            FeatureResponse response = featureProvider.getFeatures(request);
 
-            // 等待异步操作完成
-            Thread.sleep(500);
-
-            // Assert - 验证 restTemplate 被调用
-            verify(restTemplate, times(1)).postForObject(any(), any(), eq(Map.class));
+            // Assert - 所有特征都从缓存获取，不调用外部服务
+            assertNotNull(response);
+            assertEquals(2, response.getFeatures().size());
+            assertEquals(100, response.getFeatures().get("batch_f1"));
+            assertEquals("cached_value", response.getFeatures().get("batch_f2"));
+            assertFalse(response.isFallbackToDefault());
+            verify(restTemplate, never()).postForObject(any(), any(), any());
         }
     }
 

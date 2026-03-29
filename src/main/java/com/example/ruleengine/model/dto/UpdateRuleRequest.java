@@ -19,6 +19,7 @@ public class UpdateRuleRequest {
 
     private String ruleDescription;
 
-    @NotBlank(message = "Groovy脚本不能为空")
     private String groovyScript;
+
+    private String changeReason;
 }

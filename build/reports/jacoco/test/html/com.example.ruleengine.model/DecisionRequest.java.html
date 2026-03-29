@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>DecisionRequest.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">rule-engine</a> &gt; <a href="index.source.html" class="el_package">com.example.ruleengine.model</a> &gt; <span class="el_source">DecisionRequest.java</span></div><h1>DecisionRequest.java</h1><pre class="source lang-java linenums">package com.example.ruleengine.model;
+
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Positive;
+
+import java.util.List;
+import java.util.Map;
+
+/**
+ * 决策请求模型
+ * Source: CONTEXT.md 决策 D-17
+ */
+public class DecisionRequest {
+
+    @NotBlank(message = &quot;规则ID不能为空&quot;)
+    private String ruleId;
+
+    @NotNull
+    private String script;
+
+    private Map&lt;String, Object&gt; features;
+
+    private List&lt;String&gt; requiredFeatures;
+
+<span class="pc" id="L26">    @Positive(message = &quot;超时时间必须为正数&quot;)</span>
+    private long timeoutMs = 50;  // D-11: 默认 50ms 超时
+
+    // 构造器
+<span class="fc" id="L30">    public DecisionRequest() {}</span>
+
+<span class="nc" id="L32">    public DecisionRequest(String ruleId, String script, Map&lt;String, Object&gt; features) {</span>
+<span class="nc" id="L33">        this.ruleId = ruleId;</span>
+<span class="nc" id="L34">        this.script = script;</span>
+<span class="nc" id="L35">        this.features = features;</span>
+<span class="nc" id="L36">    }</span>
+
+    // Getters and Setters
+    public String getRuleId() {
+<span class="fc" id="L40">        return ruleId;</span>
+    }
+
+    public void setRuleId(String ruleId) {
+<span class="fc" id="L44">        this.ruleId = ruleId;</span>
+<span class="fc" id="L45">    }</span>
+
+    public String getScript() {
+<span class="fc" id="L48">        return script;</span>
+    }
+
+    public void setScript(String script) {
+<span class="fc" id="L52">        this.script = script;</span>
+<span class="fc" id="L53">    }</span>
+
+    public Map&lt;String, Object&gt; getFeatures() {
+<span class="fc" id="L56">        return features;</span>
+    }
+
+    public void setFeatures(Map&lt;String, Object&gt; features) {
+<span class="fc" id="L60">        this.features = features;</span>
+<span class="fc" id="L61">    }</span>
+
+    public List&lt;String&gt; getRequiredFeatures() {
+<span class="fc" id="L64">        return requiredFeatures;</span>
+    }
+
+    public void setRequiredFeatures(List&lt;String&gt; requiredFeatures) {
+<span class="fc" id="L68">        this.requiredFeatures = requiredFeatures;</span>
+<span class="fc" id="L69">    }</span>
+
+    public long getTimeoutMs() {
+<span class="fc" id="L72">        return timeoutMs;</span>
+    }
+
+    public void setTimeoutMs(long timeoutMs) {
+<span class="fc" id="L76">        this.timeoutMs = timeoutMs;</span>
+<span class="fc" id="L77">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.11.202310140853</span></div></body></html>

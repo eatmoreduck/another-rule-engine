@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+<meta http-equiv="x-ua-compatible" content="IE=edge"/>
+<title>Test results - 请求验证测试</title>
+<link href="../css/base-style.css" rel="stylesheet" type="text/css"/>
+<link href="../css/style.css" rel="stylesheet" type="text/css"/>
+<script src="../js/report.js" type="text/javascript"></script>
+</head>
+<body>
+<div id="content">
+<h1>请求验证测试</h1>
+<div class="breadcrumbs">
+<a href="../index.html">all</a> &gt; 
+<a href="../packages/com.example.ruleengine.controller.html">com.example.ruleengine.controller</a> &gt; DecisionControllerTest$RequestValidationTests</div>
+<div id="summary">
+<table>
+<tr>
+<td>
+<div class="summaryGroup">
+<table>
+<tr>
+<td>
+<div class="infoBox" id="tests">
+<div class="counter">5</div>
+<p>tests</p>
+</div>
+</td>
+<td>
+<div class="infoBox" id="failures">
+<div class="counter">0</div>
+<p>failures</p>
+</div>
+</td>
+<td>
+<div class="infoBox" id="ignored">
+<div class="counter">0</div>
+<p>ignored</p>
+</div>
+</td>
+<td>
+<div class="infoBox" id="duration">
+<div class="counter">0.037s</div>
+<p>duration</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+</td>
+<td>
+<div class="infoBox success" id="successRate">
+<div class="percent">100%</div>
+<p>successful</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+<div id="tabs">
+<ul class="tabLinks">
+<li>
+<a href="#tab0">Tests</a>
+</li>
+<li>
+<a href="#tab1">Standard output</a>
+</li>
+</ul>
+<div id="tab0" class="tab">
+<h2>Tests</h2>
+<table>
+<thead>
+<tr>
+<th>Test</th>
+<th>Method name</th>
+<th>Duration</th>
+<th>Result</th>
+</tr>
+</thead>
+<tr>
+<td class="success">空请求体应返回错误</td>
+<td class="success">shouldRejectEmptyBody()</td>
+<td class="success">0.013s</td>
+<td class="success">passed</td>
+</tr>
+<tr>
+<td class="success">无效 JSON 应返回错误</td>
+<td class="success">shouldRejectInvalidJson()</td>
+<td class="success">0.006s</td>
+<td class="success">passed</td>
+</tr>
+<tr>
+<td class="success">缺少 Content-Type 应返回错误</td>
+<td class="success">shouldRejectMissingContentType()</td>
+<td class="success">0.003s</td>
+<td class="success">passed</td>
+</tr>
+<tr>
+<td class="success">缺少 ruleId 的请求应返回错误</td>
+<td class="success">shouldRejectMissingRuleId()</td>
+<td class="success">0.012s</td>
+<td class="success">passed</td>
+</tr>
+<tr>
+<td class="success">错误的 Content-Type 应返回错误</td>
+<td class="success">shouldRejectWrongContentType()</td>
+<td class="success">0.003s</td>
+<td class="success">passed</td>
+</tr>
+</table>
+</div>
+<div id="tab1" class="tab">
+<h2>Standard output</h2>
+<span class="code">
+<pre>2026-03-29 17:22:49.053 [Test worker] INFO  o.s.t.c.s.AnnotationConfigContextLoaderUtils - Could not detect default configuration classes for test class [com.example.ruleengine.controller.DecisionControllerTest$RequestValidationTests]: RequestValidationTests does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+2026-03-29 17:22:49.061 [Test worker] INFO  o.s.b.t.c.SpringBootTestContextBootstrapper - Found @SpringBootConfiguration com.example.ruleengine.RuleEngineApplication for test class com.example.ruleengine.controller.DecisionControllerTest$RequestValidationTests
+2026-03-29 17:22:49.068 [Test worker] WARN  o.s.w.s.m.s.DefaultHandlerExceptionResolver - Resolved [org.springframework.http.converter.HttpMessageNotReadableException: JSON parse error: Unexpected character ('i' (code 105)): was expecting double-quote to start field name]
+2026-03-29 17:22:49.081 [Test worker] WARN  o.s.w.s.m.s.DefaultHandlerExceptionResolver - Resolved [org.springframework.web.bind.MethodArgumentNotValidException: Validation failed for argument [0] in public org.springframework.http.ResponseEntity&lt;com.example.ruleengine.model.DecisionResponse&gt; com.example.ruleengine.controller.DecisionController.decide(com.example.ruleengine.model.DecisionRequest): [Field error in object 'decisionRequest' on field 'ruleId': rejected value [null]; codes [NotBlank.decisionRequest.ruleId,NotBlank.ruleId,NotBlank.java.lang.String,NotBlank]; arguments [org.springframework.context.support.DefaultMessageSourceResolvable: codes [decisionRequest.ruleId,ruleId]; arguments []; default message [ruleId]]; default message [规则ID不能为空]] ]
+2026-03-29 17:22:49.086 [Test worker] WARN  o.s.w.s.m.s.DefaultHandlerExceptionResolver - Resolved [org.springframework.web.HttpMediaTypeNotSupportedException: Content-Type is not supported]
+2026-03-29 17:22:49.101 [Test worker] WARN  o.s.w.s.m.s.DefaultHandlerExceptionResolver - Resolved [org.springframework.web.bind.MethodArgumentNotValidException: Validation failed for argument [0] in public org.springframework.http.ResponseEntity&lt;com.example.ruleengine.model.DecisionResponse&gt; com.example.ruleengine.controller.DecisionController.decide(com.example.ruleengine.model.DecisionRequest) with 2 errors: [Field error in object 'decisionRequest' on field 'script': rejected value [null]; codes [NotNull.decisionRequest.script,NotNull.script,NotNull.java.lang.String,NotNull]; arguments [org.springframework.context.support.DefaultMessageSourceResolvable: codes [decisionRequest.script,script]; arguments []; default message [script]]; default message [must not be null]] [Field error in object 'decisionRequest' on field 'ruleId': rejected value [null]; codes [NotBlank.decisionRequest.ruleId,NotBlank.ruleId,NotBlank.java.lang.String,NotBlank]; arguments [org.springframework.context.support.DefaultMessageSourceResolvable: codes [decisionRequest.ruleId,ruleId]; arguments []; default message [ruleId]]; default message [规则ID不能为空]] ]
+2026-03-29 17:22:49.105 [Test worker] WARN  o.s.w.s.m.s.DefaultHandlerExceptionResolver - Resolved [org.springframework.web.HttpMediaTypeNotSupportedException: Content-Type 'text/plain' is not supported]
+</pre>
+</span>
+</div>
+</div>
+<div id="footer">
+<p>
+<div>
+<label class="hidden" id="label-for-line-wrapping-toggle" for="line-wrapping-toggle">Wrap lines
+<input id="line-wrapping-toggle" type="checkbox" autocomplete="off"/>
+</label>
+</div>Generated by 
+<a href="http://www.gradle.org">Gradle 8.5</a> at Mar 29, 2026, 5:22:59 PM</p>
+</div>
+</div>
+</body>
+</html>

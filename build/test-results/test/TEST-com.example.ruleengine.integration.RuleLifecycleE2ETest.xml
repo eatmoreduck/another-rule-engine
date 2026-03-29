@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="规则生命周期端到端测试" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-03-29T09:22:52" hostname="m1" time="0.249">
+  <properties/>
+  <testcase name="规则版本管理验证" classname="com.example.ruleengine.integration.RuleLifecycleE2ETest" time="0.243"/>
+  <testcase name="规则状态转换验证" classname="com.example.ruleengine.integration.RuleLifecycleE2ETest" time="0.003"/>
+  <testcase name="完整规则生命周期流程测试" classname="com.example.ruleengine.integration.RuleLifecycleE2ETest" time="0.003"/>
+  <system-out><![CDATA[2026-03-29 17:22:52.881 [Test worker] INFO  c.e.r.s.l.RuleLifecycleService - 创建规则: ruleKey=e2e_test_rule, operator=e2e_test_user_3
+2026-03-29 17:22:52.885 [Test worker] INFO  c.e.r.s.l.RuleLifecycleService - 更新规则并创建新版本: ruleKey=e2e_test_rule, newVersion=2, operator=e2e_test_user_3
+2026-03-29 17:22:52.885 [Test worker] INFO  c.e.r.s.l.RuleLifecycleService - 更新规则并创建新版本: ruleKey=e2e_test_rule, newVersion=3, operator=e2e_test_user_3
+2026-03-29 17:22:52.889 [Test worker] INFO  c.e.r.s.l.RuleLifecycleService - 创建规则: ruleKey=e2e_test_rule, operator=e2e_test_user_2
+2026-03-29 17:22:52.889 [Test worker] INFO  c.e.r.s.l.RuleLifecycleService - 删除规则: ruleKey=e2e_test_rule, operator=e2e_test_user_2
+2026-03-29 17:22:52.891 [Test worker] INFO  c.e.r.s.l.RuleLifecycleService - 创建规则: ruleKey=e2e_test_rule, operator=e2e_test_user
+2026-03-29 17:22:52.892 [Test worker] INFO  c.e.r.s.l.RuleLifecycleService - 更新规则并创建新版本: ruleKey=e2e_test_rule, newVersion=2, operator=e2e_test_user
+2026-03-29 17:22:52.893 [Test worker] INFO  c.e.r.s.l.RuleLifecycleService - 删除规则: ruleKey=e2e_test_rule, operator=e2e_test_user
+]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

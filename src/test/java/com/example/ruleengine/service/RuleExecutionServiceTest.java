@@ -1,5 +1,6 @@
 package com.example.ruleengine.service;
 
+import com.example.ruleengine.cache.RuleCacheService;
 import com.example.ruleengine.engine.GroovyScriptEngine;
 import com.example.ruleengine.exception.RuleExecutionException;
 import com.example.ruleengine.model.DecisionRequest;
@@ -45,6 +46,9 @@ class RuleExecutionServiceTest {
     @Mock
     private FeatureProviderService featureProvider;
 
+    @Mock
+    private RuleCacheService ruleCacheService;
+
     private TimeLimiter timeLimiter;
     private ThreadPoolTaskExecutor taskExecutor;
     private RuleExecutionService ruleExecutionService;
@@ -69,7 +73,8 @@ class RuleExecutionServiceTest {
             scriptEngine,
             featureProvider,
             timeLimiter,
-            taskExecutor
+            taskExecutor,
+            ruleCacheService
         );
     }
 

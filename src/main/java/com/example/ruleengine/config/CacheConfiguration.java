@@ -1,5 +1,6 @@
 package com.example.ruleengine.config;
 
+import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import org.springframework.cache.CacheManager;
 import org.springframework.cache.annotation.EnableCaching;
@@ -18,6 +19,18 @@ import java.util.concurrent.TimeUnit;
 @Configuration
 @EnableCaching
 public class CacheConfiguration {
+
+    /**
+     * 特征缓存（用于 FeatureProviderService）
+     */
+    @Bean("featureCache")
+    public Cache<String, Object> featureCache() {
+        return Caffeine.newBuilder()
+                .maximumSize(10_000)
+                .expireAfterWrite(30, TimeUnit.MINUTES)
+                .recordStats()
+                .build();
+    }
 
     /**
      * 缓存管理器

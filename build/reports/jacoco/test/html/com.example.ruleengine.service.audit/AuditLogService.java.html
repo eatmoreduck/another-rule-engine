@@ -1,0 +1,113 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>AuditLogService.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">rule-engine</a> &gt; <a href="index.source.html" class="el_package">com.example.ruleengine.service.audit</a> &gt; <span class="el_source">AuditLogService.java</span></div><h1>AuditLogService.java</h1><pre class="source lang-java linenums">package com.example.ruleengine.service.audit;
+
+import com.example.ruleengine.constants.AuditEvent;
+import com.example.ruleengine.domain.AuditLog;
+import com.example.ruleengine.repository.AuditLogRepository;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.scheduling.annotation.Async;
+import org.springframework.stereotype.Service;
+
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Map;
+
+/**
+ * 审计日志服务
+ */
+@Service
+<span class="fc" id="L21">@RequiredArgsConstructor</span>
+<span class="fc" id="L22">@Slf4j</span>
+public class AuditLogService {
+
+    private final AuditLogRepository auditLogRepository;
+    private final ObjectMapper objectMapper;
+
+    /**
+     * 记录操作日志
+     */
+    @Async
+    public void logOperation(String entityType, String entityId,
+                             AuditEvent operation, String operator,
+                             Map&lt;String, Object&gt; details) {
+        try {
+<span class="fc" id="L36">            String detailJson = objectMapper.writeValueAsString(details);</span>
+<span class="fc" id="L37">            AuditLog auditLog = AuditLog.builder()</span>
+<span class="fc" id="L38">                    .entityType(entityType)</span>
+<span class="fc" id="L39">                    .entityId(entityId)</span>
+<span class="fc" id="L40">                    .operation(operation.name())</span>
+<span class="fc" id="L41">                    .operationDetail(detailJson)</span>
+<span class="fc" id="L42">                    .operator(operator)</span>
+<span class="fc" id="L43">                    .status(&quot;SUCCESS&quot;)</span>
+<span class="fc" id="L44">                    .build();</span>
+<span class="fc" id="L45">            auditLogRepository.save(auditLog);</span>
+<span class="nc" id="L46">        } catch (JsonProcessingException e) {</span>
+<span class="nc" id="L47">            log.error(&quot;序列化审计详情失败&quot;, e);</span>
+<span class="fc" id="L48">        }</span>
+<span class="fc" id="L49">    }</span>
+
+    /**
+     * 记录操作日志（带上下文信息）
+     */
+    @Async
+    public void logOperationWithContext(String entityType, String entityId,
+                                       AuditEvent operation, String operator,
+                                       Map&lt;String, Object&gt; details,
+                                       String operatorIp, String requestId) {
+        try {
+<span class="fc" id="L60">            String detailJson = objectMapper.writeValueAsString(details);</span>
+<span class="fc" id="L61">            AuditLog auditLog = AuditLog.builder()</span>
+<span class="fc" id="L62">                    .entityType(entityType)</span>
+<span class="fc" id="L63">                    .entityId(entityId)</span>
+<span class="fc" id="L64">                    .operation(operation.name())</span>
+<span class="fc" id="L65">                    .operationDetail(detailJson)</span>
+<span class="fc" id="L66">                    .operator(operator)</span>
+<span class="fc" id="L67">                    .operatorIp(operatorIp)</span>
+<span class="fc" id="L68">                    .requestId(requestId)</span>
+<span class="fc" id="L69">                    .status(&quot;SUCCESS&quot;)</span>
+<span class="fc" id="L70">                    .build();</span>
+<span class="fc" id="L71">            auditLogRepository.save(auditLog);</span>
+<span class="nc" id="L72">        } catch (JsonProcessingException e) {</span>
+<span class="nc" id="L73">            log.error(&quot;序列化审计详情失败&quot;, e);</span>
+<span class="fc" id="L74">        }</span>
+<span class="fc" id="L75">    }</span>
+
+    /**
+     * 记录失败的操作
+     */
+    @Async
+    public void logFailure(String entityType, String entityId,
+                          AuditEvent operation, String operator,
+                          String errorMessage) {
+<span class="fc" id="L84">        AuditLog auditLog = AuditLog.builder()</span>
+<span class="fc" id="L85">                .entityType(entityType)</span>
+<span class="fc" id="L86">                .entityId(entityId)</span>
+<span class="fc" id="L87">                .operation(operation.name())</span>
+<span class="fc" id="L88">                .operator(operator)</span>
+<span class="fc" id="L89">                .status(&quot;FAILED&quot;)</span>
+<span class="fc" id="L90">                .errorMessage(errorMessage)</span>
+<span class="fc" id="L91">                .build();</span>
+<span class="fc" id="L92">        auditLogRepository.save(auditLog);</span>
+<span class="fc" id="L93">    }</span>
+
+    /**
+     * 获取实体审计历史
+     */
+    public List&lt;AuditLog&gt; getAuditHistory(String entityType, String entityId) {
+<span class="fc" id="L99">        return auditLogRepository.findByEntityTypeAndEntityIdOrderByOperationTimeDesc(</span>
+                entityType, entityId);
+    }
+
+    /**
+     * 获取操作人活动记录
+     */
+    public List&lt;AuditLog&gt; getOperatorActivity(String operator,
+                                             LocalDateTime start, LocalDateTime end) {
+<span class="fc" id="L108">        return auditLogRepository.findByOperationTimeBetween(start, end).stream()</span>
+<span class="fc" id="L109">                .filter(log -&gt; log.getOperator().equals(operator))</span>
+<span class="fc" id="L110">                .toList();</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.11.202310140853</span></div></body></html>

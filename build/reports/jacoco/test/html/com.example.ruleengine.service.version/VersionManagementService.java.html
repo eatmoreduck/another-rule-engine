@@ -1,0 +1,201 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>VersionManagementService.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">rule-engine</a> &gt; <a href="index.source.html" class="el_package">com.example.ruleengine.service.version</a> &gt; <span class="el_source">VersionManagementService.java</span></div><h1>VersionManagementService.java</h1><pre class="source lang-java linenums">package com.example.ruleengine.service.version;
+
+import com.example.ruleengine.annotation.Auditable;
+import com.example.ruleengine.constants.AuditEvent;
+import com.example.ruleengine.constants.RuleStatus;
+import com.example.ruleengine.domain.Rule;
+import com.example.ruleengine.domain.RuleVersion;
+import com.example.ruleengine.model.dto.CreateVersionRequest;
+import com.example.ruleengine.model.dto.VersionDiffResponse;
+import com.example.ruleengine.model.dto.VersionResponse;
+import com.example.ruleengine.repository.RuleRepository;
+import com.example.ruleengine.repository.RuleVersionRepository;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
+import java.util.stream.Collectors;
+
+/**
+ * 规则版本管理服务
+ */
+@Service
+<span class="fc" id="L25">@RequiredArgsConstructor</span>
+<span class="fc" id="L26">@Slf4j</span>
+public class VersionManagementService {
+
+    private final RuleRepository ruleRepository;
+    private final RuleVersionRepository ruleVersionRepository;
+
+    /**
+     * 创建规则新版本
+     * 1. 保存当前版本到 rule_versions
+     * 2. 更新 rules 表的 groovy_script 和 version
+     * 3. 记录变更原因和操作人
+     */
+    @Transactional
+    @Auditable(event = AuditEvent.VERSION_CREATE, entityType = &quot;RULE&quot;, entityIdExpression = &quot;#ruleKey&quot;)
+    public VersionResponse createVersion(String ruleKey, CreateVersionRequest request, String operator) {
+        // 1. 查询规则
+<span class="fc" id="L42">        Rule rule = ruleRepository.findByRuleKey(ruleKey)</span>
+<span class="pc" id="L43">                .orElseThrow(() -&gt; new IllegalArgumentException(&quot;规则不存在: &quot; + ruleKey));</span>
+
+        // 2. 保存当前版本到历史表
+<span class="fc" id="L46">        Integer currentVersion = rule.getVersion();</span>
+<span class="fc" id="L47">        RuleVersion historyVersion = RuleVersion.builder()</span>
+<span class="fc" id="L48">                .ruleId(rule.getId())</span>
+<span class="fc" id="L49">                .ruleKey(rule.getRuleKey())</span>
+<span class="fc" id="L50">                .version(currentVersion)</span>
+<span class="fc" id="L51">                .groovyScript(rule.getGroovyScript())</span>
+<span class="fc" id="L52">                .changeReason(request.getChangeReason())</span>
+<span class="fc" id="L53">                .changedBy(operator)</span>
+<span class="fc" id="L54">                .isRollback(false)</span>
+<span class="fc" id="L55">                .build();</span>
+<span class="fc" id="L56">        ruleVersionRepository.save(historyVersion);</span>
+
+        // 3. 更新规则
+<span class="fc" id="L59">        Integer newVersion = currentVersion + 1;</span>
+<span class="fc" id="L60">        rule.setGroovyScript(request.getGroovyScript());</span>
+<span class="fc" id="L61">        rule.setVersion(newVersion);</span>
+<span class="fc" id="L62">        rule.setUpdatedBy(operator);</span>
+<span class="fc" id="L63">        Rule updatedRule = ruleRepository.save(rule);</span>
+
+<span class="fc" id="L65">        log.info(&quot;创建规则新版本: ruleKey={}, version={}, operator={}&quot;, ruleKey, newVersion, operator);</span>
+
+<span class="fc" id="L67">        return VersionResponse.builder()</span>
+<span class="fc" id="L68">                .ruleId(updatedRule.getId())</span>
+<span class="fc" id="L69">                .ruleKey(updatedRule.getRuleKey())</span>
+<span class="fc" id="L70">                .version(updatedRule.getVersion())</span>
+<span class="fc" id="L71">                .groovyScript(updatedRule.getGroovyScript())</span>
+<span class="fc" id="L72">                .changedBy(operator)</span>
+<span class="fc" id="L73">                .build();</span>
+    }
+
+    /**
+     * 获取规则的所有历史版本
+     */
+    public List&lt;VersionResponse&gt; getVersions(String ruleKey) {
+<span class="fc" id="L80">        List&lt;RuleVersion&gt; versions = ruleVersionRepository.findByRuleKeyOrderByVersionDesc(ruleKey);</span>
+<span class="fc" id="L81">        return versions.stream()</span>
+<span class="fc" id="L82">                .map(VersionResponse::fromEntity)</span>
+<span class="fc" id="L83">                .collect(Collectors.toList());</span>
+    }
+
+    /**
+     * 获取规则的特定版本
+     */
+    @Auditable(event = AuditEvent.VERSION_VIEW, entityType = &quot;RULE&quot;, entityIdExpression = &quot;#ruleKey&quot;)
+    public VersionResponse getVersion(String ruleKey, Integer version) {
+<span class="nc" id="L91">        RuleVersion ruleVersion = ruleVersionRepository.findByRuleKeyAndVersion(ruleKey, version)</span>
+<span class="nc" id="L92">                .orElseThrow(() -&gt; new IllegalArgumentException(&quot;版本不存在: ruleKey=&quot; + ruleKey + &quot;, version=&quot; + version));</span>
+<span class="nc" id="L93">        return VersionResponse.fromEntity(ruleVersion);</span>
+    }
+
+    /**
+     * 比较两个版本的差异
+     */
+    @Auditable(event = AuditEvent.VERSION_COMPARE, entityType = &quot;RULE&quot;, entityIdExpression = &quot;#ruleKey&quot;)
+    public VersionDiffResponse compareVersions(String ruleKey, Integer version1, Integer version2) {
+<span class="fc" id="L101">        RuleVersion v1 = ruleVersionRepository.findByRuleKeyAndVersion(ruleKey, version1)</span>
+<span class="pc" id="L102">                .orElseThrow(() -&gt; new IllegalArgumentException(&quot;版本不存在: &quot; + version1));</span>
+<span class="fc" id="L103">        RuleVersion v2 = ruleVersionRepository.findByRuleKeyAndVersion(ruleKey, version2)</span>
+<span class="pc" id="L104">                .orElseThrow(() -&gt; new IllegalArgumentException(&quot;版本不存在: &quot; + version2));</span>
+
+        // 简单的差异比较（实际项目中可以使用 Apache Commons Text 的 StringSubstitutor 或 diffutils）
+<span class="fc" id="L107">        String diff = generateSimpleDiff(v1.getGroovyScript(), v2.getGroovyScript());</span>
+
+<span class="fc" id="L109">        return VersionDiffResponse.builder()</span>
+<span class="fc" id="L110">                .ruleKey(ruleKey)</span>
+<span class="fc" id="L111">                .version1(version1)</span>
+<span class="fc" id="L112">                .version2(version2)</span>
+<span class="fc" id="L113">                .script1(v1.getGroovyScript())</span>
+<span class="fc" id="L114">                .script2(v2.getGroovyScript())</span>
+<span class="fc" id="L115">                .diff(diff)</span>
+<span class="fc" id="L116">                .build();</span>
+    }
+
+    /**
+     * 回滚规则到指定版本
+     * 1. 将当前版本保存到 rule_versions（标记为 is_rollback=true）
+     * 2. 从 rule_versions 恢复目标版本的脚本
+     * 3. 更新 rules 表
+     * 4. 记录回滚操作
+     */
+    @Transactional
+    @Auditable(event = AuditEvent.VERSION_ROLLBACK, entityType = &quot;RULE&quot;, entityIdExpression = &quot;#ruleKey&quot;)
+    public VersionResponse rollbackToVersion(String ruleKey, Integer targetVersion, String operator) {
+        // 1. 查询规则和目标版本
+<span class="fc" id="L130">        Rule rule = ruleRepository.findByRuleKey(ruleKey)</span>
+<span class="pc" id="L131">                .orElseThrow(() -&gt; new IllegalArgumentException(&quot;规则不存在: &quot; + ruleKey));</span>
+<span class="fc" id="L132">        RuleVersion targetVersionEntity = ruleVersionRepository.findByRuleKeyAndVersion(ruleKey, targetVersion)</span>
+<span class="pc" id="L133">                .orElseThrow(() -&gt; new IllegalArgumentException(&quot;目标版本不存在: &quot; + targetVersion));</span>
+
+<span class="fc" id="L135">        Integer currentVersion = rule.getVersion();</span>
+
+        // 2. 保存当前版本到历史表（标记为回滚）
+<span class="fc" id="L138">        RuleVersion rollbackHistory = RuleVersion.builder()</span>
+<span class="fc" id="L139">                .ruleId(rule.getId())</span>
+<span class="fc" id="L140">                .ruleKey(rule.getRuleKey())</span>
+<span class="fc" id="L141">                .version(currentVersion)</span>
+<span class="fc" id="L142">                .groovyScript(rule.getGroovyScript())</span>
+<span class="fc" id="L143">                .changeReason(&quot;回滚到版本 &quot; + targetVersion)</span>
+<span class="fc" id="L144">                .changedBy(operator)</span>
+<span class="fc" id="L145">                .isRollback(true)</span>
+<span class="fc" id="L146">                .rollbackFromVersion(currentVersion)</span>
+<span class="fc" id="L147">                .build();</span>
+<span class="fc" id="L148">        ruleVersionRepository.save(rollbackHistory);</span>
+
+        // 3. 更新规则为目标版本的内容
+<span class="fc" id="L151">        Integer newVersion = currentVersion + 1;</span>
+<span class="fc" id="L152">        rule.setGroovyScript(targetVersionEntity.getGroovyScript());</span>
+<span class="fc" id="L153">        rule.setVersion(newVersion);</span>
+<span class="fc" id="L154">        rule.setUpdatedBy(operator);</span>
+<span class="fc" id="L155">        Rule updatedRule = ruleRepository.save(rule);</span>
+
+<span class="fc" id="L157">        log.info(&quot;回滚规则版本: ruleKey={}, from={}, to={}, newVersion={}, operator={}&quot;,</span>
+                ruleKey, currentVersion, targetVersion, newVersion, operator);
+
+<span class="fc" id="L160">        return VersionResponse.builder()</span>
+<span class="fc" id="L161">                .ruleId(updatedRule.getId())</span>
+<span class="fc" id="L162">                .ruleKey(updatedRule.getRuleKey())</span>
+<span class="fc" id="L163">                .version(updatedRule.getVersion())</span>
+<span class="fc" id="L164">                .groovyScript(updatedRule.getGroovyScript())</span>
+<span class="fc" id="L165">                .changedBy(operator)</span>
+<span class="fc" id="L166">                .isRollback(true)</span>
+<span class="fc" id="L167">                .rollbackFromVersion(currentVersion)</span>
+<span class="fc" id="L168">                .build();</span>
+    }
+
+    /**
+     * 生成简单的差异文本
+     */
+    private String generateSimpleDiff(String script1, String script2) {
+<span class="pc bpc" id="L175" title="1 of 2 branches missed.">        if (script1.equals(script2)) {</span>
+<span class="nc" id="L176">            return &quot;两个版本内容完全相同&quot;;</span>
+        }
+
+<span class="fc" id="L179">        int maxLength = Math.max(script1.length(), script2.length());</span>
+<span class="fc" id="L180">        int diffIndex = -1;</span>
+<span class="pc bpc" id="L181" title="1 of 2 branches missed.">        for (int i = 0; i &lt; Math.min(script1.length(), script2.length()); i++) {</span>
+<span class="fc bfc" id="L182" title="All 2 branches covered.">            if (script1.charAt(i) != script2.charAt(i)) {</span>
+<span class="fc" id="L183">                diffIndex = i;</span>
+<span class="fc" id="L184">                break;</span>
+            }
+        }
+
+<span class="pc bpc" id="L188" title="1 of 2 branches missed.">        if (diffIndex == -1) {</span>
+<span class="nc" id="L189">            return &quot;内容长度不同: version1=&quot; + script1.length() + &quot;, version2=&quot; + script2.length();</span>
+        }
+
+<span class="fc" id="L192">        int contextStart = Math.max(0, diffIndex - 50);</span>
+<span class="fc" id="L193">        int contextEnd = Math.min(maxLength, diffIndex + 50);</span>
+
+<span class="fc" id="L195">        return String.format(&quot;首次差异出现在位置 %d\n版本1: ...%s...\n版本2: ...%s...&quot;,</span>
+<span class="fc" id="L196">                diffIndex,</span>
+<span class="fc" id="L197">                script1.substring(contextStart, Math.min(script1.length(), contextEnd)),</span>
+<span class="fc" id="L198">                script2.substring(contextStart, Math.min(script2.length(), contextEnd)));</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.11.202310140853</span></div></body></html>

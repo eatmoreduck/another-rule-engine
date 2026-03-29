@@ -1,0 +1,1525 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="VersionManagementService 集成测试" tests="5" skipped="0" failures="0" errors="0" timestamp="2026-03-29T09:22:59" hostname="m1" time="0.079">
+  <properties/>
+  <testcase name="应该成功比较版本差异" classname="com.example.ruleengine.service.version.VersionManagementServiceTest" time="0.026"/>
+  <testcase name="应该成功回滚到历史版本" classname="com.example.ruleengine.service.version.VersionManagementServiceTest" time="0.014"/>
+  <testcase name="应该成功创建新版本" classname="com.example.ruleengine.service.version.VersionManagementServiceTest" time="0.012"/>
+  <testcase name="应该成功获取版本列表" classname="com.example.ruleengine.service.version.VersionManagementServiceTest" time="0.013"/>
+  <testcase name="回滚后创建新版本应该继续递增" classname="com.example.ruleengine.service.version.VersionManagementServiceTest" time="0.014"/>
+  <system-out><![CDATA[2026-03-29 17:22:59.049 [Test worker] DEBUG org.hibernate.SQL - 
+    delete 
+    from
+        rule_versions rv1_0
+Hibernate: 
+    delete 
+    from
+        rule_versions rv1_0
+2026-03-29 17:22:59.050 [Test worker] DEBUG org.hibernate.SQL - 
+    delete 
+    from
+        rules r1_0
+Hibernate: 
+    delete 
+    from
+        rules r1_0
+2026-03-29 17:22:59.051 [Test worker] DEBUG org.hibernate.SQL - 
+    insert 
+    into
+        rules
+        (created_at, created_by, enabled, groovy_script, opt_lock_version, rule_description, rule_key, rule_name, status, updated_at, updated_by, version, id) 
+    values
+        (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, default)
+Hibernate: 
+    insert 
+    into
+        rules
+        (created_at, created_by, enabled, groovy_script, opt_lock_version, rule_description, rule_key, rule_name, status, updated_at, updated_by, version, id) 
+    values
+        (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, default)
+2026-03-29 17:22:59.053 [Test worker] DEBUG org.hibernate.SQL - 
+    select
+        r1_0.id,
+        r1_0.created_at,
+        r1_0.created_by,
+        r1_0.enabled,
+        r1_0.groovy_script,
+        r1_0.opt_lock_version,
+        r1_0.rule_description,
+        r1_0.rule_key,
+        r1_0.rule_name,
+        r1_0.status,
+        r1_0.updated_at,
+        r1_0.updated_by,
+        r1_0.version 
+    from
+        rules r1_0 
+    where
+        r1_0.rule_key=?
+Hibernate: 
+    select
+        r1_0.id,
+        r1_0.created_at,
+        r1_0.created_by,
+        r1_0.enabled,
+        r1_0.groovy_script,
+        r1_0.opt_lock_version,
+        r1_0.rule_description,
+        r1_0.rule_key,
+        r1_0.rule_name,
+        r1_0.status,
+        r1_0.updated_at,
+        r1_0.updated_by,
+        r1_0.version 
+    from
+        rules r1_0 
+    where
+        r1_0.rule_key=?
+2026-03-29 17:22:59.054 [Test worker] DEBUG org.hibernate.SQL - 
+    insert 
+    into
+        rule_versions
+        (change_reason, changed_at, changed_by, groovy_script, is_rollback, rollback_from_version, rule_id, rule_key, version, id) 
+    values
+        (?, ?, ?, ?, ?, ?, ?, ?, ?, default)
+Hibernate: 
+    insert 
+    into
+        rule_versions
+        (change_reason, changed_at, changed_by, groovy_script, is_rollback, rollback_from_version, rule_id, rule_key, version, id) 
+    values
+        (?, ?, ?, ?, ?, ?, ?, ?, ?, default)
+2026-03-29 17:22:59.055 [Test worker] INFO  c.e.r.s.v.VersionManagementService - 创建规则新版本: ruleKey=test-version-rule, version=2, operator=operator
+2026-03-29 17:22:59.056 [Test worker] DEBUG org.hibernate.SQL - 
+    update
+        rules 
+    set
+        created_by=?,
+        enabled=?,
+        groovy_script=?,
+        opt_lock_version=?,
+        rule_description=?,
+        rule_key=?,
+        rule_name=?,
+        status=?,
+        updated_at=?,
+        updated_by=?,
+        version=? 
+    where
+        id=? 
+        and opt_lock_version=?
+Hibernate: 
+    update
+        rules 
+    set
+        created_by=?,
+        enabled=?,
+        groovy_script=?,
+        opt_lock_version=?,
+        rule_description=?,
+        rule_key=?,
+        rule_name=?,
+        status=?,
+        updated_at=?,
+        updated_by=?,
+        version=? 
+    where
+        id=? 
+        and opt_lock_version=?
+2026-03-29 17:22:59.056 [SimpleAsyncTaskExecutor-5] DEBUG org.hibernate.SQL - 
+    insert 
+    into
+        audit_logs
+        (entity_id, entity_type, error_message, operation, operation_detail, operation_time, operator, operator_ip, request_id, status, id) 
+    values
+        (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, default)
+Hibernate: 
+    insert 
+    into
+        audit_logs
+        (entity_id, entity_type, error_message, operation, operation_detail, operation_time, operator, operator_ip, request_id, status, id) 
+    values
+        (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, default)
+2026-03-29 17:22:59.057 [Test worker] DEBUG org.hibernate.SQL - 
+    select
+        r1_0.id,
+        r1_0.created_at,
+        r1_0.created_by,
+        r1_0.enabled,
+        r1_0.groovy_script,
+        r1_0.opt_lock_version,
+        r1_0.rule_description,
+        r1_0.rule_key,
+        r1_0.rule_name,
+        r1_0.status,
+        r1_0.updated_at,
+        r1_0.updated_by,
+        r1_0.version 
+    from
+        rules r1_0 
+    where
+        r1_0.rule_key=?
+Hibernate: 
+    select
+        r1_0.id,
+        r1_0.created_at,
+        r1_0.created_by,
+        r1_0.enabled,
+        r1_0.groovy_script,
+        r1_0.opt_lock_version,
+        r1_0.rule_description,
+        r1_0.rule_key,
+        r1_0.rule_name,
+        r1_0.status,
+        r1_0.updated_at,
+        r1_0.updated_by,
+        r1_0.version 
+    from
+        rules r1_0 
+    where
+        r1_0.rule_key=?
+2026-03-29 17:22:59.058 [Test worker] DEBUG org.hibernate.SQL - 
+    insert 
+    into
+        rule_versions
+        (change_reason, changed_at, changed_by, groovy_script, is_rollback, rollback_from_version, rule_id, rule_key, version, id) 
+    values
+        (?, ?, ?, ?, ?, ?, ?, ?, ?, default)
+Hibernate: 
+    insert 
+    into
+        rule_versions
+        (change_reason, changed_at, changed_by, groovy_script, is_rollback, rollback_from_version, rule_id, rule_key, version, id) 
+    values
+        (?, ?, ?, ?, ?, ?, ?, ?, ?, default)
+2026-03-29 17:22:59.058 [Test worker] INFO  c.e.r.s.v.VersionManagementService - 创建规则新版本: ruleKey=test-version-rule, version=3, operator=operator
+2026-03-29 17:22:59.058 [Test worker] DEBUG org.hibernate.SQL - 
+    update
+        rules 
+    set
+        created_by=?,
+        enabled=?,
+        groovy_script=?,
+        opt_lock_version=?,
+        rule_description=?,
+        rule_key=?,
+        rule_name=?,
+        status=?,
+        updated_at=?,
+        updated_by=?,
+        version=? 
+    where
+        id=? 
+        and opt_lock_version=?
+Hibernate: 
+    update
+        rules 
+    set
+        created_by=?,
+        enabled=?,
+        groovy_script=?,
+        opt_lock_version=?,
+        rule_description=?,
+        rule_key=?,
+        rule_name=?,
+        status=?,
+        updated_at=?,
+        updated_by=?,
+        version=? 
+    where
+        id=? 
+        and opt_lock_version=?
+2026-03-29 17:22:59.059 [SimpleAsyncTaskExecutor-6] DEBUG org.hibernate.SQL - 
+    insert 
+    into
+        audit_logs
+        (entity_id, entity_type, error_message, operation, operation_detail, operation_time, operator, operator_ip, request_id, status, id) 
+    values
+        (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, default)
+Hibernate: 
+    insert 
+    into
+        audit_logs
+        (entity_id, entity_type, error_message, operation, operation_detail, operation_time, operator, operator_ip, request_id, status, id) 
+    values
+        (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, default)
+2026-03-29 17:22:59.061 [Test worker] DEBUG org.hibernate.SQL - 
+    select
+        rv1_0.id,
+        rv1_0.change_reason,
+        rv1_0.changed_at,
+        rv1_0.changed_by,
+        rv1_0.groovy_script,
+        rv1_0.is_rollback,
+        rv1_0.rollback_from_version,
+        rv1_0.rule_id,
+        rv1_0.rule_key,
+        rv1_0.version 
+    from
+        rule_versions rv1_0 
+    where
+        rv1_0.rule_key=? 
+        and rv1_0.version=?
+Hibernate: 
+    select
+        rv1_0.id,
+        rv1_0.change_reason,
+        rv1_0.changed_at,
+        rv1_0.changed_by,
+        rv1_0.groovy_script,
+        rv1_0.is_rollback,
+        rv1_0.rollback_from_version,
+        rv1_0.rule_id,
+        rv1_0.rule_key,
+        rv1_0.version 
+    from
+        rule_versions rv1_0 
+    where
+        rv1_0.rule_key=? 
+        and rv1_0.version=?
+2026-03-29 17:22:59.071 [Test worker] DEBUG org.hibernate.SQL - 
+    select
+        rv1_0.id,
+        rv1_0.change_reason,
+        rv1_0.changed_at,
+        rv1_0.changed_by,
+        rv1_0.groovy_script,
+        rv1_0.is_rollback,
+        rv1_0.rollback_from_version,
+        rv1_0.rule_id,
+        rv1_0.rule_key,
+        rv1_0.version 
+    from
+        rule_versions rv1_0 
+    where
+        rv1_0.rule_key=? 
+        and rv1_0.version=?
+Hibernate: 
+    select
+        rv1_0.id,
+        rv1_0.change_reason,
+        rv1_0.changed_at,
+        rv1_0.changed_by,
+        rv1_0.groovy_script,
+        rv1_0.is_rollback,
+        rv1_0.rollback_from_version,
+        rv1_0.rule_id,
+        rv1_0.rule_key,
+        rv1_0.version 
+    from
+        rule_versions rv1_0 
+    where
+        rv1_0.rule_key=? 
+        and rv1_0.version=?
+2026-03-29 17:22:59.073 [SimpleAsyncTaskExecutor-7] DEBUG org.hibernate.SQL - 
+    insert 
+    into
+        audit_logs
+        (entity_id, entity_type, error_message, operation, operation_detail, operation_time, operator, operator_ip, request_id, status, id) 
+    values
+        (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, default)
+Hibernate: 
+    insert 
+    into
+        audit_logs
+        (entity_id, entity_type, error_message, operation, operation_detail, operation_time, operator, operator_ip, request_id, status, id) 
+    values
+        (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, default)
+2026-03-29 17:22:59.075 [Test worker] DEBUG org.hibernate.SQL - 
+    delete 
+    from
+        rule_versions rv1_0
+Hibernate: 
+    delete 
+    from
+        rule_versions rv1_0
+2026-03-29 17:22:59.076 [Test worker] DEBUG org.hibernate.SQL - 
+    delete 
+    from
+        rules r1_0
+Hibernate: 
+    delete 
+    from
+        rules r1_0
+2026-03-29 17:22:59.076 [Test worker] DEBUG org.hibernate.SQL - 
+    insert 
+    into
+        rules
+        (created_at, created_by, enabled, groovy_script, opt_lock_version, rule_description, rule_key, rule_name, status, updated_at, updated_by, version, id) 
+    values
+        (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, default)
+Hibernate: 
+    insert 
+    into
+        rules
+        (created_at, created_by, enabled, groovy_script, opt_lock_version, rule_description, rule_key, rule_name, status, updated_at, updated_by, version, id) 
+    values
+        (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, default)
+2026-03-29 17:22:59.078 [Test worker] DEBUG org.hibernate.SQL - 
+    select
+        r1_0.id,
+        r1_0.created_at,
+        r1_0.created_by,
+        r1_0.enabled,
+        r1_0.groovy_script,
+        r1_0.opt_lock_version,
+        r1_0.rule_description,
+        r1_0.rule_key,
+        r1_0.rule_name,
+        r1_0.status,
+        r1_0.updated_at,
+        r1_0.updated_by,
+        r1_0.version 
+    from
+        rules r1_0 
+    where
+        r1_0.rule_key=?
+Hibernate: 
+    select
+        r1_0.id,
+        r1_0.created_at,
+        r1_0.created_by,
+        r1_0.enabled,
+        r1_0.groovy_script,
+        r1_0.opt_lock_version,
+        r1_0.rule_description,
+        r1_0.rule_key,
+        r1_0.rule_name,
+        r1_0.status,
+        r1_0.updated_at,
+        r1_0.updated_by,
+        r1_0.version 
+    from
+        rules r1_0 
+    where
+        r1_0.rule_key=?
+2026-03-29 17:22:59.078 [Test worker] DEBUG org.hibernate.SQL - 
+    insert 
+    into
+        rule_versions
+        (change_reason, changed_at, changed_by, groovy_script, is_rollback, rollback_from_version, rule_id, rule_key, version, id) 
+    values
+        (?, ?, ?, ?, ?, ?, ?, ?, ?, default)
+Hibernate: 
+    insert 
+    into
+        rule_versions
+        (change_reason, changed_at, changed_by, groovy_script, is_rollback, rollback_from_version, rule_id, rule_key, version, id) 
+    values
+        (?, ?, ?, ?, ?, ?, ?, ?, ?, default)
+2026-03-29 17:22:59.079 [Test worker] INFO  c.e.r.s.v.VersionManagementService - 创建规则新版本: ruleKey=test-version-rule, version=2, operator=operator1
+2026-03-29 17:22:59.080 [SimpleAsyncTaskExecutor-8] DEBUG org.hibernate.SQL - 
+    insert 
+    into
+        audit_logs
+        (entity_id, entity_type, error_message, operation, operation_detail, operation_time, operator, operator_ip, request_id, status, id) 
+    values
+        (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, default)
+Hibernate: 
+    insert 
+    into
+        audit_logs
+        (entity_id, entity_type, error_message, operation, operation_detail, operation_time, operator, operator_ip, request_id, status, id) 
+    values
+        (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, default)
+2026-03-29 17:22:59.080 [Test worker] DEBUG org.hibernate.SQL - 
+    update
+        rules 
+    set
+        created_by=?,
+        enabled=?,
+        groovy_script=?,
+        opt_lock_version=?,
+        rule_description=?,
+        rule_key=?,
+        rule_name=?,
+        status=?,
+        updated_at=?,
+        updated_by=?,
+        version=? 
+    where
+        id=? 
+        and opt_lock_version=?
+Hibernate: 
+    update
+        rules 
+    set
+        created_by=?,
+        enabled=?,
+        groovy_script=?,
+        opt_lock_version=?,
+        rule_description=?,
+        rule_key=?,
+        rule_name=?,
+        status=?,
+        updated_at=?,
+        updated_by=?,
+        version=? 
+    where
+        id=? 
+        and opt_lock_version=?
+2026-03-29 17:22:59.081 [Test worker] DEBUG org.hibernate.SQL - 
+    select
+        r1_0.id,
+        r1_0.created_at,
+        r1_0.created_by,
+        r1_0.enabled,
+        r1_0.groovy_script,
+        r1_0.opt_lock_version,
+        r1_0.rule_description,
+        r1_0.rule_key,
+        r1_0.rule_name,
+        r1_0.status,
+        r1_0.updated_at,
+        r1_0.updated_by,
+        r1_0.version 
+    from
+        rules r1_0 
+    where
+        r1_0.rule_key=?
+Hibernate: 
+    select
+        r1_0.id,
+        r1_0.created_at,
+        r1_0.created_by,
+        r1_0.enabled,
+        r1_0.groovy_script,
+        r1_0.opt_lock_version,
+        r1_0.rule_description,
+        r1_0.rule_key,
+        r1_0.rule_name,
+        r1_0.status,
+        r1_0.updated_at,
+        r1_0.updated_by,
+        r1_0.version 
+    from
+        rules r1_0 
+    where
+        r1_0.rule_key=?
+2026-03-29 17:22:59.082 [Test worker] DEBUG org.hibernate.SQL - 
+    select
+        rv1_0.id,
+        rv1_0.change_reason,
+        rv1_0.changed_at,
+        rv1_0.changed_by,
+        rv1_0.groovy_script,
+        rv1_0.is_rollback,
+        rv1_0.rollback_from_version,
+        rv1_0.rule_id,
+        rv1_0.rule_key,
+        rv1_0.version 
+    from
+        rule_versions rv1_0 
+    where
+        rv1_0.rule_key=? 
+        and rv1_0.version=?
+Hibernate: 
+    select
+        rv1_0.id,
+        rv1_0.change_reason,
+        rv1_0.changed_at,
+        rv1_0.changed_by,
+        rv1_0.groovy_script,
+        rv1_0.is_rollback,
+        rv1_0.rollback_from_version,
+        rv1_0.rule_id,
+        rv1_0.rule_key,
+        rv1_0.version 
+    from
+        rule_versions rv1_0 
+    where
+        rv1_0.rule_key=? 
+        and rv1_0.version=?
+2026-03-29 17:22:59.083 [Test worker] DEBUG org.hibernate.SQL - 
+    insert 
+    into
+        rule_versions
+        (change_reason, changed_at, changed_by, groovy_script, is_rollback, rollback_from_version, rule_id, rule_key, version, id) 
+    values
+        (?, ?, ?, ?, ?, ?, ?, ?, ?, default)
+Hibernate: 
+    insert 
+    into
+        rule_versions
+        (change_reason, changed_at, changed_by, groovy_script, is_rollback, rollback_from_version, rule_id, rule_key, version, id) 
+    values
+        (?, ?, ?, ?, ?, ?, ?, ?, ?, default)
+2026-03-29 17:22:59.083 [Test worker] INFO  c.e.r.s.v.VersionManagementService - 回滚规则版本: ruleKey=test-version-rule, from=2, to=1, newVersion=3, operator=operator2
+2026-03-29 17:22:59.084 [SimpleAsyncTaskExecutor-9] DEBUG org.hibernate.SQL - 
+    insert 
+    into
+        audit_logs
+        (entity_id, entity_type, error_message, operation, operation_detail, operation_time, operator, operator_ip, request_id, status, id) 
+    values
+        (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, default)
+Hibernate: 
+    insert 
+    into
+        audit_logs
+        (entity_id, entity_type, error_message, operation, operation_detail, operation_time, operator, operator_ip, request_id, status, id) 
+    values
+        (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, default)
+2026-03-29 17:22:59.085 [Test worker] DEBUG org.hibernate.SQL - 
+    update
+        rules 
+    set
+        created_by=?,
+        enabled=?,
+        groovy_script=?,
+        opt_lock_version=?,
+        rule_description=?,
+        rule_key=?,
+        rule_name=?,
+        status=?,
+        updated_at=?,
+        updated_by=?,
+        version=? 
+    where
+        id=? 
+        and opt_lock_version=?
+Hibernate: 
+    update
+        rules 
+    set
+        created_by=?,
+        enabled=?,
+        groovy_script=?,
+        opt_lock_version=?,
+        rule_description=?,
+        rule_key=?,
+        rule_name=?,
+        status=?,
+        updated_at=?,
+        updated_by=?,
+        version=? 
+    where
+        id=? 
+        and opt_lock_version=?
+2026-03-29 17:22:59.086 [Test worker] DEBUG org.hibernate.SQL - 
+    select
+        r1_0.id,
+        r1_0.created_at,
+        r1_0.created_by,
+        r1_0.enabled,
+        r1_0.groovy_script,
+        r1_0.opt_lock_version,
+        r1_0.rule_description,
+        r1_0.rule_key,
+        r1_0.rule_name,
+        r1_0.status,
+        r1_0.updated_at,
+        r1_0.updated_by,
+        r1_0.version 
+    from
+        rules r1_0 
+    where
+        r1_0.rule_key=?
+Hibernate: 
+    select
+        r1_0.id,
+        r1_0.created_at,
+        r1_0.created_by,
+        r1_0.enabled,
+        r1_0.groovy_script,
+        r1_0.opt_lock_version,
+        r1_0.rule_description,
+        r1_0.rule_key,
+        r1_0.rule_name,
+        r1_0.status,
+        r1_0.updated_at,
+        r1_0.updated_by,
+        r1_0.version 
+    from
+        rules r1_0 
+    where
+        r1_0.rule_key=?
+2026-03-29 17:22:59.090 [Test worker] DEBUG org.hibernate.SQL - 
+    delete 
+    from
+        rule_versions rv1_0
+Hibernate: 
+    delete 
+    from
+        rule_versions rv1_0
+2026-03-29 17:22:59.090 [Test worker] DEBUG org.hibernate.SQL - 
+    delete 
+    from
+        rules r1_0
+Hibernate: 
+    delete 
+    from
+        rules r1_0
+2026-03-29 17:22:59.091 [Test worker] DEBUG org.hibernate.SQL - 
+    insert 
+    into
+        rules
+        (created_at, created_by, enabled, groovy_script, opt_lock_version, rule_description, rule_key, rule_name, status, updated_at, updated_by, version, id) 
+    values
+        (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, default)
+Hibernate: 
+    insert 
+    into
+        rules
+        (created_at, created_by, enabled, groovy_script, opt_lock_version, rule_description, rule_key, rule_name, status, updated_at, updated_by, version, id) 
+    values
+        (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, default)
+2026-03-29 17:22:59.092 [Test worker] DEBUG org.hibernate.SQL - 
+    select
+        r1_0.id,
+        r1_0.created_at,
+        r1_0.created_by,
+        r1_0.enabled,
+        r1_0.groovy_script,
+        r1_0.opt_lock_version,
+        r1_0.rule_description,
+        r1_0.rule_key,
+        r1_0.rule_name,
+        r1_0.status,
+        r1_0.updated_at,
+        r1_0.updated_by,
+        r1_0.version 
+    from
+        rules r1_0 
+    where
+        r1_0.rule_key=?
+Hibernate: 
+    select
+        r1_0.id,
+        r1_0.created_at,
+        r1_0.created_by,
+        r1_0.enabled,
+        r1_0.groovy_script,
+        r1_0.opt_lock_version,
+        r1_0.rule_description,
+        r1_0.rule_key,
+        r1_0.rule_name,
+        r1_0.status,
+        r1_0.updated_at,
+        r1_0.updated_by,
+        r1_0.version 
+    from
+        rules r1_0 
+    where
+        r1_0.rule_key=?
+2026-03-29 17:22:59.092 [Test worker] DEBUG org.hibernate.SQL - 
+    insert 
+    into
+        rule_versions
+        (change_reason, changed_at, changed_by, groovy_script, is_rollback, rollback_from_version, rule_id, rule_key, version, id) 
+    values
+        (?, ?, ?, ?, ?, ?, ?, ?, ?, default)
+Hibernate: 
+    insert 
+    into
+        rule_versions
+        (change_reason, changed_at, changed_by, groovy_script, is_rollback, rollback_from_version, rule_id, rule_key, version, id) 
+    values
+        (?, ?, ?, ?, ?, ?, ?, ?, ?, default)
+2026-03-29 17:22:59.093 [Test worker] INFO  c.e.r.s.v.VersionManagementService - 创建规则新版本: ruleKey=test-version-rule, version=2, operator=test-operator
+2026-03-29 17:22:59.093 [SimpleAsyncTaskExecutor-10] DEBUG org.hibernate.SQL - 
+    insert 
+    into
+        audit_logs
+        (entity_id, entity_type, error_message, operation, operation_detail, operation_time, operator, operator_ip, request_id, status, id) 
+    values
+        (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, default)
+Hibernate: 
+    insert 
+    into
+        audit_logs
+        (entity_id, entity_type, error_message, operation, operation_detail, operation_time, operator, operator_ip, request_id, status, id) 
+    values
+        (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, default)
+2026-03-29 17:22:59.094 [Test worker] DEBUG org.hibernate.SQL - 
+    update
+        rules 
+    set
+        created_by=?,
+        enabled=?,
+        groovy_script=?,
+        opt_lock_version=?,
+        rule_description=?,
+        rule_key=?,
+        rule_name=?,
+        status=?,
+        updated_at=?,
+        updated_by=?,
+        version=? 
+    where
+        id=? 
+        and opt_lock_version=?
+Hibernate: 
+    update
+        rules 
+    set
+        created_by=?,
+        enabled=?,
+        groovy_script=?,
+        opt_lock_version=?,
+        rule_description=?,
+        rule_key=?,
+        rule_name=?,
+        status=?,
+        updated_at=?,
+        updated_by=?,
+        version=? 
+    where
+        id=? 
+        and opt_lock_version=?
+2026-03-29 17:22:59.096 [Test worker] DEBUG org.hibernate.SQL - 
+    select
+        r1_0.id,
+        r1_0.created_at,
+        r1_0.created_by,
+        r1_0.enabled,
+        r1_0.groovy_script,
+        r1_0.opt_lock_version,
+        r1_0.rule_description,
+        r1_0.rule_key,
+        r1_0.rule_name,
+        r1_0.status,
+        r1_0.updated_at,
+        r1_0.updated_by,
+        r1_0.version 
+    from
+        rules r1_0 
+    where
+        r1_0.rule_key=?
+Hibernate: 
+    select
+        r1_0.id,
+        r1_0.created_at,
+        r1_0.created_by,
+        r1_0.enabled,
+        r1_0.groovy_script,
+        r1_0.opt_lock_version,
+        r1_0.rule_description,
+        r1_0.rule_key,
+        r1_0.rule_name,
+        r1_0.status,
+        r1_0.updated_at,
+        r1_0.updated_by,
+        r1_0.version 
+    from
+        rules r1_0 
+    where
+        r1_0.rule_key=?
+2026-03-29 17:22:59.098 [Test worker] DEBUG org.hibernate.SQL - 
+    select
+        rv1_0.id,
+        rv1_0.change_reason,
+        rv1_0.changed_at,
+        rv1_0.changed_by,
+        rv1_0.groovy_script,
+        rv1_0.is_rollback,
+        rv1_0.rollback_from_version,
+        rv1_0.rule_id,
+        rv1_0.rule_key,
+        rv1_0.version 
+    from
+        rule_versions rv1_0 
+    where
+        rv1_0.rule_key=? 
+    order by
+        rv1_0.version desc
+Hibernate: 
+    select
+        rv1_0.id,
+        rv1_0.change_reason,
+        rv1_0.changed_at,
+        rv1_0.changed_by,
+        rv1_0.groovy_script,
+        rv1_0.is_rollback,
+        rv1_0.rollback_from_version,
+        rv1_0.rule_id,
+        rv1_0.rule_key,
+        rv1_0.version 
+    from
+        rule_versions rv1_0 
+    where
+        rv1_0.rule_key=? 
+    order by
+        rv1_0.version desc
+2026-03-29 17:22:59.101 [Test worker] DEBUG org.hibernate.SQL - 
+    delete 
+    from
+        rule_versions rv1_0
+Hibernate: 
+    delete 
+    from
+        rule_versions rv1_0
+2026-03-29 17:22:59.102 [Test worker] DEBUG org.hibernate.SQL - 
+    delete 
+    from
+        rules r1_0
+Hibernate: 
+    delete 
+    from
+        rules r1_0
+2026-03-29 17:22:59.103 [Test worker] DEBUG org.hibernate.SQL - 
+    insert 
+    into
+        rules
+        (created_at, created_by, enabled, groovy_script, opt_lock_version, rule_description, rule_key, rule_name, status, updated_at, updated_by, version, id) 
+    values
+        (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, default)
+Hibernate: 
+    insert 
+    into
+        rules
+        (created_at, created_by, enabled, groovy_script, opt_lock_version, rule_description, rule_key, rule_name, status, updated_at, updated_by, version, id) 
+    values
+        (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, default)
+2026-03-29 17:22:59.105 [Test worker] DEBUG org.hibernate.SQL - 
+    select
+        r1_0.id,
+        r1_0.created_at,
+        r1_0.created_by,
+        r1_0.enabled,
+        r1_0.groovy_script,
+        r1_0.opt_lock_version,
+        r1_0.rule_description,
+        r1_0.rule_key,
+        r1_0.rule_name,
+        r1_0.status,
+        r1_0.updated_at,
+        r1_0.updated_by,
+        r1_0.version 
+    from
+        rules r1_0 
+    where
+        r1_0.rule_key=?
+Hibernate: 
+    select
+        r1_0.id,
+        r1_0.created_at,
+        r1_0.created_by,
+        r1_0.enabled,
+        r1_0.groovy_script,
+        r1_0.opt_lock_version,
+        r1_0.rule_description,
+        r1_0.rule_key,
+        r1_0.rule_name,
+        r1_0.status,
+        r1_0.updated_at,
+        r1_0.updated_by,
+        r1_0.version 
+    from
+        rules r1_0 
+    where
+        r1_0.rule_key=?
+2026-03-29 17:22:59.105 [Test worker] DEBUG org.hibernate.SQL - 
+    insert 
+    into
+        rule_versions
+        (change_reason, changed_at, changed_by, groovy_script, is_rollback, rollback_from_version, rule_id, rule_key, version, id) 
+    values
+        (?, ?, ?, ?, ?, ?, ?, ?, ?, default)
+Hibernate: 
+    insert 
+    into
+        rule_versions
+        (change_reason, changed_at, changed_by, groovy_script, is_rollback, rollback_from_version, rule_id, rule_key, version, id) 
+    values
+        (?, ?, ?, ?, ?, ?, ?, ?, ?, default)
+2026-03-29 17:22:59.105 [Test worker] INFO  c.e.r.s.v.VersionManagementService - 创建规则新版本: ruleKey=test-version-rule, version=2, operator=operator1
+2026-03-29 17:22:59.106 [Test worker] DEBUG org.hibernate.SQL - 
+    update
+        rules 
+    set
+        created_by=?,
+        enabled=?,
+        groovy_script=?,
+        opt_lock_version=?,
+        rule_description=?,
+        rule_key=?,
+        rule_name=?,
+        status=?,
+        updated_at=?,
+        updated_by=?,
+        version=? 
+    where
+        id=? 
+        and opt_lock_version=?
+Hibernate: 
+    update
+        rules 
+    set
+        created_by=?,
+        enabled=?,
+        groovy_script=?,
+        opt_lock_version=?,
+        rule_description=?,
+        rule_key=?,
+        rule_name=?,
+        status=?,
+        updated_at=?,
+        updated_by=?,
+        version=? 
+    where
+        id=? 
+        and opt_lock_version=?
+2026-03-29 17:22:59.106 [SimpleAsyncTaskExecutor-11] DEBUG org.hibernate.SQL - 
+    insert 
+    into
+        audit_logs
+        (entity_id, entity_type, error_message, operation, operation_detail, operation_time, operator, operator_ip, request_id, status, id) 
+    values
+        (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, default)
+Hibernate: 
+    insert 
+    into
+        audit_logs
+        (entity_id, entity_type, error_message, operation, operation_detail, operation_time, operator, operator_ip, request_id, status, id) 
+    values
+        (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, default)
+2026-03-29 17:22:59.107 [Test worker] DEBUG org.hibernate.SQL - 
+    select
+        r1_0.id,
+        r1_0.created_at,
+        r1_0.created_by,
+        r1_0.enabled,
+        r1_0.groovy_script,
+        r1_0.opt_lock_version,
+        r1_0.rule_description,
+        r1_0.rule_key,
+        r1_0.rule_name,
+        r1_0.status,
+        r1_0.updated_at,
+        r1_0.updated_by,
+        r1_0.version 
+    from
+        rules r1_0 
+    where
+        r1_0.rule_key=?
+Hibernate: 
+    select
+        r1_0.id,
+        r1_0.created_at,
+        r1_0.created_by,
+        r1_0.enabled,
+        r1_0.groovy_script,
+        r1_0.opt_lock_version,
+        r1_0.rule_description,
+        r1_0.rule_key,
+        r1_0.rule_name,
+        r1_0.status,
+        r1_0.updated_at,
+        r1_0.updated_by,
+        r1_0.version 
+    from
+        rules r1_0 
+    where
+        r1_0.rule_key=?
+2026-03-29 17:22:59.108 [Test worker] DEBUG org.hibernate.SQL - 
+    insert 
+    into
+        rule_versions
+        (change_reason, changed_at, changed_by, groovy_script, is_rollback, rollback_from_version, rule_id, rule_key, version, id) 
+    values
+        (?, ?, ?, ?, ?, ?, ?, ?, ?, default)
+Hibernate: 
+    insert 
+    into
+        rule_versions
+        (change_reason, changed_at, changed_by, groovy_script, is_rollback, rollback_from_version, rule_id, rule_key, version, id) 
+    values
+        (?, ?, ?, ?, ?, ?, ?, ?, ?, default)
+2026-03-29 17:22:59.108 [Test worker] INFO  c.e.r.s.v.VersionManagementService - 创建规则新版本: ruleKey=test-version-rule, version=3, operator=operator2
+2026-03-29 17:22:59.109 [Test worker] DEBUG org.hibernate.SQL - 
+    update
+        rules 
+    set
+        created_by=?,
+        enabled=?,
+        groovy_script=?,
+        opt_lock_version=?,
+        rule_description=?,
+        rule_key=?,
+        rule_name=?,
+        status=?,
+        updated_at=?,
+        updated_by=?,
+        version=? 
+    where
+        id=? 
+        and opt_lock_version=?
+Hibernate: 
+    update
+        rules 
+    set
+        created_by=?,
+        enabled=?,
+        groovy_script=?,
+        opt_lock_version=?,
+        rule_description=?,
+        rule_key=?,
+        rule_name=?,
+        status=?,
+        updated_at=?,
+        updated_by=?,
+        version=? 
+    where
+        id=? 
+        and opt_lock_version=?
+2026-03-29 17:22:59.109 [SimpleAsyncTaskExecutor-12] DEBUG org.hibernate.SQL - 
+    insert 
+    into
+        audit_logs
+        (entity_id, entity_type, error_message, operation, operation_detail, operation_time, operator, operator_ip, request_id, status, id) 
+    values
+        (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, default)
+Hibernate: 
+    insert 
+    into
+        audit_logs
+        (entity_id, entity_type, error_message, operation, operation_detail, operation_time, operator, operator_ip, request_id, status, id) 
+    values
+        (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, default)
+2026-03-29 17:22:59.111 [Test worker] DEBUG org.hibernate.SQL - 
+    select
+        rv1_0.id,
+        rv1_0.change_reason,
+        rv1_0.changed_at,
+        rv1_0.changed_by,
+        rv1_0.groovy_script,
+        rv1_0.is_rollback,
+        rv1_0.rollback_from_version,
+        rv1_0.rule_id,
+        rv1_0.rule_key,
+        rv1_0.version 
+    from
+        rule_versions rv1_0 
+    where
+        rv1_0.rule_key=? 
+    order by
+        rv1_0.version desc
+Hibernate: 
+    select
+        rv1_0.id,
+        rv1_0.change_reason,
+        rv1_0.changed_at,
+        rv1_0.changed_by,
+        rv1_0.groovy_script,
+        rv1_0.is_rollback,
+        rv1_0.rollback_from_version,
+        rv1_0.rule_id,
+        rv1_0.rule_key,
+        rv1_0.version 
+    from
+        rule_versions rv1_0 
+    where
+        rv1_0.rule_key=? 
+    order by
+        rv1_0.version desc
+2026-03-29 17:22:59.115 [Test worker] DEBUG org.hibernate.SQL - 
+    delete 
+    from
+        rule_versions rv1_0
+Hibernate: 
+    delete 
+    from
+        rule_versions rv1_0
+2026-03-29 17:22:59.116 [Test worker] DEBUG org.hibernate.SQL - 
+    delete 
+    from
+        rules r1_0
+Hibernate: 
+    delete 
+    from
+        rules r1_0
+2026-03-29 17:22:59.116 [Test worker] DEBUG org.hibernate.SQL - 
+    insert 
+    into
+        rules
+        (created_at, created_by, enabled, groovy_script, opt_lock_version, rule_description, rule_key, rule_name, status, updated_at, updated_by, version, id) 
+    values
+        (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, default)
+Hibernate: 
+    insert 
+    into
+        rules
+        (created_at, created_by, enabled, groovy_script, opt_lock_version, rule_description, rule_key, rule_name, status, updated_at, updated_by, version, id) 
+    values
+        (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, default)
+2026-03-29 17:22:59.117 [Test worker] DEBUG org.hibernate.SQL - 
+    select
+        r1_0.id,
+        r1_0.created_at,
+        r1_0.created_by,
+        r1_0.enabled,
+        r1_0.groovy_script,
+        r1_0.opt_lock_version,
+        r1_0.rule_description,
+        r1_0.rule_key,
+        r1_0.rule_name,
+        r1_0.status,
+        r1_0.updated_at,
+        r1_0.updated_by,
+        r1_0.version 
+    from
+        rules r1_0 
+    where
+        r1_0.rule_key=?
+Hibernate: 
+    select
+        r1_0.id,
+        r1_0.created_at,
+        r1_0.created_by,
+        r1_0.enabled,
+        r1_0.groovy_script,
+        r1_0.opt_lock_version,
+        r1_0.rule_description,
+        r1_0.rule_key,
+        r1_0.rule_name,
+        r1_0.status,
+        r1_0.updated_at,
+        r1_0.updated_by,
+        r1_0.version 
+    from
+        rules r1_0 
+    where
+        r1_0.rule_key=?
+2026-03-29 17:22:59.118 [Test worker] DEBUG org.hibernate.SQL - 
+    insert 
+    into
+        rule_versions
+        (change_reason, changed_at, changed_by, groovy_script, is_rollback, rollback_from_version, rule_id, rule_key, version, id) 
+    values
+        (?, ?, ?, ?, ?, ?, ?, ?, ?, default)
+Hibernate: 
+    insert 
+    into
+        rule_versions
+        (change_reason, changed_at, changed_by, groovy_script, is_rollback, rollback_from_version, rule_id, rule_key, version, id) 
+    values
+        (?, ?, ?, ?, ?, ?, ?, ?, ?, default)
+2026-03-29 17:22:59.118 [Test worker] INFO  c.e.r.s.v.VersionManagementService - 创建规则新版本: ruleKey=test-version-rule, version=2, operator=operator1
+2026-03-29 17:22:59.119 [Test worker] DEBUG org.hibernate.SQL - 
+    update
+        rules 
+    set
+        created_by=?,
+        enabled=?,
+        groovy_script=?,
+        opt_lock_version=?,
+        rule_description=?,
+        rule_key=?,
+        rule_name=?,
+        status=?,
+        updated_at=?,
+        updated_by=?,
+        version=? 
+    where
+        id=? 
+        and opt_lock_version=?
+Hibernate: 
+    update
+        rules 
+    set
+        created_by=?,
+        enabled=?,
+        groovy_script=?,
+        opt_lock_version=?,
+        rule_description=?,
+        rule_key=?,
+        rule_name=?,
+        status=?,
+        updated_at=?,
+        updated_by=?,
+        version=? 
+    where
+        id=? 
+        and opt_lock_version=?
+2026-03-29 17:22:59.119 [SimpleAsyncTaskExecutor-13] DEBUG org.hibernate.SQL - 
+    insert 
+    into
+        audit_logs
+        (entity_id, entity_type, error_message, operation, operation_detail, operation_time, operator, operator_ip, request_id, status, id) 
+    values
+        (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, default)
+Hibernate: 
+    insert 
+    into
+        audit_logs
+        (entity_id, entity_type, error_message, operation, operation_detail, operation_time, operator, operator_ip, request_id, status, id) 
+    values
+        (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, default)
+2026-03-29 17:22:59.121 [Test worker] DEBUG org.hibernate.SQL - 
+    select
+        r1_0.id,
+        r1_0.created_at,
+        r1_0.created_by,
+        r1_0.enabled,
+        r1_0.groovy_script,
+        r1_0.opt_lock_version,
+        r1_0.rule_description,
+        r1_0.rule_key,
+        r1_0.rule_name,
+        r1_0.status,
+        r1_0.updated_at,
+        r1_0.updated_by,
+        r1_0.version 
+    from
+        rules r1_0 
+    where
+        r1_0.rule_key=?
+Hibernate: 
+    select
+        r1_0.id,
+        r1_0.created_at,
+        r1_0.created_by,
+        r1_0.enabled,
+        r1_0.groovy_script,
+        r1_0.opt_lock_version,
+        r1_0.rule_description,
+        r1_0.rule_key,
+        r1_0.rule_name,
+        r1_0.status,
+        r1_0.updated_at,
+        r1_0.updated_by,
+        r1_0.version 
+    from
+        rules r1_0 
+    where
+        r1_0.rule_key=?
+2026-03-29 17:22:59.121 [Test worker] DEBUG org.hibernate.SQL - 
+    select
+        rv1_0.id,
+        rv1_0.change_reason,
+        rv1_0.changed_at,
+        rv1_0.changed_by,
+        rv1_0.groovy_script,
+        rv1_0.is_rollback,
+        rv1_0.rollback_from_version,
+        rv1_0.rule_id,
+        rv1_0.rule_key,
+        rv1_0.version 
+    from
+        rule_versions rv1_0 
+    where
+        rv1_0.rule_key=? 
+        and rv1_0.version=?
+Hibernate: 
+    select
+        rv1_0.id,
+        rv1_0.change_reason,
+        rv1_0.changed_at,
+        rv1_0.changed_by,
+        rv1_0.groovy_script,
+        rv1_0.is_rollback,
+        rv1_0.rollback_from_version,
+        rv1_0.rule_id,
+        rv1_0.rule_key,
+        rv1_0.version 
+    from
+        rule_versions rv1_0 
+    where
+        rv1_0.rule_key=? 
+        and rv1_0.version=?
+2026-03-29 17:22:59.122 [Test worker] DEBUG org.hibernate.SQL - 
+    insert 
+    into
+        rule_versions
+        (change_reason, changed_at, changed_by, groovy_script, is_rollback, rollback_from_version, rule_id, rule_key, version, id) 
+    values
+        (?, ?, ?, ?, ?, ?, ?, ?, ?, default)
+Hibernate: 
+    insert 
+    into
+        rule_versions
+        (change_reason, changed_at, changed_by, groovy_script, is_rollback, rollback_from_version, rule_id, rule_key, version, id) 
+    values
+        (?, ?, ?, ?, ?, ?, ?, ?, ?, default)
+2026-03-29 17:22:59.122 [Test worker] INFO  c.e.r.s.v.VersionManagementService - 回滚规则版本: ruleKey=test-version-rule, from=2, to=1, newVersion=3, operator=operator2
+2026-03-29 17:22:59.123 [Test worker] DEBUG org.hibernate.SQL - 
+    update
+        rules 
+    set
+        created_by=?,
+        enabled=?,
+        groovy_script=?,
+        opt_lock_version=?,
+        rule_description=?,
+        rule_key=?,
+        rule_name=?,
+        status=?,
+        updated_at=?,
+        updated_by=?,
+        version=? 
+    where
+        id=? 
+        and opt_lock_version=?
+Hibernate: 
+    update
+        rules 
+    set
+        created_by=?,
+        enabled=?,
+        groovy_script=?,
+        opt_lock_version=?,
+        rule_description=?,
+        rule_key=?,
+        rule_name=?,
+        status=?,
+        updated_at=?,
+        updated_by=?,
+        version=? 
+    where
+        id=? 
+        and opt_lock_version=?
+2026-03-29 17:22:59.123 [SimpleAsyncTaskExecutor-14] DEBUG org.hibernate.SQL - 
+    insert 
+    into
+        audit_logs
+        (entity_id, entity_type, error_message, operation, operation_detail, operation_time, operator, operator_ip, request_id, status, id) 
+    values
+        (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, default)
+Hibernate: 
+    insert 
+    into
+        audit_logs
+        (entity_id, entity_type, error_message, operation, operation_detail, operation_time, operator, operator_ip, request_id, status, id) 
+    values
+        (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, default)
+2026-03-29 17:22:59.124 [Test worker] DEBUG org.hibernate.SQL - 
+    select
+        r1_0.id,
+        r1_0.created_at,
+        r1_0.created_by,
+        r1_0.enabled,
+        r1_0.groovy_script,
+        r1_0.opt_lock_version,
+        r1_0.rule_description,
+        r1_0.rule_key,
+        r1_0.rule_name,
+        r1_0.status,
+        r1_0.updated_at,
+        r1_0.updated_by,
+        r1_0.version 
+    from
+        rules r1_0 
+    where
+        r1_0.rule_key=?
+Hibernate: 
+    select
+        r1_0.id,
+        r1_0.created_at,
+        r1_0.created_by,
+        r1_0.enabled,
+        r1_0.groovy_script,
+        r1_0.opt_lock_version,
+        r1_0.rule_description,
+        r1_0.rule_key,
+        r1_0.rule_name,
+        r1_0.status,
+        r1_0.updated_at,
+        r1_0.updated_by,
+        r1_0.version 
+    from
+        rules r1_0 
+    where
+        r1_0.rule_key=?
+2026-03-29 17:22:59.125 [Test worker] DEBUG org.hibernate.SQL - 
+    insert 
+    into
+        rule_versions
+        (change_reason, changed_at, changed_by, groovy_script, is_rollback, rollback_from_version, rule_id, rule_key, version, id) 
+    values
+        (?, ?, ?, ?, ?, ?, ?, ?, ?, default)
+Hibernate: 
+    insert 
+    into
+        rule_versions
+        (change_reason, changed_at, changed_by, groovy_script, is_rollback, rollback_from_version, rule_id, rule_key, version, id) 
+    values
+        (?, ?, ?, ?, ?, ?, ?, ?, ?, default)
+2026-03-29 17:22:59.125 [Test worker] INFO  c.e.r.s.v.VersionManagementService - 创建规则新版本: ruleKey=test-version-rule, version=4, operator=operator3
+2026-03-29 17:22:59.125 [Test worker] DEBUG org.hibernate.SQL - 
+    update
+        rules 
+    set
+        created_by=?,
+        enabled=?,
+        groovy_script=?,
+        opt_lock_version=?,
+        rule_description=?,
+        rule_key=?,
+        rule_name=?,
+        status=?,
+        updated_at=?,
+        updated_by=?,
+        version=? 
+    where
+        id=? 
+        and opt_lock_version=?
+Hibernate: 
+    update
+        rules 
+    set
+        created_by=?,
+        enabled=?,
+        groovy_script=?,
+        opt_lock_version=?,
+        rule_description=?,
+        rule_key=?,
+        rule_name=?,
+        status=?,
+        updated_at=?,
+        updated_by=?,
+        version=? 
+    where
+        id=? 
+        and opt_lock_version=?
+2026-03-29 17:22:59.125 [SimpleAsyncTaskExecutor-15] DEBUG org.hibernate.SQL - 
+    insert 
+    into
+        audit_logs
+        (entity_id, entity_type, error_message, operation, operation_detail, operation_time, operator, operator_ip, request_id, status, id) 
+    values
+        (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, default)
+Hibernate: 
+    insert 
+    into
+        audit_logs
+        (entity_id, entity_type, error_message, operation, operation_detail, operation_time, operator, operator_ip, request_id, status, id) 
+    values
+        (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, default)
+2026-03-29 17:22:59.126 [Test worker] DEBUG org.hibernate.SQL - 
+    select
+        rv1_0.id,
+        rv1_0.change_reason,
+        rv1_0.changed_at,
+        rv1_0.changed_by,
+        rv1_0.groovy_script,
+        rv1_0.is_rollback,
+        rv1_0.rollback_from_version,
+        rv1_0.rule_id,
+        rv1_0.rule_key,
+        rv1_0.version 
+    from
+        rule_versions rv1_0 
+    where
+        rv1_0.rule_key=? 
+    order by
+        rv1_0.version desc
+Hibernate: 
+    select
+        rv1_0.id,
+        rv1_0.change_reason,
+        rv1_0.changed_at,
+        rv1_0.changed_by,
+        rv1_0.groovy_script,
+        rv1_0.is_rollback,
+        rv1_0.rollback_from_version,
+        rv1_0.rule_id,
+        rv1_0.rule_key,
+        rv1_0.version 
+    from
+        rule_versions rv1_0 
+    where
+        rv1_0.rule_key=? 
+    order by
+        rv1_0.version desc
+]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

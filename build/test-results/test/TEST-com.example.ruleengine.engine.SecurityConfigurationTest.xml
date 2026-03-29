@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="SecurityConfiguration 测试" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-03-29T09:22:52" hostname="m1" time="0.002">
+  <properties/>
+  <testcase name="应创建安全的 CompilerConfiguration" classname="com.example.ruleengine.engine.SecurityConfigurationTest" time="0.001"/>
+  <testcase name="应配置导入白名单" classname="com.example.ruleengine.engine.SecurityConfigurationTest" time="0.0"/>
+  <testcase name="应创建独立的 GroovyClassLoader" classname="com.example.ruleengine.engine.SecurityConfigurationTest" time="0.001"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

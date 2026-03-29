@@ -11,11 +11,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.context.DynamicPropertyRegistry;
-import org.springframework.test.context.DynamicPropertySource;
-import org.testcontainers.containers.PostgreSQLContainer;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
+import org.springframework.test.context.ActiveProfiles;
 
 import java.util.List;
 
@@ -23,26 +19,12 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * VersionManagementService 集成测试
+ * 使用 H2 内存数据库替代 Testcontainers PostgreSQL
  */
 @SpringBootTest
-@Testcontainers
+@ActiveProfiles("test")
 @DisplayName("VersionManagementService 集成测试")
 class VersionManagementServiceTest {
-
-    @Container
-    static PostgreSQLContainer<?> postgresqlContainer = new PostgreSQLContainer<>("postgres:16-alpine")
-            .withDatabaseName("testdb")
-            .withUsername("test")
-            .withPassword("test");
-
-    @DynamicPropertySource
-    static void setProperties(DynamicPropertyRegistry registry) {
-        registry.add("spring.datasource.url", postgresqlContainer::getJdbcUrl);
-        registry.add("spring.datasource.username", postgresqlContainer::getUsername);
-        registry.add("spring.datasource.password", postgresqlContainer::getPassword);
-        registry.add("spring.jpa.hibernate.ddl-auto", () -> "create-drop");
-        registry.add("spring.flyway.enabled", () -> "false");
-    }
 
     @Autowired
     private VersionManagementService versionManagementService;
@@ -57,8 +39,8 @@ class VersionManagementServiceTest {
 
     @BeforeEach
     void setUp() {
-        ruleVersionRepository.deleteAll();
-        ruleRepository.deleteAll();
+        ruleVersionRepository.deleteAllInBatch();
+        ruleRepository.deleteAllInBatch();
 
         testRule = Rule.builder()
                 .ruleKey("test-version-rule")
@@ -116,7 +98,6 @@ class VersionManagementServiceTest {
 
         // 获取版本列表
         var versions = versionManagementService.getVersions(testRule.getRuleKey());
-
         assertThat(versions).hasSize(2);
         assertThat(versions.get(0).getVersion()).isEqualTo(2);
         assertThat(versions.get(1).getVersion()).isEqualTo(1);
@@ -167,23 +148,35 @@ class VersionManagementServiceTest {
 
         assertThat(response.getVersion()).isEqualTo(4);
 
-        // 验证版本历史
+        // 验证版本历史（按 version desc 排序）
+        // version=3: createVersion 保存的（回滚后的当前版本）
+        // version=2: rollbackToVersion 保存的（isRollback=true）
+        // version=1: 第一次 createVersion 保存的
         List<RuleVersion> versions = ruleVersionRepository.findByRuleKeyOrderByVersionDesc(testRule.getRuleKey());
         assertThat(versions).hasSize(3);
-        assertThat(versions.get(0).getVersion()).isEqualTo(3); // 回滚保存的版本
-        assertThat(versions.get(0).getIsRollback()).isTrue();
+        assertThat(versions.get(0).getVersion()).isEqualTo(3);
+        assertThat(versions.get(0).getIsRollback()).isFalse();
         assertThat(versions.get(1).getVersion()).isEqualTo(2);
+        assertThat(versions.get(1).getIsRollback()).isTrue();
         assertThat(versions.get(2).getVersion()).isEqualTo(1);
     }
 
     @Test
     @DisplayName("应该成功比较版本差异")
     void shouldCompareVersions() {
-        CreateVersionRequest request = CreateVersionRequest.builder()
+        // 创建版本2 -> 历史表保存 version=1
+        CreateVersionRequest request1 = CreateVersionRequest.builder()
                 .groovyScript("def version2() { return 'v2' }")
                 .build();
-        versionManagementService.createVersion(testRule.getRuleKey(), request, "operator");
+        versionManagementService.createVersion(testRule.getRuleKey(), request1, "operator");
 
+        // 创建版本3 -> 历史表保存 version=2
+        CreateVersionRequest request2 = CreateVersionRequest.builder()
+                .groovyScript("def version3() { return 'v3' }")
+                .build();
+        versionManagementService.createVersion(testRule.getRuleKey(), request2, "operator");
+
+        // 现在历史表中有 version=1 和 version=2，可以比较
         var diff = versionManagementService.compareVersions(testRule.getRuleKey(), 1, 2);
 
         assertThat(diff.getRuleKey()).isEqualTo(testRule.getRuleKey());

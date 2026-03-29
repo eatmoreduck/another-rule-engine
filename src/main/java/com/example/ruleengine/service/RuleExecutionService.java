@@ -1,5 +1,8 @@
 package com.example.ruleengine.service;
 
+import com.example.ruleengine.cache.RuleCacheService;
+import com.example.ruleengine.constants.RuleStatus;
+import com.example.ruleengine.domain.Rule;
 import com.example.ruleengine.engine.GroovyScriptEngine;
 import com.example.ruleengine.exception.RuleExecutionException;
 import com.example.ruleengine.model.DecisionRequest;
@@ -15,8 +18,6 @@ import org.springframework.stereotype.Service;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.TimeoutException;
-import java.util.function.Supplier;
 
 /**
  * 规则执行服务
@@ -26,6 +27,7 @@ import java.util.function.Supplier;
  * 1. REXEC-01: 同步 API 50ms 内返回决策结果
  * 2. 整合 Groovy 脚本引擎和特征获取服务
  * 3. D-12: 使用独立线程池执行规则，隔离风险
+ * 4. 从缓存加载数据库中的规则并执行（三级缓存策略）
  */
 @Service
 public class RuleExecutionService {
@@ -36,21 +38,103 @@ public class RuleExecutionService {
     private final FeatureProviderService featureProvider;
     private final TimeLimiter timeLimiter;
     private final ThreadPoolTaskExecutor ruleExecutorPool;  // D-12: 独立线程池
+    private final RuleCacheService ruleCacheService;  // 规则缓存服务
 
     public RuleExecutionService(
         GroovyScriptEngine scriptEngine,
         FeatureProviderService featureProvider,
         TimeLimiter ruleExecutionTimeLimiter,
-        ThreadPoolTaskExecutor ruleExecutorPool  // D-12: 注入独立线程池
+        ThreadPoolTaskExecutor ruleExecutorPool,  // D-12: 注入独立线程池
+        RuleCacheService ruleCacheService  // 注入规则缓存服务
     ) {
         this.scriptEngine = scriptEngine;
         this.featureProvider = featureProvider;
         this.timeLimiter = ruleExecutionTimeLimiter;
         this.ruleExecutorPool = ruleExecutorPool;  // D-12: 初始化线程池
+        this.ruleCacheService = ruleCacheService;
     }
 
     /**
-     * 执行规则决策
+     * 执行规则决策（从缓存加载规则）
+     * REXEC-01: 同步 API 接收决策请求，50ms 内返回结果
+     * D-12: 使用独立线程池执行规则，隔离风险
+     *
+     * @param ruleKey 规则Key
+     * @param request 决策请求
+     * @return 决策响应
+     */
+    public DecisionResponse decide(String ruleKey, DecisionRequest request) {
+        long startTime = System.currentTimeMillis();
+
+        try {
+            // 1. 从缓存加载规则（L2: 规则元数据缓存）
+            Rule rule = ruleCacheService.getEnabledRule(ruleKey);
+
+            if (rule == null) {
+                long executionTime = System.currentTimeMillis() - startTime;
+                logger.warn("规则不存在或未启用: ruleKey={}", ruleKey);
+                return DecisionResponse.builder()
+                    .decision("REJECT")
+                    .reason("规则不存在或未启用")
+                    .executionTimeMs(executionTime)
+                    .timeout(false)
+                    .build();
+            }
+
+            if (rule.getStatus() != RuleStatus.ACTIVE) {
+                long executionTime = System.currentTimeMillis() - startTime;
+                logger.warn("规则未激活: ruleKey={}, status={}", ruleKey, rule.getStatus());
+                return DecisionResponse.builder()
+                    .decision("REJECT")
+                    .reason("规则未激活: " + rule.getStatus().getDescription())
+                    .executionTimeMs(executionTime)
+                    .timeout(false)
+                    .build();
+            }
+
+            // 2. 设置规则脚本到请求中
+            request.setRuleId(rule.getRuleKey());
+            request.setScript(rule.getGroovyScript());
+
+            // 3. 使用独立线程池执行规则
+            CompletableFuture<DecisionResponse> future = CompletableFuture.supplyAsync(
+                () -> executeRuleInternal(request),
+                ruleExecutorPool
+            );
+
+            // 4. 超时控制
+            DecisionResponse response = future.get(request.getTimeoutMs(), java.util.concurrent.TimeUnit.MILLISECONDS);
+            response.setExecutionTimeMs(System.currentTimeMillis() - startTime);
+
+            logger.debug("Rule {} executed in {}ms", ruleKey, response.getExecutionTimeMs());
+            return response;
+
+        } catch (java.util.concurrent.TimeoutException e) {
+            long executionTime = System.currentTimeMillis() - startTime;
+            logger.warn("Rule {} execution timeout after {}ms", ruleKey, executionTime);
+
+            return DecisionResponse.builder()
+                .decision("REJECT")
+                .reason("规则执行超时")
+                .executionTimeMs(executionTime)
+                .timeout(true)
+                .build();
+
+        } catch (Exception e) {
+            long executionTime = System.currentTimeMillis() - startTime;
+            logger.error("Rule {} execution failed after {}ms", ruleKey, executionTime, e);
+
+            return DecisionResponse.builder()
+                .decision("REJECT")
+                .reason("规则执行失败: " + e.getMessage())
+                .executionTimeMs(executionTime)
+                .timeout(false)
+                .build();
+        }
+    }
+
+    /**
+     * 执行规则决策（直接执行脚本）
      * REXEC-01: 同步 API 接收决策请求，50ms 内返回结果
      * D-12: 使用独立线程池执行规则，隔离风险
      */

@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="AuditLogService 单元测试" tests="5" skipped="0" failures="0" errors="0" timestamp="2026-03-29T09:22:58" hostname="m1" time="0.275">
+  <properties/>
+  <testcase name="应该成功获取操作人活动记录" classname="com.example.ruleengine.service.audit.AuditLogServiceUnitTest" time="0.261"/>
+  <testcase name="应该成功记录失败的操作" classname="com.example.ruleengine.service.audit.AuditLogServiceUnitTest" time="0.002"/>
+  <testcase name="应该成功获取实体审计历史" classname="com.example.ruleengine.service.audit.AuditLogServiceUnitTest" time="0.0"/>
+  <testcase name="应该成功记录操作日志（带上下文）" classname="com.example.ruleengine.service.audit.AuditLogServiceUnitTest" time="0.008"/>
+  <testcase name="应该成功记录操作日志" classname="com.example.ruleengine.service.audit.AuditLogServiceUnitTest" time="0.002"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

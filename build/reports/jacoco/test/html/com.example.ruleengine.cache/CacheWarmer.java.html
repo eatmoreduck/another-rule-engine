@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>CacheWarmer.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">rule-engine</a> &gt; <a href="index.source.html" class="el_package">com.example.ruleengine.cache</a> &gt; <span class="el_source">CacheWarmer.java</span></div><h1>CacheWarmer.java</h1><pre class="source lang-java linenums">package com.example.ruleengine.cache;
+
+import com.example.ruleengine.constants.RuleStatus;
+import com.example.ruleengine.domain.Rule;
+import com.example.ruleengine.repository.RuleRepository;
+import jakarta.annotation.PostConstruct;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.stereotype.Component;
+
+import java.util.List;
+
+/**
+ * 缓存预热
+ */
+@Component
+<span class="fc" id="L18">@RequiredArgsConstructor</span>
+<span class="fc" id="L19">@Slf4j</span>
+public class CacheWarmer {
+
+    private final RuleRepository ruleRepository;
+    private final RuleCacheService ruleCacheService;
+
+    /**
+     * 应用启动时预热缓存
+     */
+    @PostConstruct
+    public void init() {
+<span class="fc" id="L30">        log.info(&quot;开始预热缓存...&quot;);</span>
+<span class="fc" id="L31">        warmUpCache();</span>
+<span class="fc" id="L32">        log.info(&quot;缓存预热完成&quot;);</span>
+<span class="fc" id="L33">    }</span>
+
+    /**
+     * 定时预热缓存（每5分钟）
+     */
+    @Scheduled(fixedRate = 300000)
+    public void scheduledWarmUp() {
+<span class="fc" id="L40">        log.debug(&quot;定时预热缓存&quot;);</span>
+<span class="fc" id="L41">        warmUpCache();</span>
+<span class="fc" id="L42">    }</span>
+
+    /**
+     * 预热所有生效中的规则
+     */
+    private void warmUpCache() {
+<span class="fc" id="L48">        List&lt;Rule&gt; activeRules = ruleRepository.findByStatusAndEnabledTrue(RuleStatus.ACTIVE);</span>
+<span class="fc" id="L49">        log.info(&quot;预加载 {} 条生效中的规则到缓存&quot;, activeRules.size());</span>
+
+<span class="fc" id="L51">        int successCount = 0;</span>
+<span class="pc bpc" id="L52" title="1 of 2 branches missed.">        for (Rule rule : activeRules) {</span>
+            try {
+<span class="nc" id="L54">                ruleCacheService.getEnabledRule(rule.getRuleKey());</span>
+<span class="nc" id="L55">                successCount++;</span>
+<span class="nc" id="L56">            } catch (Exception e) {</span>
+<span class="nc" id="L57">                log.warn(&quot;预热规则缓存失败: ruleKey={}&quot;, rule.getRuleKey(), e);</span>
+<span class="nc" id="L58">            }</span>
+<span class="nc" id="L59">        }</span>
+
+<span class="fc" id="L61">        log.info(&quot;缓存预热完成: {}/{} 成功&quot;, successCount, activeRules.size());</span>
+<span class="fc" id="L62">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.11.202310140853</span></div></body></html>

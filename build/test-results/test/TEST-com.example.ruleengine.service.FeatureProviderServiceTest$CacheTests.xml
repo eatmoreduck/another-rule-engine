@@ -1,7 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<testsuite name="缓存测试" tests="1" skipped="0" failures="0" errors="0" timestamp="2026-03-27T13:27:27" hostname="m1" time="0.003">
+<testsuite name="缓存测试" tests="1" skipped="0" failures="0" errors="0" timestamp="2026-03-29T09:22:55" hostname="m1" time="0.001">
   <properties/>
-  <testcase name="缓存命中: 从缓存获取特征" classname="com.example.ruleengine.service.FeatureProviderServiceTest$CacheTests" time="0.003"/>
-  <system-out><![CDATA[]]></system-out>
+  <testcase name="缓存命中: 从缓存获取特征" classname="com.example.ruleengine.service.FeatureProviderServiceTest$CacheTests" time="0.001"/>
+  <system-out><![CDATA[2026-03-29 17:22:55.412 [Test worker] DEBUG c.e.r.service.FeatureProviderService - Cache hit for feature: user_level
+]]></system-out>
   <system-err><![CDATA[]]></system-err>
 </testsuite>

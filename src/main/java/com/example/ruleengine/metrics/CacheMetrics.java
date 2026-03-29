@@ -4,6 +4,7 @@ import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.stats.CacheStats;
 import lombok.RequiredArgsConstructor;
 import org.springframework.cache.CacheManager;
+import org.springframework.cache.caffeine.CaffeineCache;
 import org.springframework.stereotype.Component;
 
 import java.util.HashMap;
@@ -25,9 +26,8 @@ public class CacheMetrics {
         Map<String, Object> stats = new HashMap<>();
 
         org.springframework.cache.Cache cache = cacheManager.getCache("rules");
-        if (cache instanceof com.github.benmanes.caffeine.cache.CaffeineCache) {
-            com.github.benmanes.caffeine.cache.CaffeineCache caffeineCache =
-                    (com.github.benmanes.caffeine.cache.CaffeineCache) cache;
+        if (cache instanceof CaffeineCache) {
+            CaffeineCache caffeineCache = (CaffeineCache) cache;
             Cache<Object, Object> nativeCache = caffeineCache.getNativeCache();
 
             CacheStats cacheStats = nativeCache.stats();
@@ -37,7 +37,6 @@ public class CacheMetrics {
             stats.put("missCount", cacheStats.missCount());
             stats.put("evictionCount", cacheStats.evictionCount());
             stats.put("size", nativeCache.estimatedSize());
-            stats.put("maximumSize", nativeCache.getMaximumSize());
         }
 
         return stats;
@@ -52,9 +51,8 @@ public class CacheMetrics {
         String[] cacheNames = {"rules", "compiled-scripts"};
         for (String cacheName : cacheNames) {
             org.springframework.cache.Cache cache = cacheManager.getCache(cacheName);
-            if (cache instanceof com.github.benmanes.caffeine.cache.CaffeineCache) {
-                com.github.benmanes.caffeine.cache.CaffeineCache caffeineCache =
-                        (com.github.benmanes.caffeine.cache.CaffeineCache) cache;
+            if (cache instanceof CaffeineCache) {
+                CaffeineCache caffeineCache = (CaffeineCache) cache;
                 Cache<Object, Object> nativeCache = caffeineCache.getNativeCache();
                 CacheStats cacheStats = nativeCache.stats();
 
@@ -64,7 +62,6 @@ public class CacheMetrics {
                 stats.put("missCount", cacheStats.missCount());
                 stats.put("evictionCount", cacheStats.evictionCount());
                 stats.put("size", nativeCache.estimatedSize());
-                stats.put("maximumSize", nativeCache.getMaximumSize());
 
                 allStats.put(cacheName, stats);
             }

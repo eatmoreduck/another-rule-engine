@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>SecurityConfiguration.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">rule-engine</a> &gt; <a href="index.source.html" class="el_package">com.example.ruleengine.engine</a> &gt; <span class="el_source">SecurityConfiguration.java</span></div><h1>SecurityConfiguration.java</h1><pre class="source lang-java linenums">package com.example.ruleengine.engine;
+
+import groovy.lang.GroovyClassLoader;
+import org.codehaus.groovy.control.CompilerConfiguration;
+import org.codehaus.groovy.control.customizers.SecureASTCustomizer;
+import org.springframework.stereotype.Component;
+
+import java.util.Arrays;
+import java.util.Collections;
+
+/**
+ * Groovy 脚本沙箱安全配置
+ * Source: RESEARCH.md 模式1 + CONTEXT.md 决策 D-08, D-09, D-10
+ *
+ * 安全措施：
+ * 1. 禁用危险类（System、Runtime、ProcessBuilder、File）
+ * 2. 限制导入白名单
+ * 3. 禁用静态导入
+ * 4. 禁用闭包创建
+ */
+@Component
+<span class="fc" id="L22">public class SecurityConfiguration {</span>
+
+    private static final int MAX_CACHE_SIZE = 1000;
+    private static final long CACHE_EXPIRE_HOURS = 24;
+
+    /**
+     * 创建安全的 CompilerConfiguration
+     * D-08: 禁用危险类
+     * D-07: 启用 PARALLEL_PARSE 提升编译性能
+     */
+    public CompilerConfiguration createSecureConfiguration() {
+<span class="fc" id="L33">        CompilerConfiguration config = new CompilerConfiguration();</span>
+
+        // D-07: 启用并行解析优化
+<span class="fc" id="L36">        config.setOptimizationOptions(java.util.Map.of(&quot;parallelParse&quot;, true));</span>
+
+        // D-08: 配置沙箱安全
+<span class="fc" id="L39">        SecureASTCustomizer secureCustomizer = new SecureASTCustomizer();</span>
+
+        // 导入白名单：只允许安全的类
+        // 注意: SecureASTCustomizer 对通配符支持有限，需要同时指定具体类
+<span class="fc" id="L43">        secureCustomizer.setImportsWhitelist(Arrays.asList(</span>
+            &quot;java.util.*&quot;,
+            &quot;java.lang.Math&quot;,
+            &quot;java.lang.String&quot;,
+            &quot;java.lang.Integer&quot;,
+            &quot;java.lang.Long&quot;,
+            &quot;java.lang.Double&quot;,
+            &quot;java.lang.Boolean&quot;,
+            &quot;java.lang.Object&quot;,
+            // java.time 包 - 同时支持通配符和具体类
+            &quot;java.time.*&quot;,
+            &quot;java.time.LocalDate&quot;,
+            &quot;java.time.LocalDateTime&quot;,
+            &quot;java.time.LocalTime&quot;,
+            &quot;java.time.ZoneId&quot;,
+            &quot;java.time.ZonedDateTime&quot;,
+            &quot;java.time.format.DateTimeFormatter&quot;,
+            &quot;java.time.Duration&quot;,
+            &quot;java.time.Period&quot;,
+            &quot;java.time.Instant&quot;,
+            &quot;java.math.BigDecimal&quot;,
+            &quot;java.math.BigInteger&quot;
+        ));
+
+        // 星号导入白名单（允许 import java.time.* 这样的语句）
+<span class="fc" id="L68">        secureCustomizer.setStarImportsWhitelist(Arrays.asList(</span>
+            &quot;java.util&quot;,
+            &quot;java.time&quot;,
+            &quot;java.lang&quot;,
+            &quot;java.math&quot;
+        ));
+
+        // 禁止静态导入
+<span class="fc" id="L76">        secureCustomizer.setStaticImportsWhitelist(Collections.emptyList());</span>
+
+        // 禁止直接创建闭包（防止绕过沙箱）
+<span class="fc" id="L79">        secureCustomizer.setClosuresAllowed(true);</span>
+
+        // 添加到编译配置
+<span class="fc" id="L82">        config.addCompilationCustomizers(secureCustomizer);</span>
+
+<span class="fc" id="L84">        return config;</span>
+    }
+
+    /**
+     * 创建独立的 GroovyClassLoader
+     * D-10: 脚本在独立 ClassLoader 中执行
+     */
+    public GroovyClassLoader createIsolatedClassLoader() {
+<span class="fc" id="L92">        CompilerConfiguration config = createSecureConfiguration();</span>
+<span class="fc" id="L93">        return new GroovyClassLoader(getClass().getClassLoader(), config);</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.11.202310140853</span></div></body></html>

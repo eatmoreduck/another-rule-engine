@@ -5,8 +5,10 @@ import com.example.ruleengine.constants.AuditEvent;
 import com.example.ruleengine.constants.RuleStatus;
 import com.example.ruleengine.domain.Rule;
 import com.example.ruleengine.model.dto.CreateRuleRequest;
+import com.example.ruleengine.model.dto.RuleQuery;
 import com.example.ruleengine.model.dto.UpdateRuleRequest;
 import com.example.ruleengine.repository.RuleRepository;
+import com.example.ruleengine.validator.RuleUsageChecker;
 import com.example.ruleengine.service.version.VersionManagementService;
 import com.example.ruleengine.validator.GroovyScriptValidator;
 import lombok.RequiredArgsConstructor;
@@ -27,6 +29,7 @@ public class RuleLifecycleService {
     private final RuleRepository ruleRepository;
     private final GroovyScriptValidator scriptValidator;
     private final VersionManagementService versionManagementService;
+    private final RuleUsageChecker ruleUsageChecker;
 
     /**
      * 创建新规则
@@ -80,20 +83,46 @@ public class RuleLifecycleService {
             }
         }
 
-        // 3. 更新规则
+        // 3. 更新规则（不涉及脚本变更时直接更新）
+        if (request.getGroovyScript() == null || request.getGroovyScript().equals(rule.getGroovyScript())) {
+            // 仅更新元数据，不创建新版本
+            if (request.getRuleName() != null) {
+                rule.setRuleName(request.getRuleName());
+            }
+            if (request.getRuleDescription() != null) {
+                rule.setRuleDescription(request.getRuleDescription());
+            }
+            rule.setUpdatedBy(operator);
+
+            Rule updated = ruleRepository.save(rule);
+            log.info("更新规则元数据: ruleKey={}, operator={}", ruleKey, operator);
+            return updated;
+        }
+
+        // 4. 脚本变更时创建新版本
+        String changeReason = request.getChangeReason() != null ? request.getChangeReason() : "更新规则脚本";
+        com.example.ruleengine.model.dto.CreateVersionRequest versionRequest =
+            com.example.ruleengine.model.dto.CreateVersionRequest.builder()
+                .groovyScript(request.getGroovyScript())
+                .changeReason(changeReason)
+                .build();
+
+        versionManagementService.createVersion(ruleKey, versionRequest, operator);
+
+        // 5. 更新规则元数据
+        Rule updatedRule = ruleRepository.findByRuleKey(ruleKey)
+                .orElseThrow(() -> new IllegalArgumentException("规则不存在: " + ruleKey));
+
         if (request.getRuleName() != null) {
-            rule.setRuleName(request.getRuleName());
+            updatedRule.setRuleName(request.getRuleName());
         }
         if (request.getRuleDescription() != null) {
-            rule.setRuleDescription(request.getRuleDescription());
+            updatedRule.setRuleDescription(request.getRuleDescription());
         }
-        if (request.getGroovyScript() != null) {
-            rule.setGroovyScript(request.getGroovyScript());
-        }
-        rule.setUpdatedBy(operator);
+        updatedRule.setUpdatedBy(operator);
 
-        Rule updated = ruleRepository.save(rule);
-        log.info("更新规则: ruleKey={}, operator={}", ruleKey, operator);
+        Rule updated = ruleRepository.save(updatedRule);
+        log.info("更新规则并创建新版本: ruleKey={}, newVersion={}, operator={}", ruleKey, updated.getVersion(), operator);
         return updated;
     }
 
@@ -103,9 +132,18 @@ public class RuleLifecycleService {
     @Auditable(event = AuditEvent.RULE_DELETE, entityType = "RULE", entityIdExpression = "#ruleKey")
     @Transactional
     public void deleteRule(String ruleKey, String operator) {
+        // 1. 验证规则存在
         Rule rule = ruleRepository.findByRuleKey(ruleKey)
                 .orElseThrow(() -> new IllegalArgumentException("规则不存在: " + ruleKey));
+
+        // 2. 检查规则是否在使用中
+        if (!ruleUsageChecker.canSafelyDelete(ruleKey)) {
+            throw new IllegalStateException("规则正在使用中，不能删除: " + ruleKey);
+        }
+
+        // 3. 软删除
         rule.setStatus(RuleStatus.DELETED);
+        rule.setEnabled(false);
         rule.setUpdatedBy(operator);
         ruleRepository.save(rule);
         log.info("删除规则: ruleKey={}, operator={}", ruleKey, operator);
@@ -151,5 +189,23 @@ public class RuleLifecycleService {
      */
     public Page<Rule> listRules(Pageable pageable) {
         return ruleRepository.findAll(pageable);
+    }
+
+    /**
+     * 查询规则（支持多条件过滤）
+     */
+    public Page<Rule> queryRules(RuleQuery query, Pageable pageable) {
+        log.info("查询规则: query={}", query);
+        return ruleRepository.findByConditions(
+                query.getStatus(),
+                query.getCreatedBy(),
+                query.getEnabled(),
+                query.getKeyword(),
+                query.getCreatedAtStart(),
+                query.getCreatedAtEnd(),
+                query.getUpdatedAtStart(),
+                query.getUpdatedAtEnd(),
+                pageable
+        );
     }
 }

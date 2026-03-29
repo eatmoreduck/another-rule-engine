@@ -1,5 +1,7 @@
 package com.example.ruleengine.service.version;
 
+import com.example.ruleengine.annotation.Auditable;
+import com.example.ruleengine.constants.AuditEvent;
 import com.example.ruleengine.constants.RuleStatus;
 import com.example.ruleengine.domain.Rule;
 import com.example.ruleengine.domain.RuleVersion;
@@ -34,6 +36,7 @@ public class VersionManagementService {
      * 3. 记录变更原因和操作人
      */
     @Transactional
+    @Auditable(event = AuditEvent.VERSION_CREATE, entityType = "RULE", entityIdExpression = "#ruleKey")
     public VersionResponse createVersion(String ruleKey, CreateVersionRequest request, String operator) {
         // 1. 查询规则
         Rule rule = ruleRepository.findByRuleKey(ruleKey)
@@ -83,6 +86,7 @@ public class VersionManagementService {
     /**
      * 获取规则的特定版本
      */
+    @Auditable(event = AuditEvent.VERSION_VIEW, entityType = "RULE", entityIdExpression = "#ruleKey")
     public VersionResponse getVersion(String ruleKey, Integer version) {
         RuleVersion ruleVersion = ruleVersionRepository.findByRuleKeyAndVersion(ruleKey, version)
                 .orElseThrow(() -> new IllegalArgumentException("版本不存在: ruleKey=" + ruleKey + ", version=" + version));
@@ -92,6 +96,7 @@ public class VersionManagementService {
     /**
      * 比较两个版本的差异
      */
+    @Auditable(event = AuditEvent.VERSION_COMPARE, entityType = "RULE", entityIdExpression = "#ruleKey")
     public VersionDiffResponse compareVersions(String ruleKey, Integer version1, Integer version2) {
         RuleVersion v1 = ruleVersionRepository.findByRuleKeyAndVersion(ruleKey, version1)
                 .orElseThrow(() -> new IllegalArgumentException("版本不存在: " + version1));
@@ -119,6 +124,7 @@ public class VersionManagementService {
      * 4. 记录回滚操作
      */
     @Transactional
+    @Auditable(event = AuditEvent.VERSION_ROLLBACK, entityType = "RULE", entityIdExpression = "#ruleKey")
     public VersionResponse rollbackToVersion(String ruleKey, Integer targetVersion, String operator) {
         // 1. 查询规则和目标版本
         Rule rule = ruleRepository.findByRuleKey(ruleKey)

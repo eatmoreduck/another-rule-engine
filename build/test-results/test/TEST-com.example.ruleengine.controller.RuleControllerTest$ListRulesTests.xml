@@ -1,0 +1,156 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="GET /api/v1/rules - 列出规则" tests="2" skipped="0" failures="0" errors="0" timestamp="2026-03-29T09:22:51" hostname="m1" time="0.081">
+  <properties/>
+  <testcase name="应返回分页的规则列表" classname="com.example.ruleengine.controller.RuleControllerTest$ListRulesTests" time="0.064"/>
+  <testcase name="空数据库应返回空列表" classname="com.example.ruleengine.controller.RuleControllerTest$ListRulesTests" time="0.015"/>
+  <system-out><![CDATA[2026-03-29 17:22:51.862 [Test worker] DEBUG org.hibernate.SQL - 
+    delete 
+    from
+        rule_versions rv1_0
+Hibernate: 
+    delete 
+    from
+        rule_versions rv1_0
+2026-03-29 17:22:51.863 [Test worker] DEBUG org.hibernate.SQL - 
+    delete 
+    from
+        rules r1_0
+Hibernate: 
+    delete 
+    from
+        rules r1_0
+2026-03-29 17:22:51.864 [Test worker] DEBUG org.hibernate.SQL - 
+    insert 
+    into
+        rules
+        (created_at, created_by, enabled, groovy_script, opt_lock_version, rule_description, rule_key, rule_name, status, updated_at, updated_by, version, id) 
+    values
+        (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, default)
+Hibernate: 
+    insert 
+    into
+        rules
+        (created_at, created_by, enabled, groovy_script, opt_lock_version, rule_description, rule_key, rule_name, status, updated_at, updated_by, version, id) 
+    values
+        (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, default)
+2026-03-29 17:22:51.866 [Test worker] DEBUG org.hibernate.SQL - 
+    insert 
+    into
+        rules
+        (created_at, created_by, enabled, groovy_script, opt_lock_version, rule_description, rule_key, rule_name, status, updated_at, updated_by, version, id) 
+    values
+        (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, default)
+Hibernate: 
+    insert 
+    into
+        rules
+        (created_at, created_by, enabled, groovy_script, opt_lock_version, rule_description, rule_key, rule_name, status, updated_at, updated_by, version, id) 
+    values
+        (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, default)
+2026-03-29 17:22:51.875 [Test worker] DEBUG org.hibernate.SQL - 
+    select
+        r1_0.id,
+        r1_0.created_at,
+        r1_0.created_by,
+        r1_0.enabled,
+        r1_0.groovy_script,
+        r1_0.opt_lock_version,
+        r1_0.rule_description,
+        r1_0.rule_key,
+        r1_0.rule_name,
+        r1_0.status,
+        r1_0.updated_at,
+        r1_0.updated_by,
+        r1_0.version 
+    from
+        rules r1_0 
+    offset
+        ? rows 
+    fetch
+        first ? rows only
+Hibernate: 
+    select
+        r1_0.id,
+        r1_0.created_at,
+        r1_0.created_by,
+        r1_0.enabled,
+        r1_0.groovy_script,
+        r1_0.opt_lock_version,
+        r1_0.rule_description,
+        r1_0.rule_key,
+        r1_0.rule_name,
+        r1_0.status,
+        r1_0.updated_at,
+        r1_0.updated_by,
+        r1_0.version 
+    from
+        rules r1_0 
+    offset
+        ? rows 
+    fetch
+        first ? rows only
+2026-03-29 17:22:51.904 [Test worker] WARN  o.s.d.w.c.SpringDataJacksonConfiguration$PageModule$PlainPageSerializationWarning - Serializing PageImpl instances as-is is not supported, meaning that there is no guarantee about the stability of the resulting JSON structure!
+	For a stable JSON structure, please use Spring Data's PagedModel (globally via @EnableSpringDataWebSupport(pageSerializationMode = VIA_DTO))
+	or Spring HATEOAS and Spring Data's PagedResourcesAssembler as documented in https://docs.spring.io/spring-data/commons/reference/repositories/core-extensions.html#core.web.pageables.
+
+2026-03-29 17:22:51.929 [Test worker] DEBUG org.hibernate.SQL - 
+    delete 
+    from
+        rule_versions rv1_0
+Hibernate: 
+    delete 
+    from
+        rule_versions rv1_0
+2026-03-29 17:22:51.930 [Test worker] DEBUG org.hibernate.SQL - 
+    delete 
+    from
+        rules r1_0
+Hibernate: 
+    delete 
+    from
+        rules r1_0
+2026-03-29 17:22:51.935 [Test worker] DEBUG org.hibernate.SQL - 
+    select
+        r1_0.id,
+        r1_0.created_at,
+        r1_0.created_by,
+        r1_0.enabled,
+        r1_0.groovy_script,
+        r1_0.opt_lock_version,
+        r1_0.rule_description,
+        r1_0.rule_key,
+        r1_0.rule_name,
+        r1_0.status,
+        r1_0.updated_at,
+        r1_0.updated_by,
+        r1_0.version 
+    from
+        rules r1_0 
+    offset
+        ? rows 
+    fetch
+        first ? rows only
+Hibernate: 
+    select
+        r1_0.id,
+        r1_0.created_at,
+        r1_0.created_by,
+        r1_0.enabled,
+        r1_0.groovy_script,
+        r1_0.opt_lock_version,
+        r1_0.rule_description,
+        r1_0.rule_key,
+        r1_0.rule_name,
+        r1_0.status,
+        r1_0.updated_at,
+        r1_0.updated_by,
+        r1_0.version 
+    from
+        rules r1_0 
+    offset
+        ? rows 
+    fetch
+        first ? rows only
+]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

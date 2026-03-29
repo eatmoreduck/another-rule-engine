@@ -2,18 +2,35 @@ spring:
   application:
     name: rule-engine-test
 
-  # 注意：Java 17 不直接支持虚拟线程
-  # threads:
-  #   virtual:
-  #     enabled: true
+  # H2 内存数据库配置（替代 PostgreSQL）
+  datasource:
+    url: jdbc:h2:mem:testdb;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;DEFAULT_NULL_ORDERING=HIGH
+    username: sa
+    password:
+    driver-class-name: org.h2.Driver
+
+  # JPA 配置：测试环境使用 create-drop 自动建表
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    show-sql: true
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.H2Dialect
+        format_sql: true
+
+  # 测试环境禁用 Flyway（使用 JPA 自动建表）
+  flyway:
+    enabled: false
 
   cache:
     type: caffeine
 
 server:
-  port: 8080  # 测试时使用相同端口，由 @WebMvcTest 等注解控制
+  port: 0  # 随机端口，避免冲突
 
 logging:
   level:
     root: WARN
     com.example.ruleengine: DEBUG
+    org.hibernate.SQL: DEBUG

@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="正常执行测试" tests="5" skipped="0" failures="0" errors="0" timestamp="2026-03-29T09:22:55" hostname="m1" time="0.04">
+  <properties/>
+  <testcase name="执行返回布尔值 false 的脚本应返回 REJECT" classname="com.example.ruleengine.service.RuleExecutionServiceTest$NormalExecutionTests" time="0.004"/>
+  <testcase name="执行返回 String 的脚本应作为 decision" classname="com.example.ruleengine.service.RuleExecutionServiceTest$NormalExecutionTests" time="0.004"/>
+  <testcase name="执行返回 Map 的脚本应正确解析" classname="com.example.ruleengine.service.RuleExecutionServiceTest$NormalExecutionTests" time="0.019"/>
+  <testcase name="执行返回布尔值 true 的脚本应返回 PASS" classname="com.example.ruleengine.service.RuleExecutionServiceTest$NormalExecutionTests" time="0.003"/>
+  <testcase name="执行应包含执行上下文" classname="com.example.ruleengine.service.RuleExecutionServiceTest$NormalExecutionTests" time="0.002"/>
+  <system-out><![CDATA[2026-03-29 17:22:55.622 [Test worker] DEBUG c.e.r.service.RuleExecutionService - Rule rule-002 executed in 1ms
+2026-03-29 17:22:55.626 [Test worker] DEBUG c.e.r.service.RuleExecutionService - Rule rule-004 executed in 2ms
+2026-03-29 17:22:55.652 [Test worker] DEBUG c.e.r.service.RuleExecutionService - Rule rule-003 executed in 5ms
+2026-03-29 17:22:55.655 [Test worker] DEBUG c.e.r.service.RuleExecutionService - Rule rule-001 executed in 1ms
+2026-03-29 17:22:55.658 [Test worker] DEBUG c.e.r.service.RuleExecutionService - Rule rule-005 executed in 1ms
+]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

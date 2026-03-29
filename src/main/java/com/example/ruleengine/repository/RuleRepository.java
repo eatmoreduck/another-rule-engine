@@ -2,16 +2,21 @@ package com.example.ruleengine.repository;
 
 import com.example.ruleengine.constants.RuleStatus;
 import com.example.ruleengine.domain.Rule;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
 /**
  * 规则数据访问接口
+ * 优化：添加批量查询、EntityGraph 和投影查询，避免 N+1 问题
  */
 @Repository
 public interface RuleRepository extends JpaRepository<Rule, Long> {
@@ -62,4 +67,54 @@ public interface RuleRepository extends JpaRepository<Rule, Long> {
      */
     @Query("SELECT r.groovyScript FROM Rule r WHERE r.ruleKey = :ruleKey AND r.enabled = true")
     Optional<String> findScriptByKey(@Param("ruleKey") String ruleKey);
+
+    /**
+     * 根据状态和创建人分页查询
+     */
+    Page<Rule> findByStatusAndCreatedBy(RuleStatus status, String createdBy, Pageable pageable);
+
+    /**
+     * 根据创建人分页查询
+     */
+    Page<Rule> findByCreatedBy(String createdBy, Pageable pageable);
+
+    /**
+     * 根据状态分页查询
+     */
+    Page<Rule> findByStatus(RuleStatus status, Pageable pageable);
+
+    /**
+     * 根据启用状态分页查询
+     */
+    Page<Rule> findByEnabled(Boolean enabled, Pageable pageable);
+
+    /**
+     * 关键词搜索（rule_key 或 rule_name 包含关键词）
+     */
+    @Query("SELECT r FROM Rule r WHERE r.ruleKey LIKE %:keyword% OR r.ruleName LIKE %:keyword%")
+    Page<Rule> findByKeyword(@Param("keyword") String keyword, Pageable pageable);
+
+    /**
+     * 综合查询（支持多条件组合）
+     */
+    @Query("SELECT r FROM Rule r WHERE " +
+           "(:status IS NULL OR r.status = :status) AND " +
+           "(:createdBy IS NULL OR r.createdBy = :createdBy) AND " +
+           "(:enabled IS NULL OR r.enabled = :enabled) AND " +
+           "(:keyword IS NULL OR r.ruleKey LIKE %:keyword% OR r.ruleName LIKE %:keyword%) AND " +
+           "(:createdAtStart IS NULL OR r.createdAt >= :createdAtStart) AND " +
+           "(:createdAtEnd IS NULL OR r.createdAt <= :createdAtEnd) AND " +
+           "(:updatedAtStart IS NULL OR r.updatedAt >= :updatedAtStart) AND " +
+           "(:updatedAtEnd IS NULL OR r.updatedAt <= :updatedAtEnd)")
+    Page<Rule> findByConditions(
+            @Param("status") RuleStatus status,
+            @Param("createdBy") String createdBy,
+            @Param("enabled") Boolean enabled,
+            @Param("keyword") String keyword,
+            @Param("createdAtStart") LocalDateTime createdAtStart,
+            @Param("createdAtEnd") LocalDateTime createdAtEnd,
+            @Param("updatedAtStart") LocalDateTime updatedAtStart,
+            @Param("updatedAtEnd") LocalDateTime updatedAtEnd,
+            Pageable pageable
+    );
 }

@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>AuditLogController.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">rule-engine</a> &gt; <a href="index.source.html" class="el_package">com.example.ruleengine.controller</a> &gt; <span class="el_source">AuditLogController.java</span></div><h1>AuditLogController.java</h1><pre class="source lang-java linenums">package com.example.ruleengine.controller;
+
+import com.example.ruleengine.domain.AuditLog;
+import com.example.ruleengine.service.audit.AuditLogService;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+import java.time.LocalDateTime;
+import java.util.List;
+
+/**
+ * 审计日志查询 REST API 控制器
+ */
+@RestController
+@RequestMapping(&quot;/api/v1/audit&quot;)
+<span class="fc" id="L19">@RequiredArgsConstructor</span>
+<span class="fc" id="L20">@Slf4j</span>
+public class AuditLogController {
+
+    private final AuditLogService auditLogService;
+
+    /**
+     * 获取实体审计历史
+     * GET /api/v1/audit/logs/{entityType}/{entityId}
+     */
+    @GetMapping(&quot;/logs/{entityType}/{entityId}&quot;)
+    public ResponseEntity&lt;List&lt;AuditLog&gt;&gt; getAuditHistory(
+            @PathVariable String entityType,
+            @PathVariable String entityId) {
+<span class="nc" id="L33">        log.info(&quot;获取实体审计历史: entityType={}, entityId={}&quot;, entityType, entityId);</span>
+<span class="nc" id="L34">        List&lt;AuditLog&gt; logs = auditLogService.getAuditHistory(entityType, entityId);</span>
+<span class="nc" id="L35">        return ResponseEntity.ok(logs);</span>
+    }
+
+    /**
+     * 获取操作人活动记录
+     * GET /api/v1/audit/logs/operator/{operator}?start=xxx&amp;end=xxx
+     */
+    @GetMapping(&quot;/logs/operator/{operator}&quot;)
+    public ResponseEntity&lt;List&lt;AuditLog&gt;&gt; getOperatorActivity(
+            @PathVariable String operator,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime start,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime end) {
+<span class="nc" id="L47">        log.info(&quot;获取操作人活动记录: operator={}, start={}, end={}&quot;, operator, start, end);</span>
+
+<span class="nc bnc" id="L49" title="All 2 branches missed.">        if (start == null) {</span>
+<span class="nc" id="L50">            start = LocalDateTime.now().minusDays(7);</span>
+        }
+<span class="nc bnc" id="L52" title="All 2 branches missed.">        if (end == null) {</span>
+<span class="nc" id="L53">            end = LocalDateTime.now();</span>
+        }
+
+<span class="nc" id="L56">        List&lt;AuditLog&gt; logs = auditLogService.getOperatorActivity(operator, start, end);</span>
+<span class="nc" id="L57">        return ResponseEntity.ok(logs);</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.11.202310140853</span></div></body></html>

@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<testsuite name="性能相关测试" tests="1" skipped="0" failures="0" errors="0" timestamp="2026-03-27T13:27:25" hostname="m1" time="1.21">
+<testsuite name="性能相关测试" tests="1" skipped="0" failures="0" errors="0" timestamp="2026-03-29T09:22:55" hostname="m1" time="0.123">
   <properties/>
-  <testcase name="响应时间应记录" classname="com.example.ruleengine.service.FeatureProviderServiceTest$PerformanceTests" time="1.21"/>
-  <system-out><![CDATA[21:27:26.868 [ForkJoinPool.commonPool-worker-1] ERROR com.example.ruleengine.service.FeatureProviderService -- Failed to call external feature platform
+  <testcase name="响应时间应记录" classname="com.example.ruleengine.service.FeatureProviderServiceTest$PerformanceTests" time="0.123"/>
+  <system-out><![CDATA[2026-03-29 17:22:55.400 [ForkJoinPool.commonPool-worker-1] ERROR c.e.r.service.FeatureProviderService - Failed to call external feature platform
 org.mockito.exceptions.misusing.PotentialStubbingProblem: 
 Strict stubbing argument mismatch. Please check:
  - this invocation of 'postForObject' method:
@@ -14,7 +14,7 @@ Strict stubbing argument mismatch. Please check:
     -> at com.example.ruleengine.service.FeatureProviderService.fetchExternalFeatures(FeatureProviderService.java:150)
  - has following stubbing(s) with different arguments:
     1. restTemplate.postForObject(null, null, null);
-      -> at com.example.ruleengine.service.FeatureProviderServiceTest$PerformanceTests.shouldRecordFetchTime(FeatureProviderServiceTest.java:289)
+      -> at com.example.ruleengine.service.FeatureProviderServiceTest$PerformanceTests.shouldRecordFetchTime(FeatureProviderServiceTest.java:294)
 Typically, stubbing argument mismatch indicates user mistake when writing tests.
 Mockito fails early so that you can debug potential problem easily.
 However, there are legit scenarios when this exception generates false negative signal:
@@ -33,6 +33,7 @@ For more information see javadoc for PotentialStubbingProblem class.
 	at java.base/java.util.concurrent.ForkJoinPool.scan(ForkJoinPool.java:1655)
 	at java.base/java.util.concurrent.ForkJoinPool.runWorker(ForkJoinPool.java:1622)
 	at java.base/java.util.concurrent.ForkJoinWorkerThread.run(ForkJoinWorkerThread.java:165)
+2026-03-29 17:22:55.401 [Test worker] DEBUG c.e.r.service.FeatureProviderService - Used default values for features: [user_age]
 ]]></system-out>
   <system-err><![CDATA[]]></system-err>
 </testsuite>

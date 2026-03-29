@@ -1,0 +1,150 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>RuleController.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">rule-engine</a> &gt; <a href="index.source.html" class="el_package">com.example.ruleengine.controller</a> &gt; <span class="el_source">RuleController.java</span></div><h1>RuleController.java</h1><pre class="source lang-java linenums">package com.example.ruleengine.controller;
+
+import com.example.ruleengine.domain.Rule;
+import com.example.ruleengine.model.dto.CreateRuleRequest;
+import com.example.ruleengine.model.dto.RuleQuery;
+import com.example.ruleengine.model.dto.UpdateRuleRequest;
+import com.example.ruleengine.model.dto.ValidateScriptRequest;
+import com.example.ruleengine.model.dto.ValidateScriptResponse;
+import com.example.ruleengine.service.lifecycle.RuleLifecycleService;
+import com.example.ruleengine.validator.GroovyScriptValidator;
+import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+/**
+ * 规则管理 REST API 控制器
+ */
+@RestController
+@RequestMapping(&quot;/api/v1/rules&quot;)
+<span class="fc" id="L24">@RequiredArgsConstructor</span>
+<span class="fc" id="L25">@Slf4j</span>
+public class RuleController {
+
+    private final RuleLifecycleService ruleLifecycleService;
+    private final GroovyScriptValidator scriptValidator;
+
+    /**
+     * 创建规则
+     * POST /api/v1/rules
+     */
+    @PostMapping
+    public ResponseEntity&lt;Rule&gt; createRule(
+            @Valid @RequestBody CreateRuleRequest request,
+            @RequestHeader(value = &quot;X-Operator&quot;, defaultValue = &quot;system&quot;) String operator) {
+<span class="fc" id="L39">        log.info(&quot;创建规则: ruleKey={}, operator={}&quot;, request.getRuleKey(), operator);</span>
+<span class="fc" id="L40">        Rule rule = ruleLifecycleService.createRule(request, operator);</span>
+<span class="fc" id="L41">        return ResponseEntity.ok(rule);</span>
+    }
+
+    /**
+     * 更新规则
+     * PUT /api/v1/rules/{ruleKey}
+     */
+    @PutMapping(&quot;/{ruleKey}&quot;)
+    public ResponseEntity&lt;Rule&gt; updateRule(
+            @PathVariable String ruleKey,
+            @Valid @RequestBody UpdateRuleRequest request,
+            @RequestHeader(value = &quot;X-Operator&quot;, defaultValue = &quot;system&quot;) String operator) {
+<span class="fc" id="L53">        log.info(&quot;更新规则: ruleKey={}, operator={}&quot;, ruleKey, operator);</span>
+<span class="fc" id="L54">        Rule rule = ruleLifecycleService.updateRule(ruleKey, request, operator);</span>
+<span class="fc" id="L55">        return ResponseEntity.ok(rule);</span>
+    }
+
+    /**
+     * 删除规则
+     * DELETE /api/v1/rules/{ruleKey}
+     */
+    @DeleteMapping(&quot;/{ruleKey}&quot;)
+    public ResponseEntity&lt;Void&gt; deleteRule(
+            @PathVariable String ruleKey,
+            @RequestHeader(value = &quot;X-Operator&quot;, defaultValue = &quot;system&quot;) String operator) {
+<span class="fc" id="L66">        log.info(&quot;删除规则: ruleKey={}, operator={}&quot;, ruleKey, operator);</span>
+<span class="fc" id="L67">        ruleLifecycleService.deleteRule(ruleKey, operator);</span>
+<span class="fc" id="L68">        return ResponseEntity.ok().build();</span>
+    }
+
+    /**
+     * 启用规则
+     * POST /api/v1/rules/{ruleKey}/enable
+     */
+    @PostMapping(&quot;/{ruleKey}/enable&quot;)
+    public ResponseEntity&lt;Rule&gt; enableRule(
+            @PathVariable String ruleKey,
+            @RequestHeader(value = &quot;X-Operator&quot;, defaultValue = &quot;system&quot;) String operator) {
+<span class="fc" id="L79">        log.info(&quot;启用规则: ruleKey={}, operator={}&quot;, ruleKey, operator);</span>
+<span class="fc" id="L80">        Rule rule = ruleLifecycleService.enableRule(ruleKey, operator);</span>
+<span class="fc" id="L81">        return ResponseEntity.ok(rule);</span>
+    }
+
+    /**
+     * 禁用规则
+     * POST /api/v1/rules/{ruleKey}/disable
+     */
+    @PostMapping(&quot;/{ruleKey}/disable&quot;)
+    public ResponseEntity&lt;Rule&gt; disableRule(
+            @PathVariable String ruleKey,
+            @RequestHeader(value = &quot;X-Operator&quot;, defaultValue = &quot;system&quot;) String operator) {
+<span class="fc" id="L92">        log.info(&quot;禁用规则: ruleKey={}, operator={}&quot;, ruleKey, operator);</span>
+<span class="fc" id="L93">        Rule rule = ruleLifecycleService.disableRule(ruleKey, operator);</span>
+<span class="fc" id="L94">        return ResponseEntity.ok(rule);</span>
+    }
+
+    /**
+     * 获取规则详情
+     * GET /api/v1/rules/{ruleKey}
+     */
+    @GetMapping(&quot;/{ruleKey}&quot;)
+    public ResponseEntity&lt;Rule&gt; getRule(@PathVariable String ruleKey) {
+<span class="fc" id="L103">        Rule rule = ruleLifecycleService.getRule(ruleKey);</span>
+<span class="fc" id="L104">        return ResponseEntity.ok(rule);</span>
+    }
+
+    /**
+     * 列出所有规则（分页）
+     * GET /api/v1/rules?page=0&amp;size=20
+     */
+    @GetMapping
+    public ResponseEntity&lt;Page&lt;Rule&gt;&gt; listRules(Pageable pageable) {
+<span class="fc" id="L113">        Page&lt;Rule&gt; rules = ruleLifecycleService.listRules(pageable);</span>
+<span class="fc" id="L114">        return ResponseEntity.ok(rules);</span>
+    }
+
+    /**
+     * 查询规则（支持多条件过滤）
+     * POST /api/v1/rules/query
+     */
+    @PostMapping(&quot;/query&quot;)
+    public ResponseEntity&lt;Page&lt;Rule&gt;&gt; queryRules(
+            @RequestBody RuleQuery query,
+            Pageable pageable) {
+<span class="nc" id="L125">        log.info(&quot;查询规则: query={}&quot;, query);</span>
+<span class="nc" id="L126">        Page&lt;Rule&gt; rules = ruleLifecycleService.queryRules(query, pageable);</span>
+<span class="nc" id="L127">        return ResponseEntity.ok(rules);</span>
+    }
+
+    /**
+     * 验证 Groovy 脚本
+     * POST /api/v1/rules/validate
+     */
+    @PostMapping(&quot;/validate&quot;)
+    public ResponseEntity&lt;ValidateScriptResponse&gt; validateScript(
+            @Valid @RequestBody ValidateScriptRequest request) {
+<span class="fc" id="L137">        log.info(&quot;验证Groovy脚本&quot;);</span>
+<span class="fc" id="L138">        GroovyScriptValidator.ValidationResult validation = scriptValidator.validate(request.getGroovyScript());</span>
+
+<span class="fc bfc" id="L140" title="All 2 branches covered.">        if (validation.isValid()) {</span>
+<span class="fc" id="L141">            return ResponseEntity.ok(ValidateScriptResponse.success());</span>
+        } else {
+<span class="fc" id="L143">            return ResponseEntity.ok(ValidateScriptResponse.error(</span>
+                    &quot;Groovy脚本语法错误&quot;,
+<span class="fc" id="L145">                    validation.getErrorMessage()</span>
+            ));
+        }
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.11.202310140853</span></div></body></html>

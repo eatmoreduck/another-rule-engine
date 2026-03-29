@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="边界条件测试" tests="4" skipped="0" failures="0" errors="0" timestamp="2026-03-29T09:22:48" hostname="m1" time="0.087">
+  <properties/>
+  <testcase name="特殊字符在脚本中应正常处理" classname="com.example.ruleengine.controller.DecisionControllerTest$EdgeCaseTests" time="0.006"/>
+  <testcase name="大量特征数据应正常处理" classname="com.example.ruleengine.controller.DecisionControllerTest$EdgeCaseTests" time="0.065"/>
+  <testcase name="Unicode 字符应正常处理" classname="com.example.ruleengine.controller.DecisionControllerTest$EdgeCaseTests" time="0.005"/>
+  <testcase name="长脚本内容应正常处理" classname="com.example.ruleengine.controller.DecisionControllerTest$EdgeCaseTests" time="0.006"/>
+  <system-out><![CDATA[2026-03-29 17:22:48.848 [Test worker] INFO  o.s.t.c.s.AnnotationConfigContextLoaderUtils - Could not detect default configuration classes for test class [com.example.ruleengine.controller.DecisionControllerTest$EdgeCaseTests]: EdgeCaseTests does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+2026-03-29 17:22:48.856 [Test worker] INFO  o.s.b.t.c.SpringBootTestContextBootstrapper - Found @SpringBootConfiguration com.example.ruleengine.RuleEngineApplication for test class com.example.ruleengine.controller.DecisionControllerTest$EdgeCaseTests
+2026-03-29 17:22:48.862 [Test worker] INFO  c.e.r.controller.DecisionController - Received decision request for rule: special-chars-rule
+2026-03-29 17:22:48.862 [Test worker] DEBUG c.e.r.controller.DecisionController - Rule special-chars-rule executed in 5ms, decision: PASS
+2026-03-29 17:22:48.869 [Test worker] INFO  c.e.r.controller.DecisionController - Received decision request for rule: large-features-rule
+2026-03-29 17:22:48.870 [Test worker] DEBUG c.e.r.controller.DecisionController - Rule large-features-rule executed in 20ms, decision: PASS
+2026-03-29 17:22:48.935 [Test worker] INFO  c.e.r.controller.DecisionController - Received decision request for rule: unicode-rule
+2026-03-29 17:22:48.936 [Test worker] DEBUG c.e.r.controller.DecisionController - Rule unicode-rule executed in 5ms, decision: PASS
+2026-03-29 17:22:48.942 [Test worker] INFO  c.e.r.controller.DecisionController - Received decision request for rule: long-script-rule
+2026-03-29 17:22:48.943 [Test worker] DEBUG c.e.r.controller.DecisionController - Rule long-script-rule executed in 15ms, decision: PASS
+]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="正常请求测试" tests="4" skipped="0" failures="0" errors="0" timestamp="2026-03-29T09:22:49" hostname="m1" time="0.034">
+  <properties/>
+  <testcase name="带执行上下文的响应应正确返回" classname="com.example.ruleengine.controller.DecisionControllerTest$NormalRequestTests" time="0.014"/>
+  <testcase name="POST /api/v1/decide 应返回 REJECT 决策" classname="com.example.ruleengine.controller.DecisionControllerTest$NormalRequestTests" time="0.006"/>
+  <testcase name="POST /api/v1/decide 应返回 PASS 决策" classname="com.example.ruleengine.controller.DecisionControllerTest$NormalRequestTests" time="0.005"/>
+  <testcase name="带特征的请求应正确处理" classname="com.example.ruleengine.controller.DecisionControllerTest$NormalRequestTests" time="0.005"/>
+  <system-out><![CDATA[2026-03-29 17:22:49.109 [Test worker] INFO  o.s.t.c.s.AnnotationConfigContextLoaderUtils - Could not detect default configuration classes for test class [com.example.ruleengine.controller.DecisionControllerTest$NormalRequestTests]: NormalRequestTests does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+2026-03-29 17:22:49.116 [Test worker] INFO  o.s.b.t.c.SpringBootTestContextBootstrapper - Found @SpringBootConfiguration com.example.ruleengine.RuleEngineApplication for test class com.example.ruleengine.controller.DecisionControllerTest$NormalRequestTests
+2026-03-29 17:22:49.121 [Test worker] INFO  c.e.r.controller.DecisionController - Received decision request for rule: rule-004
+2026-03-29 17:22:49.121 [Test worker] DEBUG c.e.r.controller.DecisionController - Rule rule-004 executed in 25ms, decision: PASS
+2026-03-29 17:22:49.136 [Test worker] INFO  c.e.r.controller.DecisionController - Received decision request for rule: rule-002
+2026-03-29 17:22:49.137 [Test worker] DEBUG c.e.r.controller.DecisionController - Rule rule-002 executed in 10ms, decision: REJECT
+2026-03-29 17:22:49.143 [Test worker] INFO  c.e.r.controller.DecisionController - Received decision request for rule: rule-001
+2026-03-29 17:22:49.143 [Test worker] DEBUG c.e.r.controller.DecisionController - Rule rule-001 executed in 15ms, decision: PASS
+2026-03-29 17:22:49.149 [Test worker] INFO  c.e.r.controller.DecisionController - Received decision request for rule: rule-003
+2026-03-29 17:22:49.149 [Test worker] DEBUG c.e.r.controller.DecisionController - Rule rule-003 executed in 20ms, decision: PASS
+]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

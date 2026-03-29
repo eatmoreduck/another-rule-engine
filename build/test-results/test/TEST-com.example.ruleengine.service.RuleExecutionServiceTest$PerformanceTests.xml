@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="性能测试" tests="2" skipped="0" failures="0" errors="0" timestamp="2026-03-29T09:22:55" hostname="m1" time="0.113">
+  <properties/>
+  <testcase name="快速执行应在 50ms 内完成" classname="com.example.ruleengine.service.RuleExecutionServiceTest$PerformanceTests" time="0.111"/>
+  <testcase name="执行时间应被记录" classname="com.example.ruleengine.service.RuleExecutionServiceTest$PerformanceTests" time="0.002"/>
+  <system-out><![CDATA[2026-03-29 17:22:55.529 [Test worker] DEBUG c.e.r.service.RuleExecutionService - Rule fast-rule executed in 0ms
+2026-03-29 17:22:55.532 [Test worker] DEBUG c.e.r.service.RuleExecutionService - Rule perf-rule executed in 1ms
+]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>
