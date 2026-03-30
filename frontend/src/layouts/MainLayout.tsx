@@ -1,5 +1,5 @@
 import { Layout, Menu, Typography } from 'antd';
-import { SafetyOutlined, SettingOutlined, ExperimentOutlined } from '@ant-design/icons';
+import { SafetyOutlined, SettingOutlined, ExperimentOutlined, BugOutlined, BarChartOutlined, DashboardOutlined } from '@ant-design/icons';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 
 const { Header, Content } = Layout;
@@ -15,6 +15,21 @@ const menuItems = [
     key: '/grayscale',
     icon: <ExperimentOutlined />,
     label: '灰度发布',
+  },
+  {
+    key: '/monitoring',
+    icon: <DashboardOutlined />,
+    label: '监控仪表盘',
+  },
+  {
+    key: '/test',
+    icon: <BugOutlined />,
+    label: '测试验证',
+  },
+  {
+    key: '/analytics',
+    icon: <BarChartOutlined />,
+    label: '分析中心',
   },
   {
     key: '/settings',

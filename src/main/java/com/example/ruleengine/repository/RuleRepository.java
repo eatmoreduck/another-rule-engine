@@ -117,4 +117,20 @@ public interface RuleRepository extends JpaRepository<Rule, Long> {
             @Param("updatedAtEnd") LocalDateTime updatedAtEnd,
             Pageable pageable
     );
+
+    /**
+     * 根据环境ID查询规则
+     */
+    List<Rule> findByEnvironmentId(Long environmentId);
+
+    /**
+     * 根据环境ID和启用状态查询规则
+     */
+    List<Rule> findByEnvironmentIdAndEnabledTrue(Long environmentId);
+
+    /**
+     * 根据环境ID查询规则Key列表
+     */
+    @Query("SELECT r.ruleKey FROM Rule r WHERE r.environmentId = :environmentId")
+    List<String> findRuleKeysByEnvironmentId(@Param("environmentId") Long environmentId);
 }

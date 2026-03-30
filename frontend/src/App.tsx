@@ -6,6 +6,8 @@ import RuleEditPage from './pages/RuleEditPage';
 import FlowEditorPage from './pages/FlowEditorPage';
 import MonitoringPage from './pages/MonitoringPage';
 import GrayscalePage from './pages/GrayscalePage';
+import TestPage from './pages/TestPage';
+import AnalyticsPage from './pages/AnalyticsPage';
 
 export default function App() {
   return (
@@ -20,6 +22,8 @@ export default function App() {
         <Route path="/rules/:ruleKey/edit/flow" element={<FlowEditorPage />} />
         <Route path="/monitoring" element={<MonitoringPage />} />
         <Route path="/grayscale" element={<GrayscalePage />} />
+        <Route path="/test" element={<TestPage />} />
+        <Route path="/analytics" element={<AnalyticsPage />} />
         <Route path="*" element={<Navigate to="/rules" replace />} />
       </Route>
     </Routes>

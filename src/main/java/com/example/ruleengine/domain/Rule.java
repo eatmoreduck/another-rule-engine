@@ -71,4 +71,10 @@ public class Rule {
      */
     @Version
     private Long optLockVersion;
+
+    /**
+     * 所属环境ID
+     */
+    @Column(name = "environment_id")
+    private Long environmentId;
 }
