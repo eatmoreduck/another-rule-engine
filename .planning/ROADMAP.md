@@ -127,7 +127,13 @@ Plan 5: 同步决策 API（Wave 3）
 4. 用户可通过 Web 界面管理规则（列表、详情、编辑、预览）
 5. 配置的规则可成功保存并转换为 Groovy DSL 格式
 
-**Plans**: TBD
+**Plans**: 4 plans
+
+Plans:
+- [ ] 03-01-PLAN.md -- 前端基础设施与规则列表页（React 19 + Vite + Ant Design）
+- [ ] 03-02-PLAN.md -- 规则详情页与表单配置编辑器（条件-动作模式）
+- [ ] 03-03-PLAN.md -- 可视化流程图编辑器（React Flow + 自定义节点）
+- [ ] 03-04-PLAN.md -- 双模式集成与路由完善（模式切换 + DSL 统一）
 
 **UI hint**: yes
 
@@ -209,7 +215,7 @@ Plan 5: 同步决策 API（Wave 3）
 |-------|----------------|--------|-----------|
 | 1. 核心规则执行引擎 | 5/5 | ✅ Complete | 2025-03-26 |
 | 2. 数据持久化与版本管理 | 0/5 | 📋 Planned | - |
-| 3. 规则配置界面 | 0/0 | Not started | - |
+| 3. 规则配置界面 | 0/4 | 📋 Planned | - |
 | 4. 监控与安全增强 | 0/0 | Not started | - |
 | 5. 灰度发布与异步执行 | 0/0 | Not started | - |
 | 6. 测试验证与分析 | 0/0 | Not started | - |
@@ -240,4 +246,4 @@ Phase 7 (高级功能与扩展) ← Phase 2, Phase 3
 
 ---
 *Roadmap created: 2025-03-26*
-*Last updated: 2025-03-26*
+*Last updated: 2026-03-30*
