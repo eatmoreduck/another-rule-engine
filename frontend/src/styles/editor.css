@@ -1,0 +1,246 @@
+/* ================================================================
+   Editor Styles - 规则编辑器相关样式
+   Plan 03-04: 统一编辑器样式
+   ================================================================ */
+
+/* --- 脚本预览区域 --- */
+.script-preview-code {
+  background-color: #1e1e1e;
+  color: #d4d4d4;
+  font-family: 'Menlo', 'Monaco', 'Courier New', monospace;
+  font-size: 13px;
+  line-height: 1.6;
+  padding: 16px;
+  border-radius: 8px;
+  overflow-x: auto;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+/* 语法高亮 */
+.script-keyword {
+  color: #569cd6;
+  font-weight: 600;
+}
+
+.script-string {
+  color: #ce9178;
+}
+
+.script-number {
+  color: #b5cea8;
+}
+
+.script-comment {
+  color: #6a9955;
+  font-style: italic;
+}
+
+.script-preview-actions {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+/* --- 模式切换区域 --- */
+.mode-switch {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding: 0 0 16px 0;
+}
+
+.mode-switch .ant-segmented {
+  border-radius: 6px;
+}
+
+/* --- 节点面板 --- */
+.node-palette {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  z-index: 10;
+  background: #fff;
+  border: 1px solid #e8e8e8;
+  border-radius: 8px;
+  padding: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  width: 180px;
+}
+
+.node-palette-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: #595959;
+  margin-bottom: 8px;
+}
+
+.node-palette-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  margin-bottom: 4px;
+  border-radius: 4px;
+  cursor: grab;
+  font-size: 13px;
+  color: #333;
+  border: 1px solid #e8e8e8;
+  background: #fafafa;
+  transition: all 0.2s;
+}
+
+.node-palette-item:hover {
+  border-color: #1890ff;
+  background: #e6f7ff;
+}
+
+.node-palette-item:active {
+  cursor: grabbing;
+}
+
+/* --- 自定义流程图节点 --- */
+.custom-node {
+  padding: 10px 16px;
+  border-radius: 8px;
+  font-size: 13px;
+  min-width: 140px;
+  text-align: center;
+  border: 2px solid;
+  background: #fff;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+}
+
+.custom-node-start {
+  border-color: #52c41a;
+  background: #f6ffed;
+}
+
+.custom-node-end {
+  border-color: #ff4d4f;
+  background: #fff2f0;
+}
+
+.custom-node-condition {
+  border-color: #1890ff;
+  background: #e6f7ff;
+  transform: rotate(0deg);
+  border-radius: 8px;
+}
+
+.custom-node-action {
+  border-color: #faad14;
+  background: #fffbe6;
+}
+
+.custom-node-title {
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+.custom-node-detail {
+  font-size: 12px;
+  color: #8c8c8c;
+}
+
+/* --- 流程图编辑器容器 --- */
+.flow-editor-container {
+  width: 100%;
+  height: calc(100vh - 240px);
+  min-height: 500px;
+  border: 1px solid #e8e8e8;
+  border-radius: 8px;
+  overflow: hidden;
+  position: relative;
+}
+
+/* --- 表单编辑器 --- */
+.form-editor-container {
+  max-width: 800px;
+  padding: 0 0 24px 0;
+}
+
+.rule-condition-row {
+  margin-bottom: 8px;
+  padding: 12px;
+  background: #fafafa;
+  border-radius: 6px;
+  border: 1px solid #f0f0f0;
+}
+
+.rule-condition-row:hover {
+  border-color: #d9d9d9;
+}
+
+/* --- 页面头部 --- */
+.page-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 24px;
+}
+
+.page-header-title {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 600;
+}
+
+.page-header-actions {
+  display: flex;
+  gap: 8px;
+}
+
+/* --- 规则详情页 --- */
+.rule-detail-section {
+  margin-bottom: 24px;
+}
+
+.rule-detail-section h3 {
+  font-size: 15px;
+  font-weight: 600;
+  margin-bottom: 12px;
+  color: #333;
+}
+
+/* --- 脚本预览折叠面板 --- */
+.script-preview-panel .ant-collapse-content-box {
+  padding: 0 !important;
+}
+
+.script-preview-panel .ant-collapse-header {
+  font-weight: 600;
+}
+
+/* --- 响应式适配 --- */
+@media (max-width: 768px) {
+  .page-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .page-header-actions {
+    width: 100%;
+    flex-wrap: wrap;
+  }
+
+  .mode-switch {
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+  .form-editor-container {
+    max-width: 100%;
+  }
+
+  .flow-editor-container {
+    height: calc(100vh - 320px);
+    min-height: 350px;
+  }
+
+  .node-palette {
+    width: 140px;
+    padding: 8px;
+  }
+}
