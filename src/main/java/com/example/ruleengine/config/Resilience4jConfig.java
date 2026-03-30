@@ -1,5 +1,7 @@
 package com.example.ruleengine.config;
 
+import io.github.resilience4j.circuitbreaker.CircuitBreaker;
+import io.github.resilience4j.circuitbreaker.CircuitBreakerConfig;
 import io.github.resilience4j.timelimiter.TimeLimiter;
 import io.github.resilience4j.timelimiter.TimeLimiterConfig;
 import org.springframework.context.annotation.Bean;
@@ -61,5 +63,44 @@ public class Resilience4jConfig {
         executor.initialize();
 
         return executor;
+    }
+
+    /**
+     * 规则执行 CircuitBreaker
+     * REXEC-05: 断路器保护，防止级联故障
+     *
+     * 配置说明：
+     * - 滑动窗口大小：100（基于计数的滑动窗口）
+     * - 失败率阈值：50%（超过则打开断路器）
+     * - 等待时间：10s（断路器打开后等待 10 秒进入半开状态）
+     * - 半开状态允许请求数：10
+     * - 最小请求数：20（达到后才开始计算失败率）
+     */
+    @Bean(name = "ruleExecutionCircuitBreaker")
+    public CircuitBreaker ruleExecutionCircuitBreaker() {
+        CircuitBreakerConfig config = CircuitBreakerConfig.custom()
+            .slidingWindowType(CircuitBreakerConfig.SlidingWindowType.COUNT_BASED)
+            .slidingWindowSize(100)
+            .failureRateThreshold(50.0f)
+            .waitDurationInOpenState(Duration.ofSeconds(10))
+            .permittedNumberOfCallsInHalfOpenState(10)
+            .minimumNumberOfCalls(20)
+            .build();
+
+        CircuitBreaker circuitBreaker = CircuitBreaker.of("ruleExecution", config);
+
+        // 断路器事件监听
+        circuitBreaker.getEventPublisher()
+            .onStateTransition(event ->
+                org.slf4j.LoggerFactory.getLogger(Resilience4jConfig.class)
+                    .warn("CircuitBreaker 状态变更: {}", event))
+            .onError(event ->
+                org.slf4j.LoggerFactory.getLogger(Resilience4jConfig.class)
+                    .debug("CircuitBreaker 记录错误: {}", event))
+            .onSuccess(event ->
+                org.slf4j.LoggerFactory.getLogger(Resilience4jConfig.class)
+                    .debug("CircuitBreaker 记录成功: {}", event));
+
+        return circuitBreaker;
     }
 }

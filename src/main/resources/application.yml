@@ -86,6 +86,42 @@ server:
     accept-count: 100
     connection-timeout: 10s  # 10 秒连接超时
 
+# 异步执行配置（REXEC-02）
+rule-engine:
+  async:
+    # 异步结果存储过期时间（秒）
+    result-expire-seconds: 300
+    # 结果清理任务执行间隔（秒）
+    cleanup-interval-seconds: 60
+  execution:
+    # 默认超时时间（毫秒）
+    default-timeout-ms: 50
+    # 降级决策
+    degradation-decision: PASS
+    degradation-reason: 规则执行超时，返回默认通过决策
+
+# Resilience4j 配置（REXEC-05）
+resilience4j:
+  circuitbreaker:
+    instances:
+      ruleExecution:
+        # 滑动窗口大小
+        sliding-window-size: 100
+        # 失败率阈值（百分比），超过则打开断路器
+        failure-rate-threshold: 50
+        # 断路器打开后等待时间（秒）
+        wait-duration-in-open-state: 10s
+        # 半开状态允许的请求数
+        permitted-number-of-calls-in-half-open-state: 10
+        # 最小请求数（达到后才开始计算失败率）
+        minimum-number-of-calls: 20
+        # 滑动窗口类型
+        sliding-window-type: COUNT_BASED
+  timelimiter:
+    instances:
+      ruleExecution:
+        timeout-duration: 50ms
+
 # 日志配置
 logging:
   level:

@@ -8,6 +8,7 @@ import com.example.ruleengine.model.DecisionRequest;
 import com.example.ruleengine.model.DecisionResponse;
 import com.example.ruleengine.model.FeatureResponse;
 import com.example.ruleengine.service.executionlog.ExecutionLogService;
+import com.example.ruleengine.service.grayscale.GrayscaleService;
 import io.github.resilience4j.timelimiter.TimeLimiter;
 import io.github.resilience4j.timelimiter.TimeLimiterConfig;
 import org.junit.jupiter.api.BeforeEach;
@@ -57,6 +58,9 @@ class RuleExecutionServiceTest {
     @Mock
     private RuleExecutionMetrics ruleExecutionMetrics;
 
+    @Mock
+    private GrayscaleService grayscaleService;
+
     private TimeLimiter timeLimiter;
     private ThreadPoolTaskExecutor taskExecutor;
     private RuleExecutionService ruleExecutionService;
@@ -84,7 +88,8 @@ class RuleExecutionServiceTest {
             taskExecutor,
             ruleCacheService,
             executionLogService,
-            ruleExecutionMetrics
+            ruleExecutionMetrics,
+            grayscaleService
         );
     }
 

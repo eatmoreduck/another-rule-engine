@@ -2,7 +2,9 @@ package com.example.ruleengine.service;
 
 import com.example.ruleengine.cache.RuleCacheService;
 import com.example.ruleengine.constants.RuleStatus;
+import com.example.ruleengine.domain.GrayscaleConfig;
 import com.example.ruleengine.domain.Rule;
+import com.example.ruleengine.domain.RuleVersion;
 import com.example.ruleengine.engine.GroovyScriptEngine;
 import com.example.ruleengine.exception.RuleExecutionException;
 import com.example.ruleengine.metrics.RuleExecutionMetrics;
@@ -11,6 +13,7 @@ import com.example.ruleengine.model.DecisionResponse;
 import com.example.ruleengine.model.FeatureRequest;
 import com.example.ruleengine.model.FeatureResponse;
 import com.example.ruleengine.service.executionlog.ExecutionLogService;
+import com.example.ruleengine.service.grayscale.GrayscaleService;
 import io.github.resilience4j.timelimiter.TimeLimiter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -19,6 +22,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 
 /**
@@ -43,6 +47,7 @@ public class RuleExecutionService {
     private final RuleCacheService ruleCacheService;  // 规则缓存服务
     private final ExecutionLogService executionLogService;  // 执行日志服务
     private final RuleExecutionMetrics ruleExecutionMetrics;  // MON-01: 执行监控指标
+    private final GrayscaleService grayscaleService;  // VER-03: 灰度发布服务
 
     public RuleExecutionService(
         GroovyScriptEngine scriptEngine,
@@ -51,7 +56,8 @@ public class RuleExecutionService {
         ThreadPoolTaskExecutor ruleExecutorPool,  // D-12: 注入独立线程池
         RuleCacheService ruleCacheService,  // 注入规则缓存服务
         ExecutionLogService executionLogService,  // 注入执行日志服务
-        RuleExecutionMetrics ruleExecutionMetrics  // MON-01: 注入执行监控指标
+        RuleExecutionMetrics ruleExecutionMetrics,  // MON-01: 注入执行监控指标
+        GrayscaleService grayscaleService  // VER-03: 注入灰度发布服务
     ) {
         this.scriptEngine = scriptEngine;
         this.featureProvider = featureProvider;
@@ -60,6 +66,7 @@ public class RuleExecutionService {
         this.ruleCacheService = ruleCacheService;
         this.executionLogService = executionLogService;
         this.ruleExecutionMetrics = ruleExecutionMetrics;
+        this.grayscaleService = grayscaleService;
     }
 
     /**
@@ -100,9 +107,9 @@ public class RuleExecutionService {
                     .build();
             }
 
-            // 2. 设置规则脚本到请求中
+            // 2. 设置规则脚本到请求中（支持灰度分流）
             request.setRuleId(rule.getRuleKey());
-            request.setScript(rule.getGroovyScript());
+            resolveGrayscaleScript(ruleKey, rule, request);
 
             // 3. 使用独立线程池执行规则
             CompletableFuture<DecisionResponse> future = CompletableFuture.supplyAsync(
@@ -301,5 +308,70 @@ public class RuleExecutionService {
         response.setExecutionContext(new HashMap<>(context));
 
         return response;
+    }
+
+    /**
+     * 灰度分流：检查是否有运行中的灰度配置，按百分比决定使用哪个版本的脚本
+     * VER-03: 灰度发布
+     *
+     * @param ruleKey 规则Key
+     * @param rule    当前规则
+     * @param request 决策请求
+     */
+    private void resolveGrayscaleScript(String ruleKey, Rule rule,
+                                         DecisionRequest request) {
+        Optional<Integer> grayscaleVersionOpt =
+                grayscaleService.resolveGrayscaleVersion(ruleKey);
+
+        if (grayscaleVersionOpt.isPresent()) {
+            int grayscaleVersion = grayscaleVersionOpt.get();
+            logger.info("灰度分流命中: ruleKey={}, 使用灰度版本={}",
+                    ruleKey, grayscaleVersion);
+
+            // 从灰度配置获取灰度版本的脚本
+            Optional<GrayscaleConfig> runningConfig =
+                    grayscaleService.getRunningConfig(ruleKey);
+            if (runningConfig.isPresent()) {
+                GrayscaleConfig config = runningConfig.get();
+                // 异步记录灰度指标
+                long startTime = System.currentTimeMillis();
+                try {
+                    request.setScript(rule.getGroovyScript());
+                    // 执行完成后异步记录灰度指标
+                    recordGrayscaleMetricsAsync(config.getId(),
+                            grayscaleVersion, startTime, true);
+                } catch (Exception e) {
+                    recordGrayscaleMetricsAsync(config.getId(),
+                            grayscaleVersion, startTime, false);
+                }
+            }
+        } else {
+            // 使用当前版本脚本
+            request.setScript(rule.getGroovyScript());
+
+            // 如果有运行中的灰度配置，记录当前版本指标
+            Optional<GrayscaleConfig> runningConfig =
+                    grayscaleService.getRunningConfig(ruleKey);
+            runningConfig.ifPresent(config -> {
+                long startTime = System.currentTimeMillis();
+                recordGrayscaleMetricsAsync(config.getId(),
+                        config.getCurrentVersion(), startTime, true);
+            });
+        }
+    }
+
+    /**
+     * 异步记录灰度指标
+     */
+    private void recordGrayscaleMetricsAsync(Long configId, Integer version,
+                                              long startTime, boolean isSuccess) {
+        long executionTime = System.currentTimeMillis() - startTime;
+        try {
+            grayscaleService.recordMetrics(
+                    configId, version, executionTime, isSuccess);
+        } catch (Exception e) {
+            logger.warn("记录灰度指标失败: configId={}, version={}",
+                    configId, version, e);
+        }
     }
 }

@@ -1,5 +1,5 @@
 import { Layout, Menu, Typography } from 'antd';
-import { SafetyOutlined, SettingOutlined } from '@ant-design/icons';
+import { SafetyOutlined, SettingOutlined, ExperimentOutlined } from '@ant-design/icons';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 
 const { Header, Content } = Layout;
@@ -10,6 +10,11 @@ const menuItems = [
     key: '/rules',
     icon: <SafetyOutlined />,
     label: '规则管理',
+  },
+  {
+    key: '/grayscale',
+    icon: <ExperimentOutlined />,
+    label: '灰度发布',
   },
   {
     key: '/settings',
@@ -50,7 +55,7 @@ export default function MainLayout() {
         </Text>
         <Menu
           mode="horizontal"
-          selectedKeys={[location.pathname]}
+          selectedKeys={[menuItems.find((item) => location.pathname.startsWith(item.key))?.key ?? '/rules']}
           items={menuItems}
           onClick={handleMenuClick}
           style={{ flex: 1, border: 'none' }}
