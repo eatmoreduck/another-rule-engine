@@ -1,0 +1,198 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>ExecutionLogService.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">rule-engine</a> &gt; <a href="index.source.html" class="el_package">com.example.ruleengine.service.executionlog</a> &gt; <span class="el_source">ExecutionLogService.java</span></div><h1>ExecutionLogService.java</h1><pre class="source lang-java linenums">package com.example.ruleengine.service.executionlog;
+
+import com.example.ruleengine.domain.ExecutionLog;
+import com.example.ruleengine.repository.ExecutionLogRepository;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.scheduling.annotation.Async;
+import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.stereotype.Service;
+
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Map;
+
+/**
+ * 规则执行日志服务
+ *
+ * 功能：
+ * 1. 异步记录规则执行日志（输入、输出、执行时间）
+ * 2. 查询日志（按规则、时间范围、状态）
+ * 3. 定期清理超过 N 天的日志（保留策略）
+ */
+@Service
+<span class="nc" id="L27">@RequiredArgsConstructor</span>
+<span class="nc" id="L28">@Slf4j</span>
+public class ExecutionLogService {
+
+    private final ExecutionLogRepository executionLogRepository;
+    private final ObjectMapper objectMapper;
+
+    @Value(&quot;${rule-engine.execution-log.retention-days:30}&quot;)
+    private int retentionDays;
+
+    /**
+     * 异步记录执行成功日志
+     *
+     * @param ruleKey 规则Key
+     * @param ruleVersion 规则版本
+     * @param inputFeatures 输入特征
+     * @param outputDecision 决策结果
+     * @param outputReason 决策原因
+     * @param executionTimeMs 执行耗时（毫秒）
+     */
+    @Async
+    public void logSuccess(String ruleKey, Integer ruleVersion,
+                           Map&lt;String, Object&gt; inputFeatures,
+                           String outputDecision, String outputReason,
+                           long executionTimeMs) {
+        try {
+<span class="nc" id="L53">            String featuresJson = serializeFeatures(inputFeatures);</span>
+<span class="nc" id="L54">            ExecutionLog executionLog = ExecutionLog.builder()</span>
+<span class="nc" id="L55">                    .ruleKey(ruleKey)</span>
+<span class="nc" id="L56">                    .ruleVersion(ruleVersion)</span>
+<span class="nc" id="L57">                    .inputFeatures(featuresJson)</span>
+<span class="nc" id="L58">                    .outputDecision(outputDecision)</span>
+<span class="nc" id="L59">                    .outputReason(outputReason)</span>
+<span class="nc" id="L60">                    .executionTimeMs((int) executionTimeMs)</span>
+<span class="nc" id="L61">                    .status(&quot;SUCCESS&quot;)</span>
+<span class="nc" id="L62">                    .build();</span>
+<span class="nc" id="L63">            executionLogRepository.save(executionLog);</span>
+<span class="nc" id="L64">        } catch (Exception e) {</span>
+<span class="nc" id="L65">            log.error(&quot;记录执行日志失败: ruleKey={}&quot;, ruleKey, e);</span>
+<span class="nc" id="L66">        }</span>
+<span class="nc" id="L67">    }</span>
+
+    /**
+     * 异步记录执行超时日志
+     *
+     * @param ruleKey 规则Key
+     * @param ruleVersion 规则版本
+     * @param inputFeatures 输入特征
+     * @param executionTimeMs 执行耗时（毫秒）
+     */
+    @Async
+    public void logTimeout(String ruleKey, Integer ruleVersion,
+                           Map&lt;String, Object&gt; inputFeatures,
+                           long executionTimeMs) {
+        try {
+<span class="nc" id="L82">            String featuresJson = serializeFeatures(inputFeatures);</span>
+<span class="nc" id="L83">            ExecutionLog executionLog = ExecutionLog.builder()</span>
+<span class="nc" id="L84">                    .ruleKey(ruleKey)</span>
+<span class="nc" id="L85">                    .ruleVersion(ruleVersion)</span>
+<span class="nc" id="L86">                    .inputFeatures(featuresJson)</span>
+<span class="nc" id="L87">                    .outputDecision(&quot;REJECT&quot;)</span>
+<span class="nc" id="L88">                    .outputReason(&quot;规则执行超时&quot;)</span>
+<span class="nc" id="L89">                    .executionTimeMs((int) executionTimeMs)</span>
+<span class="nc" id="L90">                    .status(&quot;TIMEOUT&quot;)</span>
+<span class="nc" id="L91">                    .build();</span>
+<span class="nc" id="L92">            executionLogRepository.save(executionLog);</span>
+<span class="nc" id="L93">        } catch (Exception e) {</span>
+<span class="nc" id="L94">            log.error(&quot;记录超时日志失败: ruleKey={}&quot;, ruleKey, e);</span>
+<span class="nc" id="L95">        }</span>
+<span class="nc" id="L96">    }</span>
+
+    /**
+     * 异步记录执行错误日志
+     *
+     * @param ruleKey 规则Key
+     * @param ruleVersion 规则版本
+     * @param inputFeatures 输入特征
+     * @param executionTimeMs 执行耗时（毫秒）
+     * @param errorMessage 错误信息
+     */
+    @Async
+    public void logError(String ruleKey, Integer ruleVersion,
+                         Map&lt;String, Object&gt; inputFeatures,
+                         long executionTimeMs, String errorMessage) {
+        try {
+<span class="nc" id="L112">            String featuresJson = serializeFeatures(inputFeatures);</span>
+<span class="nc" id="L113">            ExecutionLog executionLog = ExecutionLog.builder()</span>
+<span class="nc" id="L114">                    .ruleKey(ruleKey)</span>
+<span class="nc" id="L115">                    .ruleVersion(ruleVersion)</span>
+<span class="nc" id="L116">                    .inputFeatures(featuresJson)</span>
+<span class="nc" id="L117">                    .outputDecision(&quot;REJECT&quot;)</span>
+<span class="nc" id="L118">                    .outputReason(&quot;规则执行失败: &quot; + errorMessage)</span>
+<span class="nc" id="L119">                    .executionTimeMs((int) executionTimeMs)</span>
+<span class="nc" id="L120">                    .status(&quot;ERROR&quot;)</span>
+<span class="nc" id="L121">                    .errorMessage(errorMessage)</span>
+<span class="nc" id="L122">                    .build();</span>
+<span class="nc" id="L123">            executionLogRepository.save(executionLog);</span>
+<span class="nc" id="L124">        } catch (Exception e) {</span>
+<span class="nc" id="L125">            log.error(&quot;记录错误日志失败: ruleKey={}&quot;, ruleKey, e);</span>
+<span class="nc" id="L126">        }</span>
+<span class="nc" id="L127">    }</span>
+
+    /**
+     * 查询指定规则的执行日志
+     *
+     * @param ruleKey 规则Key
+     * @return 执行日志列表（按创建时间倒序）
+     */
+    public List&lt;ExecutionLog&gt; getLogsByRuleKey(String ruleKey) {
+<span class="nc" id="L136">        return executionLogRepository.findByRuleKeyOrderByCreatedAtDesc(ruleKey);</span>
+    }
+
+    /**
+     * 查询指定规则在时间范围内的执行日志
+     *
+     * @param ruleKey 规则Key
+     * @param start 开始时间
+     * @param end 结束时间
+     * @return 执行日志列表
+     */
+    public List&lt;ExecutionLog&gt; getLogsByRuleKeyAndTimeRange(
+            String ruleKey, LocalDateTime start, LocalDateTime end) {
+<span class="nc" id="L149">        return executionLogRepository.findByRuleKeyAndCreatedAtBetweenOrderByCreatedAtDesc(</span>
+                ruleKey, start, end);
+    }
+
+    /**
+     * 查询指定状态的执行日志
+     *
+     * @param status 执行状态（SUCCESS/TIMEOUT/ERROR）
+     * @return 执行日志列表
+     */
+    public List&lt;ExecutionLog&gt; getLogsByStatus(String status) {
+<span class="nc" id="L160">        return executionLogRepository.findByStatusOrderByCreatedAtDesc(status);</span>
+    }
+
+    /**
+     * 查询最近执行日志
+     *
+     * @return 最近100条执行日志
+     */
+    public List&lt;ExecutionLog&gt; getRecentLogs() {
+<span class="nc" id="L169">        return executionLogRepository.findTop100ByOrderByCreatedAtDesc();</span>
+    }
+
+    /**
+     * 定期清理过期执行日志（每天凌晨3点执行）
+     * 清理超过 retentionDays 天的日志
+     */
+    @Scheduled(cron = &quot;0 0 3 * * *&quot;)
+    public void cleanupExpiredLogs() {
+<span class="nc" id="L178">        LocalDateTime before = LocalDateTime.now().minusDays(retentionDays);</span>
+<span class="nc" id="L179">        int deletedCount = executionLogRepository.deleteByCreatedAtBefore(before);</span>
+<span class="nc" id="L180">        log.info(&quot;清理过期执行日志完成: 删除 {} 条记录, 保留天数={}&quot;, deletedCount, retentionDays);</span>
+<span class="nc" id="L181">    }</span>
+
+    /**
+     * 序列化输入特征为 JSON 字符串
+     */
+    private String serializeFeatures(Map&lt;String, Object&gt; features) {
+<span class="nc bnc" id="L187" title="All 4 branches missed.">        if (features == null || features.isEmpty()) {</span>
+<span class="nc" id="L188">            return null;</span>
+        }
+        try {
+<span class="nc" id="L191">            return objectMapper.writeValueAsString(features);</span>
+<span class="nc" id="L192">        } catch (JsonProcessingException e) {</span>
+<span class="nc" id="L193">            log.warn(&quot;序列化输入特征失败&quot;, e);</span>
+<span class="nc" id="L194">            return null;</span>
+        }
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.11.202310140853</span></div></body></html>

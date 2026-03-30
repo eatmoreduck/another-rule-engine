@@ -17,59 +17,59 @@ import java.time.LocalDateTime;
  */
 @Entity
 @Table(name = &quot;rules&quot;)
-<span class="pc bnc" id="L20" title="All 110 branches missed.">@Data</span>
-<span class="pc bfc" id="L21" title="All 6 branches covered.">@Builder</span>
-<span class="fc" id="L22">@NoArgsConstructor</span>
-<span class="fc" id="L23">@AllArgsConstructor</span>
+<span class="nc bnc" id="L20" title="All 110 branches missed.">@Data</span>
+<span class="nc bnc" id="L21" title="All 6 branches missed.">@Builder</span>
+<span class="nc" id="L22">@NoArgsConstructor</span>
+<span class="nc" id="L23">@AllArgsConstructor</span>
 public class Rule {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-<span class="fc" id="L28">    private Long id;</span>
+<span class="nc" id="L28">    private Long id;</span>
 
     @Column(name = &quot;rule_key&quot;, unique = true, nullable = false, length = 255)
-<span class="fc" id="L31">    private String ruleKey;</span>
+<span class="nc" id="L31">    private String ruleKey;</span>
 
     @Column(name = &quot;rule_name&quot;, nullable = false, length = 255)
-<span class="fc" id="L34">    private String ruleName;</span>
+<span class="nc" id="L34">    private String ruleName;</span>
 
     @Column(name = &quot;rule_description&quot;, columnDefinition = &quot;TEXT&quot;)
-<span class="fc" id="L37">    private String ruleDescription;</span>
+<span class="nc" id="L37">    private String ruleDescription;</span>
 
     @Column(name = &quot;groovy_script&quot;, nullable = false, columnDefinition = &quot;TEXT&quot;)
-<span class="fc" id="L40">    private String groovyScript;</span>
+<span class="nc" id="L40">    private String groovyScript;</span>
 
     @Column(name = &quot;version&quot;, nullable = false)
     @Builder.Default
-<span class="fc" id="L44">    private Integer version = 1;</span>
+<span class="nc" id="L44">    private Integer version = 1;</span>
 
     @Enumerated(EnumType.STRING)
     @Column(name = &quot;status&quot;, nullable = false, length = 50)
     @Builder.Default
-<span class="fc" id="L49">    private RuleStatus status = RuleStatus.DRAFT;</span>
+<span class="nc" id="L49">    private RuleStatus status = RuleStatus.DRAFT;</span>
 
     @Column(name = &quot;created_by&quot;, nullable = false, length = 255)
-<span class="fc" id="L52">    private String createdBy;</span>
+<span class="nc" id="L52">    private String createdBy;</span>
 
     @CreationTimestamp
     @Column(name = &quot;created_at&quot;, nullable = false, updatable = false)
-<span class="fc" id="L56">    private LocalDateTime createdAt;</span>
+<span class="nc" id="L56">    private LocalDateTime createdAt;</span>
 
     @Column(name = &quot;updated_by&quot;, length = 255)
-<span class="fc" id="L59">    private String updatedBy;</span>
+<span class="nc" id="L59">    private String updatedBy;</span>
 
     @UpdateTimestamp
     @Column(name = &quot;updated_at&quot;)
-<span class="fc" id="L63">    private LocalDateTime updatedAt;</span>
+<span class="nc" id="L63">    private LocalDateTime updatedAt;</span>
 
     @Column(name = &quot;enabled&quot;, nullable = false)
     @Builder.Default
-<span class="fc" id="L67">    private Boolean enabled = true;</span>
+<span class="nc" id="L67">    private Boolean enabled = true;</span>
 
     /**
      * 乐观锁版本号
      */
     @Version
-<span class="fc" id="L73">    private Long optLockVersion;</span>
+<span class="nc" id="L73">    private Long optLockVersion;</span>
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.11.202310140853</span></div></body></html>

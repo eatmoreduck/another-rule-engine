@@ -12,38 +12,38 @@ import java.time.LocalDateTime;
  * 版本响应
  */
 <span class="nc bnc" id="L14" title="All 86 branches missed.">@Data</span>
-<span class="pc" id="L15">@Builder</span>
+<span class="nc" id="L15">@Builder</span>
 <span class="nc" id="L16">@NoArgsConstructor</span>
-<span class="fc" id="L17">@AllArgsConstructor</span>
+<span class="nc" id="L17">@AllArgsConstructor</span>
 public class VersionResponse {
 
 <span class="nc" id="L20">    private Long id;</span>
 <span class="nc" id="L21">    private Long ruleId;</span>
 <span class="nc" id="L22">    private String ruleKey;</span>
-<span class="fc" id="L23">    private Integer version;</span>
-<span class="fc" id="L24">    private String groovyScript;</span>
+<span class="nc" id="L23">    private Integer version;</span>
+<span class="nc" id="L24">    private String groovyScript;</span>
 <span class="nc" id="L25">    private String changeReason;</span>
 <span class="nc" id="L26">    private String changedBy;</span>
 <span class="nc" id="L27">    private LocalDateTime changedAt;</span>
-<span class="fc" id="L28">    private Boolean isRollback;</span>
-<span class="fc" id="L29">    private Integer rollbackFromVersion;</span>
+<span class="nc" id="L28">    private Boolean isRollback;</span>
+<span class="nc" id="L29">    private Integer rollbackFromVersion;</span>
 
     /**
      * 从实体转换为响应对象
      */
     public static VersionResponse fromEntity(RuleVersion entity) {
-<span class="fc" id="L35">        return VersionResponse.builder()</span>
-<span class="fc" id="L36">                .id(entity.getId())</span>
-<span class="fc" id="L37">                .ruleId(entity.getRuleId())</span>
-<span class="fc" id="L38">                .ruleKey(entity.getRuleKey())</span>
-<span class="fc" id="L39">                .version(entity.getVersion())</span>
-<span class="fc" id="L40">                .groovyScript(entity.getGroovyScript())</span>
-<span class="fc" id="L41">                .changeReason(entity.getChangeReason())</span>
-<span class="fc" id="L42">                .changedBy(entity.getChangedBy())</span>
-<span class="fc" id="L43">                .changedAt(entity.getChangedAt())</span>
-<span class="fc" id="L44">                .isRollback(entity.getIsRollback())</span>
-<span class="fc" id="L45">                .rollbackFromVersion(entity.getRollbackFromVersion())</span>
-<span class="fc" id="L46">                .build();</span>
+<span class="nc" id="L35">        return VersionResponse.builder()</span>
+<span class="nc" id="L36">                .id(entity.getId())</span>
+<span class="nc" id="L37">                .ruleId(entity.getRuleId())</span>
+<span class="nc" id="L38">                .ruleKey(entity.getRuleKey())</span>
+<span class="nc" id="L39">                .version(entity.getVersion())</span>
+<span class="nc" id="L40">                .groovyScript(entity.getGroovyScript())</span>
+<span class="nc" id="L41">                .changeReason(entity.getChangeReason())</span>
+<span class="nc" id="L42">                .changedBy(entity.getChangedBy())</span>
+<span class="nc" id="L43">                .changedAt(entity.getChangedAt())</span>
+<span class="nc" id="L44">                .isRollback(entity.getIsRollback())</span>
+<span class="nc" id="L45">                .rollbackFromVersion(entity.getRollbackFromVersion())</span>
+<span class="nc" id="L46">                .build();</span>
     }
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.11.202310140853</span></div></body></html>

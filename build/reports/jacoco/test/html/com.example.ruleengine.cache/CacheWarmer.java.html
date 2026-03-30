@@ -15,8 +15,8 @@ import java.util.List;
  * 缓存预热
  */
 @Component
-<span class="fc" id="L18">@RequiredArgsConstructor</span>
-<span class="fc" id="L19">@Slf4j</span>
+<span class="nc" id="L18">@RequiredArgsConstructor</span>
+<span class="nc" id="L19">@Slf4j</span>
 public class CacheWarmer {
 
     private final RuleRepository ruleRepository;
@@ -27,29 +27,29 @@ public class CacheWarmer {
      */
     @PostConstruct
     public void init() {
-<span class="fc" id="L30">        log.info(&quot;开始预热缓存...&quot;);</span>
-<span class="fc" id="L31">        warmUpCache();</span>
-<span class="fc" id="L32">        log.info(&quot;缓存预热完成&quot;);</span>
-<span class="fc" id="L33">    }</span>
+<span class="nc" id="L30">        log.info(&quot;开始预热缓存...&quot;);</span>
+<span class="nc" id="L31">        warmUpCache();</span>
+<span class="nc" id="L32">        log.info(&quot;缓存预热完成&quot;);</span>
+<span class="nc" id="L33">    }</span>
 
     /**
      * 定时预热缓存（每5分钟）
      */
     @Scheduled(fixedRate = 300000)
     public void scheduledWarmUp() {
-<span class="fc" id="L40">        log.debug(&quot;定时预热缓存&quot;);</span>
-<span class="fc" id="L41">        warmUpCache();</span>
-<span class="fc" id="L42">    }</span>
+<span class="nc" id="L40">        log.debug(&quot;定时预热缓存&quot;);</span>
+<span class="nc" id="L41">        warmUpCache();</span>
+<span class="nc" id="L42">    }</span>
 
     /**
      * 预热所有生效中的规则
      */
     private void warmUpCache() {
-<span class="fc" id="L48">        List&lt;Rule&gt; activeRules = ruleRepository.findByStatusAndEnabledTrue(RuleStatus.ACTIVE);</span>
-<span class="fc" id="L49">        log.info(&quot;预加载 {} 条生效中的规则到缓存&quot;, activeRules.size());</span>
+<span class="nc" id="L48">        List&lt;Rule&gt; activeRules = ruleRepository.findByStatusAndEnabledTrue(RuleStatus.ACTIVE);</span>
+<span class="nc" id="L49">        log.info(&quot;预加载 {} 条生效中的规则到缓存&quot;, activeRules.size());</span>
 
-<span class="fc" id="L51">        int successCount = 0;</span>
-<span class="pc bpc" id="L52" title="1 of 2 branches missed.">        for (Rule rule : activeRules) {</span>
+<span class="nc" id="L51">        int successCount = 0;</span>
+<span class="nc bnc" id="L52" title="All 2 branches missed.">        for (Rule rule : activeRules) {</span>
             try {
 <span class="nc" id="L54">                ruleCacheService.getEnabledRule(rule.getRuleKey());</span>
 <span class="nc" id="L55">                successCount++;</span>
@@ -58,7 +58,7 @@ public class CacheWarmer {
 <span class="nc" id="L58">            }</span>
 <span class="nc" id="L59">        }</span>
 
-<span class="fc" id="L61">        log.info(&quot;缓存预热完成: {}/{} 成功&quot;, successCount, activeRules.size());</span>
-<span class="fc" id="L62">    }</span>
+<span class="nc" id="L61">        log.info(&quot;缓存预热完成: {}/{} 成功&quot;, successCount, activeRules.size());</span>
+<span class="nc" id="L62">    }</span>
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.11.202310140853</span></div></body></html>

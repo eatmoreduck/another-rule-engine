@@ -5,10 +5,12 @@ import com.example.ruleengine.constants.RuleStatus;
 import com.example.ruleengine.domain.Rule;
 import com.example.ruleengine.engine.GroovyScriptEngine;
 import com.example.ruleengine.exception.RuleExecutionException;
+import com.example.ruleengine.metrics.RuleExecutionMetrics;
 import com.example.ruleengine.model.DecisionRequest;
 import com.example.ruleengine.model.DecisionResponse;
 import com.example.ruleengine.model.FeatureRequest;
 import com.example.ruleengine.model.FeatureResponse;
+import com.example.ruleengine.service.executionlog.ExecutionLogService;
 import io.github.resilience4j.timelimiter.TimeLimiter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -39,19 +41,25 @@ public class RuleExecutionService {
     private final TimeLimiter timeLimiter;
     private final ThreadPoolTaskExecutor ruleExecutorPool;  // D-12: 独立线程池
     private final RuleCacheService ruleCacheService;  // 规则缓存服务
+    private final ExecutionLogService executionLogService;  // 执行日志服务
+    private final RuleExecutionMetrics ruleExecutionMetrics;  // MON-01: 执行监控指标
 
     public RuleExecutionService(
         GroovyScriptEngine scriptEngine,
         FeatureProviderService featureProvider,
         TimeLimiter ruleExecutionTimeLimiter,
         ThreadPoolTaskExecutor ruleExecutorPool,  // D-12: 注入独立线程池
-        RuleCacheService ruleCacheService  // 注入规则缓存服务
+        RuleCacheService ruleCacheService,  // 注入规则缓存服务
+        ExecutionLogService executionLogService,  // 注入执行日志服务
+        RuleExecutionMetrics ruleExecutionMetrics  // MON-01: 注入执行监控指标
     ) {
         this.scriptEngine = scriptEngine;
         this.featureProvider = featureProvider;
         this.timeLimiter = ruleExecutionTimeLimiter;
         this.ruleExecutorPool = ruleExecutorPool;  // D-12: 初始化线程池
         this.ruleCacheService = ruleCacheService;
+        this.executionLogService = executionLogService;
+        this.ruleExecutionMetrics = ruleExecutionMetrics;
     }
 
     /**
@@ -107,11 +115,29 @@ public class RuleExecutionService {
             response.setExecutionTimeMs(System.currentTimeMillis() - startTime);
 
             logger.debug("Rule {} executed in {}ms", ruleKey, response.getExecutionTimeMs());
+
+            // MON-02: 异步记录执行成功日志
+            executionLogService.logSuccess(
+                ruleKey, null, request.getFeatures(),
+                response.getDecision(), response.getReason(),
+                response.getExecutionTimeMs());
+
+            // MON-01: 记录执行指标
+            ruleExecutionMetrics.recordExecution(
+                ruleKey, response.getDecision(), response.getExecutionTimeMs());
+
             return response;
 
         } catch (java.util.concurrent.TimeoutException e) {
             long executionTime = System.currentTimeMillis() - startTime;
             logger.warn("Rule {} execution timeout after {}ms", ruleKey, executionTime);
+
+            // MON-02: 异步记录超时日志
+            executionLogService.logTimeout(
+                ruleKey, null, request.getFeatures(), executionTime);
+
+            // MON-01: 记录错误指标
+            ruleExecutionMetrics.recordError(ruleKey, e);
 
             return DecisionResponse.builder()
                 .decision("REJECT")
@@ -123,6 +149,14 @@ public class RuleExecutionService {
         } catch (Exception e) {
             long executionTime = System.currentTimeMillis() - startTime;
             logger.error("Rule {} execution failed after {}ms", ruleKey, executionTime, e);
+
+            // MON-02: 异步记录错误日志
+            executionLogService.logError(
+                ruleKey, null, request.getFeatures(),
+                executionTime, e.getMessage());
+
+            // MON-01: 记录错误指标
+            ruleExecutionMetrics.recordError(ruleKey, e);
 
             return DecisionResponse.builder()
                 .decision("REJECT")
@@ -153,12 +187,30 @@ public class RuleExecutionService {
             response.setExecutionTimeMs(System.currentTimeMillis() - startTime);
 
             logger.debug("Rule {} executed in {}ms", request.getRuleId(), response.getExecutionTimeMs());
+
+            // MON-02: 异步记录执行成功日志
+            executionLogService.logSuccess(
+                request.getRuleId(), null, request.getFeatures(),
+                response.getDecision(), response.getReason(),
+                response.getExecutionTimeMs());
+
+            // MON-01: 记录执行指标
+            ruleExecutionMetrics.recordExecution(
+                request.getRuleId(), response.getDecision(), response.getExecutionTimeMs());
+
             return response;
 
         } catch (java.util.concurrent.TimeoutException e) {
             // D-11: 超时返回降级决策
             long executionTime = System.currentTimeMillis() - startTime;
             logger.warn("Rule {} execution timeout after {}ms", request.getRuleId(), executionTime);
+
+            // MON-02: 异步记录超时日志
+            executionLogService.logTimeout(
+                request.getRuleId(), null, request.getFeatures(), executionTime);
+
+            // MON-01: 记录错误指标
+            ruleExecutionMetrics.recordError(request.getRuleId(), e);
 
             return DecisionResponse.builder()
                 .decision("REJECT")
@@ -171,6 +223,14 @@ public class RuleExecutionService {
             // D-11: 异常返回降级决策
             long executionTime = System.currentTimeMillis() - startTime;
             logger.error("Rule {} execution failed after {}ms", request.getRuleId(), executionTime, e);
+
+            // MON-02: 异步记录错误日志
+            executionLogService.logError(
+                request.getRuleId(), null, request.getFeatures(),
+                executionTime, e.getMessage());
+
+            // MON-01: 记录错误指标
+            ruleExecutionMetrics.recordError(request.getRuleId(), e);
 
             return DecisionResponse.builder()
                 .decision("REJECT")

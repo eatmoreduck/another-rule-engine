@@ -10,6 +10,7 @@ import {
   UnorderedListOutlined,
   ExperimentOutlined,
   SettingOutlined,
+  DashboardOutlined,
 } from '@ant-design/icons';
 
 const { Header, Content } = Layout;
@@ -20,6 +21,11 @@ const menuItems = [
     key: '/rules',
     icon: <UnorderedListOutlined />,
     label: '规则管理',
+  },
+  {
+    key: '/monitoring',
+    icon: <DashboardOutlined />,
+    label: '监控',
   },
   {
     key: '/test',

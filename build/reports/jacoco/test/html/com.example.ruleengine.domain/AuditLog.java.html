@@ -15,9 +15,9 @@ import java.time.LocalDateTime;
 @Entity
 @Table(name = &quot;audit_logs&quot;)
 <span class="nc bnc" id="L17" title="All 94 branches missed.">@Data</span>
-<span class="pc bfc" id="L18" title="All 2 branches covered.">@Builder</span>
-<span class="fc" id="L19">@NoArgsConstructor</span>
-<span class="fc" id="L20">@AllArgsConstructor</span>
+<span class="nc bnc" id="L18" title="All 2 branches missed.">@Builder</span>
+<span class="nc" id="L19">@NoArgsConstructor</span>
+<span class="nc" id="L20">@AllArgsConstructor</span>
 public class AuditLog {
 
     @Id
@@ -25,22 +25,22 @@ public class AuditLog {
 <span class="nc" id="L25">    private Long id;</span>
 
     @Column(name = &quot;entity_type&quot;, nullable = false, length = 100)
-<span class="fc" id="L28">    private String entityType;</span>
+<span class="nc" id="L28">    private String entityType;</span>
 
     @Column(name = &quot;entity_id&quot;, nullable = false, length = 255)
-<span class="fc" id="L31">    private String entityId;</span>
+<span class="nc" id="L31">    private String entityId;</span>
 
     @Column(name = &quot;operation&quot;, nullable = false, length = 50)
-<span class="fc" id="L34">    private String operation;</span>
+<span class="nc" id="L34">    private String operation;</span>
 
     @Column(name = &quot;operation_detail&quot;, columnDefinition = &quot;TEXT&quot;)
-<span class="fc" id="L37">    private String operationDetail;</span>
+<span class="nc" id="L37">    private String operationDetail;</span>
 
     @Column(name = &quot;operator&quot;, nullable = false, length = 255)
-<span class="fc" id="L40">    private String operator;</span>
+<span class="nc" id="L40">    private String operator;</span>
 
     @Column(name = &quot;operator_ip&quot;, length = 50)
-<span class="fc" id="L43">    private String operatorIp;</span>
+<span class="nc" id="L43">    private String operatorIp;</span>
 
     @CreationTimestamp
     @Column(name = &quot;operation_time&quot;, nullable = false, updatable = false)
@@ -48,12 +48,12 @@ public class AuditLog {
 
     @Column(name = &quot;status&quot;, nullable = false, length = 50)
     @Builder.Default
-<span class="fc" id="L51">    private String status = &quot;SUCCESS&quot;;</span>
+<span class="nc" id="L51">    private String status = &quot;SUCCESS&quot;;</span>
 
     @Column(name = &quot;error_message&quot;, columnDefinition = &quot;TEXT&quot;)
-<span class="fc" id="L54">    private String errorMessage;</span>
+<span class="nc" id="L54">    private String errorMessage;</span>
 
     @Column(name = &quot;request_id&quot;, length = 100)
-<span class="fc" id="L57">    private String requestId;</span>
+<span class="nc" id="L57">    private String requestId;</span>
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.11.202310140853</span></div></body></html>

@@ -22,8 +22,8 @@ import org.springframework.transaction.annotation.Transactional;
  * 规则生命周期管理服务
  */
 @Service
-<span class="fc" id="L25">@RequiredArgsConstructor</span>
-<span class="fc" id="L26">@Slf4j</span>
+<span class="nc" id="L25">@RequiredArgsConstructor</span>
+<span class="nc" id="L26">@Slf4j</span>
 public class RuleLifecycleService {
 
     private final RuleRepository ruleRepository;
@@ -38,31 +38,31 @@ public class RuleLifecycleService {
     @Transactional
     public Rule createRule(CreateRuleRequest request, String operator) {
         // 1. 验证 rule_key 唯一性
-<span class="fc bfc" id="L41" title="All 2 branches covered.">        if (ruleRepository.existsByRuleKey(request.getRuleKey())) {</span>
-<span class="fc" id="L42">            throw new IllegalArgumentException(&quot;规则Key已存在: &quot; + request.getRuleKey());</span>
+<span class="nc bnc" id="L41" title="All 2 branches missed.">        if (ruleRepository.existsByRuleKey(request.getRuleKey())) {</span>
+<span class="nc" id="L42">            throw new IllegalArgumentException(&quot;规则Key已存在: &quot; + request.getRuleKey());</span>
         }
 
         // 2. 验证 Groovy 脚本语法
-<span class="fc" id="L46">        GroovyScriptValidator.ValidationResult validation = scriptValidator.validate(request.getGroovyScript());</span>
-<span class="fc bfc" id="L47" title="All 2 branches covered.">        if (!validation.isValid()) {</span>
-<span class="fc" id="L48">            throw new IllegalArgumentException(&quot;Groovy脚本语法错误: &quot; + validation.getErrorMessage());</span>
+<span class="nc" id="L46">        GroovyScriptValidator.ValidationResult validation = scriptValidator.validate(request.getGroovyScript());</span>
+<span class="nc bnc" id="L47" title="All 2 branches missed.">        if (!validation.isValid()) {</span>
+<span class="nc" id="L48">            throw new IllegalArgumentException(&quot;Groovy脚本语法错误: &quot; + validation.getErrorMessage());</span>
         }
 
         // 3. 创建规则实体
-<span class="fc" id="L52">        Rule rule = Rule.builder()</span>
-<span class="fc" id="L53">                .ruleKey(request.getRuleKey())</span>
-<span class="fc" id="L54">                .ruleName(request.getRuleName())</span>
-<span class="fc" id="L55">                .ruleDescription(request.getRuleDescription())</span>
-<span class="fc" id="L56">                .groovyScript(request.getGroovyScript())</span>
-<span class="fc" id="L57">                .version(1)</span>
-<span class="fc" id="L58">                .status(RuleStatus.DRAFT)</span>
-<span class="fc" id="L59">                .createdBy(operator)</span>
-<span class="fc" id="L60">                .enabled(true)</span>
-<span class="fc" id="L61">                .build();</span>
+<span class="nc" id="L52">        Rule rule = Rule.builder()</span>
+<span class="nc" id="L53">                .ruleKey(request.getRuleKey())</span>
+<span class="nc" id="L54">                .ruleName(request.getRuleName())</span>
+<span class="nc" id="L55">                .ruleDescription(request.getRuleDescription())</span>
+<span class="nc" id="L56">                .groovyScript(request.getGroovyScript())</span>
+<span class="nc" id="L57">                .version(1)</span>
+<span class="nc" id="L58">                .status(RuleStatus.DRAFT)</span>
+<span class="nc" id="L59">                .createdBy(operator)</span>
+<span class="nc" id="L60">                .enabled(true)</span>
+<span class="nc" id="L61">                .build();</span>
 
-<span class="fc" id="L63">        Rule saved = ruleRepository.save(rule);</span>
-<span class="fc" id="L64">        log.info(&quot;创建规则: ruleKey={}, operator={}&quot;, request.getRuleKey(), operator);</span>
-<span class="fc" id="L65">        return saved;</span>
+<span class="nc" id="L63">        Rule saved = ruleRepository.save(rule);</span>
+<span class="nc" id="L64">        log.info(&quot;创建规则: ruleKey={}, operator={}&quot;, request.getRuleKey(), operator);</span>
+<span class="nc" id="L65">        return saved;</span>
     }
 
     /**
@@ -72,58 +72,58 @@ public class RuleLifecycleService {
     @Transactional
     public Rule updateRule(String ruleKey, UpdateRuleRequest request, String operator) {
         // 1. 验证规则存在
-<span class="fc" id="L75">        Rule rule = ruleRepository.findByRuleKey(ruleKey)</span>
-<span class="fc" id="L76">                .orElseThrow(() -&gt; new IllegalArgumentException(&quot;规则不存在: &quot; + ruleKey));</span>
+<span class="nc" id="L75">        Rule rule = ruleRepository.findByRuleKey(ruleKey)</span>
+<span class="nc" id="L76">                .orElseThrow(() -&gt; new IllegalArgumentException(&quot;规则不存在: &quot; + ruleKey));</span>
 
         // 2. 验证 Groovy 脚本语法
-<span class="fc bfc" id="L79" title="All 2 branches covered.">        if (request.getGroovyScript() != null) {</span>
-<span class="fc" id="L80">            GroovyScriptValidator.ValidationResult validation = scriptValidator.validate(request.getGroovyScript());</span>
-<span class="fc bfc" id="L81" title="All 2 branches covered.">            if (!validation.isValid()) {</span>
-<span class="fc" id="L82">                throw new IllegalArgumentException(&quot;Groovy脚本语法错误: &quot; + validation.getErrorMessage());</span>
+<span class="nc bnc" id="L79" title="All 2 branches missed.">        if (request.getGroovyScript() != null) {</span>
+<span class="nc" id="L80">            GroovyScriptValidator.ValidationResult validation = scriptValidator.validate(request.getGroovyScript());</span>
+<span class="nc bnc" id="L81" title="All 2 branches missed.">            if (!validation.isValid()) {</span>
+<span class="nc" id="L82">                throw new IllegalArgumentException(&quot;Groovy脚本语法错误: &quot; + validation.getErrorMessage());</span>
             }
         }
 
         // 3. 更新规则（不涉及脚本变更时直接更新）
-<span class="fc bfc" id="L87" title="All 4 branches covered.">        if (request.getGroovyScript() == null || request.getGroovyScript().equals(rule.getGroovyScript())) {</span>
+<span class="nc bnc" id="L87" title="All 4 branches missed.">        if (request.getGroovyScript() == null || request.getGroovyScript().equals(rule.getGroovyScript())) {</span>
             // 仅更新元数据，不创建新版本
-<span class="fc bfc" id="L89" title="All 2 branches covered.">            if (request.getRuleName() != null) {</span>
-<span class="fc" id="L90">                rule.setRuleName(request.getRuleName());</span>
+<span class="nc bnc" id="L89" title="All 2 branches missed.">            if (request.getRuleName() != null) {</span>
+<span class="nc" id="L90">                rule.setRuleName(request.getRuleName());</span>
             }
-<span class="fc bfc" id="L92" title="All 2 branches covered.">            if (request.getRuleDescription() != null) {</span>
-<span class="fc" id="L93">                rule.setRuleDescription(request.getRuleDescription());</span>
+<span class="nc bnc" id="L92" title="All 2 branches missed.">            if (request.getRuleDescription() != null) {</span>
+<span class="nc" id="L93">                rule.setRuleDescription(request.getRuleDescription());</span>
             }
-<span class="fc" id="L95">            rule.setUpdatedBy(operator);</span>
+<span class="nc" id="L95">            rule.setUpdatedBy(operator);</span>
 
-<span class="fc" id="L97">            Rule updated = ruleRepository.save(rule);</span>
-<span class="fc" id="L98">            log.info(&quot;更新规则元数据: ruleKey={}, operator={}&quot;, ruleKey, operator);</span>
-<span class="fc" id="L99">            return updated;</span>
+<span class="nc" id="L97">            Rule updated = ruleRepository.save(rule);</span>
+<span class="nc" id="L98">            log.info(&quot;更新规则元数据: ruleKey={}, operator={}&quot;, ruleKey, operator);</span>
+<span class="nc" id="L99">            return updated;</span>
         }
 
         // 4. 脚本变更时创建新版本
-<span class="fc bfc" id="L103" title="All 2 branches covered.">        String changeReason = request.getChangeReason() != null ? request.getChangeReason() : &quot;更新规则脚本&quot;;</span>
+<span class="nc bnc" id="L103" title="All 2 branches missed.">        String changeReason = request.getChangeReason() != null ? request.getChangeReason() : &quot;更新规则脚本&quot;;</span>
         com.example.ruleengine.model.dto.CreateVersionRequest versionRequest =
-<span class="fc" id="L105">            com.example.ruleengine.model.dto.CreateVersionRequest.builder()</span>
-<span class="fc" id="L106">                .groovyScript(request.getGroovyScript())</span>
-<span class="fc" id="L107">                .changeReason(changeReason)</span>
-<span class="fc" id="L108">                .build();</span>
+<span class="nc" id="L105">            com.example.ruleengine.model.dto.CreateVersionRequest.builder()</span>
+<span class="nc" id="L106">                .groovyScript(request.getGroovyScript())</span>
+<span class="nc" id="L107">                .changeReason(changeReason)</span>
+<span class="nc" id="L108">                .build();</span>
 
-<span class="fc" id="L110">        versionManagementService.createVersion(ruleKey, versionRequest, operator);</span>
+<span class="nc" id="L110">        versionManagementService.createVersion(ruleKey, versionRequest, operator);</span>
 
         // 5. 更新规则元数据
-<span class="fc" id="L113">        Rule updatedRule = ruleRepository.findByRuleKey(ruleKey)</span>
-<span class="pc" id="L114">                .orElseThrow(() -&gt; new IllegalArgumentException(&quot;规则不存在: &quot; + ruleKey));</span>
+<span class="nc" id="L113">        Rule updatedRule = ruleRepository.findByRuleKey(ruleKey)</span>
+<span class="nc" id="L114">                .orElseThrow(() -&gt; new IllegalArgumentException(&quot;规则不存在: &quot; + ruleKey));</span>
 
-<span class="fc bfc" id="L116" title="All 2 branches covered.">        if (request.getRuleName() != null) {</span>
-<span class="fc" id="L117">            updatedRule.setRuleName(request.getRuleName());</span>
+<span class="nc bnc" id="L116" title="All 2 branches missed.">        if (request.getRuleName() != null) {</span>
+<span class="nc" id="L117">            updatedRule.setRuleName(request.getRuleName());</span>
         }
-<span class="pc bpc" id="L119" title="1 of 2 branches missed.">        if (request.getRuleDescription() != null) {</span>
+<span class="nc bnc" id="L119" title="All 2 branches missed.">        if (request.getRuleDescription() != null) {</span>
 <span class="nc" id="L120">            updatedRule.setRuleDescription(request.getRuleDescription());</span>
         }
-<span class="fc" id="L122">        updatedRule.setUpdatedBy(operator);</span>
+<span class="nc" id="L122">        updatedRule.setUpdatedBy(operator);</span>
 
-<span class="fc" id="L124">        Rule updated = ruleRepository.save(updatedRule);</span>
-<span class="fc" id="L125">        log.info(&quot;更新规则并创建新版本: ruleKey={}, newVersion={}, operator={}&quot;, ruleKey, updated.getVersion(), operator);</span>
-<span class="fc" id="L126">        return updated;</span>
+<span class="nc" id="L124">        Rule updated = ruleRepository.save(updatedRule);</span>
+<span class="nc" id="L125">        log.info(&quot;更新规则并创建新版本: ruleKey={}, newVersion={}, operator={}&quot;, ruleKey, updated.getVersion(), operator);</span>
+<span class="nc" id="L126">        return updated;</span>
     }
 
     /**
@@ -133,21 +133,21 @@ public class RuleLifecycleService {
     @Transactional
     public void deleteRule(String ruleKey, String operator) {
         // 1. 验证规则存在
-<span class="fc" id="L136">        Rule rule = ruleRepository.findByRuleKey(ruleKey)</span>
-<span class="fc" id="L137">                .orElseThrow(() -&gt; new IllegalArgumentException(&quot;规则不存在: &quot; + ruleKey));</span>
+<span class="nc" id="L136">        Rule rule = ruleRepository.findByRuleKey(ruleKey)</span>
+<span class="nc" id="L137">                .orElseThrow(() -&gt; new IllegalArgumentException(&quot;规则不存在: &quot; + ruleKey));</span>
 
         // 2. 检查规则是否在使用中
-<span class="fc bfc" id="L140" title="All 2 branches covered.">        if (!ruleUsageChecker.canSafelyDelete(ruleKey)) {</span>
-<span class="fc" id="L141">            throw new IllegalStateException(&quot;规则正在使用中，不能删除: &quot; + ruleKey);</span>
+<span class="nc bnc" id="L140" title="All 2 branches missed.">        if (!ruleUsageChecker.canSafelyDelete(ruleKey)) {</span>
+<span class="nc" id="L141">            throw new IllegalStateException(&quot;规则正在使用中，不能删除: &quot; + ruleKey);</span>
         }
 
         // 3. 软删除
-<span class="fc" id="L145">        rule.setStatus(RuleStatus.DELETED);</span>
-<span class="fc" id="L146">        rule.setEnabled(false);</span>
-<span class="fc" id="L147">        rule.setUpdatedBy(operator);</span>
-<span class="fc" id="L148">        ruleRepository.save(rule);</span>
-<span class="fc" id="L149">        log.info(&quot;删除规则: ruleKey={}, operator={}&quot;, ruleKey, operator);</span>
-<span class="fc" id="L150">    }</span>
+<span class="nc" id="L145">        rule.setStatus(RuleStatus.DELETED);</span>
+<span class="nc" id="L146">        rule.setEnabled(false);</span>
+<span class="nc" id="L147">        rule.setUpdatedBy(operator);</span>
+<span class="nc" id="L148">        ruleRepository.save(rule);</span>
+<span class="nc" id="L149">        log.info(&quot;删除规则: ruleKey={}, operator={}&quot;, ruleKey, operator);</span>
+<span class="nc" id="L150">    }</span>
 
     /**
      * 启用规则
@@ -155,12 +155,12 @@ public class RuleLifecycleService {
     @Auditable(event = AuditEvent.RULE_ENABLE, entityType = &quot;RULE&quot;, entityIdExpression = &quot;#ruleKey&quot;)
     @Transactional
     public Rule enableRule(String ruleKey, String operator) {
-<span class="fc" id="L158">        Rule rule = ruleRepository.findByRuleKey(ruleKey)</span>
-<span class="fc" id="L159">                .orElseThrow(() -&gt; new IllegalArgumentException(&quot;规则不存在: &quot; + ruleKey));</span>
-<span class="fc" id="L160">        rule.setStatus(RuleStatus.ACTIVE);</span>
-<span class="fc" id="L161">        rule.setEnabled(true);</span>
-<span class="fc" id="L162">        rule.setUpdatedBy(operator);</span>
-<span class="fc" id="L163">        return ruleRepository.save(rule);</span>
+<span class="nc" id="L158">        Rule rule = ruleRepository.findByRuleKey(ruleKey)</span>
+<span class="nc" id="L159">                .orElseThrow(() -&gt; new IllegalArgumentException(&quot;规则不存在: &quot; + ruleKey));</span>
+<span class="nc" id="L160">        rule.setStatus(RuleStatus.ACTIVE);</span>
+<span class="nc" id="L161">        rule.setEnabled(true);</span>
+<span class="nc" id="L162">        rule.setUpdatedBy(operator);</span>
+<span class="nc" id="L163">        return ruleRepository.save(rule);</span>
     }
 
     /**
@@ -169,42 +169,42 @@ public class RuleLifecycleService {
     @Auditable(event = AuditEvent.RULE_DISABLE, entityType = &quot;RULE&quot;, entityIdExpression = &quot;#ruleKey&quot;)
     @Transactional
     public Rule disableRule(String ruleKey, String operator) {
-<span class="fc" id="L172">        Rule rule = ruleRepository.findByRuleKey(ruleKey)</span>
-<span class="fc" id="L173">                .orElseThrow(() -&gt; new IllegalArgumentException(&quot;规则不存在: &quot; + ruleKey));</span>
-<span class="fc" id="L174">        rule.setEnabled(false);</span>
-<span class="fc" id="L175">        rule.setUpdatedBy(operator);</span>
-<span class="fc" id="L176">        return ruleRepository.save(rule);</span>
+<span class="nc" id="L172">        Rule rule = ruleRepository.findByRuleKey(ruleKey)</span>
+<span class="nc" id="L173">                .orElseThrow(() -&gt; new IllegalArgumentException(&quot;规则不存在: &quot; + ruleKey));</span>
+<span class="nc" id="L174">        rule.setEnabled(false);</span>
+<span class="nc" id="L175">        rule.setUpdatedBy(operator);</span>
+<span class="nc" id="L176">        return ruleRepository.save(rule);</span>
     }
 
     /**
      * 获取规则详情
      */
     public Rule getRule(String ruleKey) {
-<span class="fc" id="L183">        return ruleRepository.findByRuleKey(ruleKey)</span>
-<span class="fc" id="L184">                .orElseThrow(() -&gt; new IllegalArgumentException(&quot;规则不存在: &quot; + ruleKey));</span>
+<span class="nc" id="L183">        return ruleRepository.findByRuleKey(ruleKey)</span>
+<span class="nc" id="L184">                .orElseThrow(() -&gt; new IllegalArgumentException(&quot;规则不存在: &quot; + ruleKey));</span>
     }
 
     /**
      * 列出所有规则（分页）
      */
     public Page&lt;Rule&gt; listRules(Pageable pageable) {
-<span class="fc" id="L191">        return ruleRepository.findAll(pageable);</span>
+<span class="nc" id="L191">        return ruleRepository.findAll(pageable);</span>
     }
 
     /**
      * 查询规则（支持多条件过滤）
      */
     public Page&lt;Rule&gt; queryRules(RuleQuery query, Pageable pageable) {
-<span class="fc" id="L198">        log.info(&quot;查询规则: query={}&quot;, query);</span>
-<span class="fc" id="L199">        return ruleRepository.findByConditions(</span>
-<span class="fc" id="L200">                query.getStatus(),</span>
-<span class="fc" id="L201">                query.getCreatedBy(),</span>
-<span class="fc" id="L202">                query.getEnabled(),</span>
-<span class="fc" id="L203">                query.getKeyword(),</span>
-<span class="fc" id="L204">                query.getCreatedAtStart(),</span>
-<span class="fc" id="L205">                query.getCreatedAtEnd(),</span>
-<span class="fc" id="L206">                query.getUpdatedAtStart(),</span>
-<span class="fc" id="L207">                query.getUpdatedAtEnd(),</span>
+<span class="nc" id="L198">        log.info(&quot;查询规则: query={}&quot;, query);</span>
+<span class="nc" id="L199">        return ruleRepository.findByConditions(</span>
+<span class="nc" id="L200">                query.getStatus(),</span>
+<span class="nc" id="L201">                query.getCreatedBy(),</span>
+<span class="nc" id="L202">                query.getEnabled(),</span>
+<span class="nc" id="L203">                query.getKeyword(),</span>
+<span class="nc" id="L204">                query.getCreatedAtStart(),</span>
+<span class="nc" id="L205">                query.getCreatedAtEnd(),</span>
+<span class="nc" id="L206">                query.getUpdatedAtStart(),</span>
+<span class="nc" id="L207">                query.getUpdatedAtEnd(),</span>
                 pageable
         );
     }

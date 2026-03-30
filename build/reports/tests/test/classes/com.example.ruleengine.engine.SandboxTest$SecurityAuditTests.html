@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+<meta http-equiv="x-ua-compatible" content="IE=edge"/>
+<title>Test results - 第二层 - SecurityAuditService 正则审计</title>
+<link href="../css/base-style.css" rel="stylesheet" type="text/css"/>
+<link href="../css/style.css" rel="stylesheet" type="text/css"/>
+<script src="../js/report.js" type="text/javascript"></script>
+</head>
+<body>
+<div id="content">
+<h1>第二层 - SecurityAuditService 正则审计</h1>
+<div class="breadcrumbs">
+<a href="../index.html">all</a> &gt; 
+<a href="../packages/com.example.ruleengine.engine.html">com.example.ruleengine.engine</a> &gt; SandboxTest$SecurityAuditTests</div>
+<div id="summary">
+<table>
+<tr>
+<td>
+<div class="summaryGroup">
+<table>
+<tr>
+<td>
+<div class="infoBox" id="tests">
+<div class="counter">17</div>
+<p>tests</p>
+</div>
+</td>
+<td>
+<div class="infoBox" id="failures">
+<div class="counter">0</div>
+<p>failures</p>
+</div>
+</td>
+<td>
+<div class="infoBox" id="ignored">
+<div class="counter">0</div>
+<p>ignored</p>
+</div>
+</td>
+<td>
+<div class="infoBox" id="duration">
+<div class="counter">0.020s</div>
+<p>duration</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+</td>
+<td>
+<div class="infoBox success" id="successRate">
+<div class="percent">100%</div>
+<p>successful</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+<div id="tabs">
+<ul class="tabLinks">
+<li>
+<a href="#tab0">Tests</a>
+</li>
+<li>
+<a href="#tab1">Standard output</a>
+</li>
+</ul>
+<div id="tab0" class="tab">
+<h2>Tests</h2>
+<table>
+<thead>
+<tr>
+<th>Test</th>
+<th>Method name</th>
+<th>Duration</th>
+<th>Result</th>
+</tr>
+</thead>
+<tr>
+<td class="success">空脚本应被审计拦截</td>
+<td class="success">shouldDetectEmptyScript()</td>
+<td class="success">0s</td>
+<td class="success">passed</td>
+</tr>
+<tr>
+<td class="success">包含文件操作的脚本应被审计拦截</td>
+<td class="success">shouldDetectFileOperation()</td>
+<td class="success">0s</td>
+<td class="success">passed</td>
+</tr>
+<tr>
+<td class="success">应检测 getClass() 调用</td>
+<td class="success">shouldDetectGetClass()</td>
+<td class="success">0s</td>
+<td class="success">passed</td>
+</tr>
+<tr>
+<td class="success">包含网络操作的脚本应被审计拦截</td>
+<td class="success">shouldDetectNetworkOperation()</td>
+<td class="success">0.001s</td>
+<td class="success">passed</td>
+</tr>
+<tr>
+<td class="success">null 脚本应被审计拦截</td>
+<td class="success">shouldDetectNullScript()</td>
+<td class="success">0s</td>
+<td class="success">passed</td>
+</tr>
+<tr>
+<td class="success">超大脚本应被审计拦截</td>
+<td class="success">shouldDetectOversizedScript()</td>
+<td class="success">0.003s</td>
+<td class="success">passed</td>
+</tr>
+<tr>
+<td class="success">包含进程创建的脚本应被审计拦截</td>
+<td class="success">shouldDetectProcessCreation()</td>
+<td class="success">0.001s</td>
+<td class="success">passed</td>
+</tr>
+<tr>
+<td class="success">包含反射调用的脚本应被审计拦截</td>
+<td class="success">shouldDetectReflection()</td>
+<td class="success">0.001s</td>
+<td class="success">passed</td>
+</tr>
+<tr>
+<td class="success">应检测 Runtime.exec 调用</td>
+<td class="success">shouldDetectRuntimeExec()</td>
+<td class="success">0.001s</td>
+<td class="success">passed</td>
+</tr>
+<tr>
+<td class="success">包含 Socket 操作的脚本应被审计拦截</td>
+<td class="success">shouldDetectSocketOperation()</td>
+<td class="success">0.009s</td>
+<td class="success">passed</td>
+</tr>
+<tr>
+<td class="success">包含 System 调用的脚本应被审计拦截</td>
+<td class="success">shouldDetectSystemCall()</td>
+<td class="success">0.001s</td>
+<td class="success">passed</td>
+</tr>
+<tr>
+<td class="success">应检测 Thread 创建</td>
+<td class="success">shouldDetectThreadCreation()</td>
+<td class="success">0.001s</td>
+<td class="success">passed</td>
+</tr>
+<tr>
+<td class="success">集合操作脚本应通过审计</td>
+<td class="success">shouldPassCollectionScript()</td>
+<td class="success">0s</td>
+<td class="success">passed</td>
+</tr>
+<tr>
+<td class="success">数学运算脚本应通过审计</td>
+<td class="success">shouldPassMathScript()</td>
+<td class="success">0s</td>
+<td class="success">passed</td>
+</tr>
+<tr>
+<td class="success">正常脚本应通过审计</td>
+<td class="success">shouldPassNormalScript()</td>
+<td class="success">0s</td>
+<td class="success">passed</td>
+</tr>
+<tr>
+<td class="success">深度嵌套应产生警告</td>
+<td class="success">shouldWarnAboutDeepNesting()</td>
+<td class="success">0.001s</td>
+<td class="success">passed</td>
+</tr>
+<tr>
+<td class="success">无限循环模式应产生警告</td>
+<td class="success">shouldWarnAboutInfiniteLoop()</td>
+<td class="success">0.001s</td>
+<td class="success">passed</td>
+</tr>
+</table>
+</div>
+<div id="tab1" class="tab">
+<h2>Standard output</h2>
+<span class="code">
+<pre>16:29:43.997 [Test worker] WARN SECURITY_AUDIT -- [SECURITY_AUDIT] scriptId=test-socket, error=检测到危险的网络操作模式
+16:29:44.003 [Test worker] WARN SECURITY_AUDIT -- [SECURITY_AUDIT] scriptId=test-socket, result=REJECTED, errors=1, warnings=0
+16:29:44.003 [Test worker] WARN com.example.ruleengine.engine.SecurityAuditService -- 脚本安全审计未通过: scriptId=test-socket, errors=[检测到危险的网络操作模式]
+16:29:44.005 [Test worker] WARN SECURITY_AUDIT -- [SECURITY_AUDIT] scriptId=test-null, error=空脚本
+16:29:44.006 [Test worker] INFO SECURITY_AUDIT -- [SECURITY_AUDIT] scriptId=test-collection, result=PASSED, warnings=0
+16:29:44.006 [Test worker] INFO SECURITY_AUDIT -- [SECURITY_AUDIT] scriptId=test-normal, result=PASSED, warnings=0
+16:29:44.007 [Test worker] WARN SECURITY_AUDIT -- [SECURITY_AUDIT] scriptId=test-reflection, error=检测到危险的反射操作模式
+16:29:44.007 [Test worker] WARN SECURITY_AUDIT -- [SECURITY_AUDIT] scriptId=test-reflection, result=REJECTED, errors=1, warnings=0
+16:29:44.007 [Test worker] WARN com.example.ruleengine.engine.SecurityAuditService -- 脚本安全审计未通过: scriptId=test-reflection, errors=[检测到危险的反射操作模式]
+16:29:44.008 [Test worker] WARN SECURITY_AUDIT -- [SECURITY_AUDIT] scriptId=test-thread, error=检测到危险的线程操作模式
+16:29:44.008 [Test worker] WARN SECURITY_AUDIT -- [SECURITY_AUDIT] scriptId=test-thread, result=REJECTED, errors=1, warnings=0
+16:29:44.008 [Test worker] WARN com.example.ruleengine.engine.SecurityAuditService -- 脚本安全审计未通过: scriptId=test-thread, errors=[检测到危险的线程操作模式]
+16:29:44.009 [Test worker] INFO SECURITY_AUDIT -- [SECURITY_AUDIT] scriptId=test-nesting, warning=嵌套深度过深, depth=15
+16:29:44.009 [Test worker] INFO SECURITY_AUDIT -- [SECURITY_AUDIT] scriptId=test-nesting, result=PASSED, warnings=1
+16:29:44.013 [Test worker] WARN SECURITY_AUDIT -- [SECURITY_AUDIT] scriptId=test-oversized, error=脚本超长, length=70000
+16:29:44.014 [Test worker] INFO SECURITY_AUDIT -- [SECURITY_AUDIT] scriptId=test-math, result=PASSED, warnings=0
+16:29:44.014 [Test worker] WARN SECURITY_AUDIT -- [SECURITY_AUDIT] scriptId=test-system, error=检测到危险的System 调用模式
+16:29:44.014 [Test worker] WARN SECURITY_AUDIT -- [SECURITY_AUDIT] scriptId=test-system, result=REJECTED, errors=1, warnings=0
+16:29:44.015 [Test worker] WARN com.example.ruleengine.engine.SecurityAuditService -- 脚本安全审计未通过: scriptId=test-system, errors=[检测到危险的System 调用模式]
+16:29:44.015 [Test worker] WARN SECURITY_AUDIT -- [SECURITY_AUDIT] scriptId=test-process, error=检测到危险的进程创建模式
+16:29:44.015 [Test worker] WARN SECURITY_AUDIT -- [SECURITY_AUDIT] scriptId=test-process, result=REJECTED, errors=1, warnings=0
+16:29:44.015 [Test worker] WARN com.example.ruleengine.engine.SecurityAuditService -- 脚本安全审计未通过: scriptId=test-process, errors=[检测到危险的进程创建模式]
+16:29:44.016 [Test worker] WARN SECURITY_AUDIT -- [SECURITY_AUDIT] scriptId=test-network, error=检测到危险的网络操作模式
+16:29:44.016 [Test worker] WARN SECURITY_AUDIT -- [SECURITY_AUDIT] scriptId=test-network, result=REJECTED, errors=1, warnings=0
+16:29:44.016 [Test worker] WARN com.example.ruleengine.engine.SecurityAuditService -- 脚本安全审计未通过: scriptId=test-network, errors=[检测到危险的网络操作模式]
+16:29:44.017 [Test worker] WARN SECURITY_AUDIT -- [SECURITY_AUDIT] scriptId=test-runtime-exec, error=检测到危险的Runtime 调用模式
+16:29:44.017 [Test worker] WARN SECURITY_AUDIT -- [SECURITY_AUDIT] scriptId=test-runtime-exec, error=检测到危险的进程创建模式
+16:29:44.017 [Test worker] WARN SECURITY_AUDIT -- [SECURITY_AUDIT] scriptId=test-runtime-exec, result=REJECTED, errors=2, warnings=0
+16:29:44.017 [Test worker] WARN com.example.ruleengine.engine.SecurityAuditService -- 脚本安全审计未通过: scriptId=test-runtime-exec, errors=[检测到危险的Runtime 调用模式, 检测到危险的进程创建模式]
+16:29:44.018 [Test worker] WARN SECURITY_AUDIT -- [SECURITY_AUDIT] scriptId=test-getclass, error=检测到危险的反射操作模式
+16:29:44.018 [Test worker] WARN SECURITY_AUDIT -- [SECURITY_AUDIT] scriptId=test-getclass, result=REJECTED, errors=1, warnings=0
+16:29:44.018 [Test worker] WARN com.example.ruleengine.engine.SecurityAuditService -- 脚本安全审计未通过: scriptId=test-getclass, errors=[检测到危险的反射操作模式]
+16:29:44.018 [Test worker] WARN SECURITY_AUDIT -- [SECURITY_AUDIT] scriptId=test-file, error=检测到危险的文件操作模式
+16:29:44.018 [Test worker] WARN SECURITY_AUDIT -- [SECURITY_AUDIT] scriptId=test-file, result=REJECTED, errors=1, warnings=0
+16:29:44.018 [Test worker] WARN com.example.ruleengine.engine.SecurityAuditService -- 脚本安全审计未通过: scriptId=test-file, errors=[检测到危险的文件操作模式]
+16:29:44.019 [Test worker] INFO SECURITY_AUDIT -- [SECURITY_AUDIT] scriptId=test-loop, warning=可能的无限循环
+16:29:44.019 [Test worker] INFO SECURITY_AUDIT -- [SECURITY_AUDIT] scriptId=test-loop, result=PASSED, warnings=1
+16:29:44.020 [Test worker] WARN SECURITY_AUDIT -- [SECURITY_AUDIT] scriptId=test-empty, error=空脚本
+</pre>
+</span>
+</div>
+</div>
+<div id="footer">
+<p>
+<div>
+<label class="hidden" id="label-for-line-wrapping-toggle" for="line-wrapping-toggle">Wrap lines
+<input id="line-wrapping-toggle" type="checkbox" autocomplete="off"/>
+</label>
+</div>Generated by 
+<a href="http://www.gradle.org">Gradle 8.5</a> at Mar 30, 2026, 4:29:44 PM</p>
+</div>
+</div>
+</body>
+</html>

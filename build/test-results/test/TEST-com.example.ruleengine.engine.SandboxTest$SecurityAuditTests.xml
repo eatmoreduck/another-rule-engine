@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="第二层 - SecurityAuditService 正则审计" tests="17" skipped="0" failures="0" errors="0" timestamp="2026-03-30T08:29:43" hostname="m1" time="0.025">
+  <properties/>
+  <testcase name="包含 Socket 操作的脚本应被审计拦截" classname="com.example.ruleengine.engine.SandboxTest$SecurityAuditTests" time="0.009"/>
+  <testcase name="null 脚本应被审计拦截" classname="com.example.ruleengine.engine.SandboxTest$SecurityAuditTests" time="0.0"/>
+  <testcase name="集合操作脚本应通过审计" classname="com.example.ruleengine.engine.SandboxTest$SecurityAuditTests" time="0.0"/>
+  <testcase name="正常脚本应通过审计" classname="com.example.ruleengine.engine.SandboxTest$SecurityAuditTests" time="0.0"/>
+  <testcase name="包含反射调用的脚本应被审计拦截" classname="com.example.ruleengine.engine.SandboxTest$SecurityAuditTests" time="0.001"/>
+  <testcase name="应检测 Thread 创建" classname="com.example.ruleengine.engine.SandboxTest$SecurityAuditTests" time="0.001"/>
+  <testcase name="深度嵌套应产生警告" classname="com.example.ruleengine.engine.SandboxTest$SecurityAuditTests" time="0.001"/>
+  <testcase name="超大脚本应被审计拦截" classname="com.example.ruleengine.engine.SandboxTest$SecurityAuditTests" time="0.003"/>
+  <testcase name="数学运算脚本应通过审计" classname="com.example.ruleengine.engine.SandboxTest$SecurityAuditTests" time="0.0"/>
+  <testcase name="包含 System 调用的脚本应被审计拦截" classname="com.example.ruleengine.engine.SandboxTest$SecurityAuditTests" time="0.001"/>
+  <testcase name="包含进程创建的脚本应被审计拦截" classname="com.example.ruleengine.engine.SandboxTest$SecurityAuditTests" time="0.001"/>
+  <testcase name="包含网络操作的脚本应被审计拦截" classname="com.example.ruleengine.engine.SandboxTest$SecurityAuditTests" time="0.001"/>
+  <testcase name="应检测 Runtime.exec 调用" classname="com.example.ruleengine.engine.SandboxTest$SecurityAuditTests" time="0.001"/>
+  <testcase name="应检测 getClass() 调用" classname="com.example.ruleengine.engine.SandboxTest$SecurityAuditTests" time="0.0"/>
+  <testcase name="包含文件操作的脚本应被审计拦截" classname="com.example.ruleengine.engine.SandboxTest$SecurityAuditTests" time="0.0"/>
+  <testcase name="无限循环模式应产生警告" classname="com.example.ruleengine.engine.SandboxTest$SecurityAuditTests" time="0.001"/>
+  <testcase name="空脚本应被审计拦截" classname="com.example.ruleengine.engine.SandboxTest$SecurityAuditTests" time="0.0"/>
+  <system-out><![CDATA[16:29:43.997 [Test worker] WARN SECURITY_AUDIT -- [SECURITY_AUDIT] scriptId=test-socket, error=检测到危险的网络操作模式
+16:29:44.003 [Test worker] WARN SECURITY_AUDIT -- [SECURITY_AUDIT] scriptId=test-socket, result=REJECTED, errors=1, warnings=0
+16:29:44.003 [Test worker] WARN com.example.ruleengine.engine.SecurityAuditService -- 脚本安全审计未通过: scriptId=test-socket, errors=[检测到危险的网络操作模式]
+16:29:44.005 [Test worker] WARN SECURITY_AUDIT -- [SECURITY_AUDIT] scriptId=test-null, error=空脚本
+16:29:44.006 [Test worker] INFO SECURITY_AUDIT -- [SECURITY_AUDIT] scriptId=test-collection, result=PASSED, warnings=0
+16:29:44.006 [Test worker] INFO SECURITY_AUDIT -- [SECURITY_AUDIT] scriptId=test-normal, result=PASSED, warnings=0
+16:29:44.007 [Test worker] WARN SECURITY_AUDIT -- [SECURITY_AUDIT] scriptId=test-reflection, error=检测到危险的反射操作模式
+16:29:44.007 [Test worker] WARN SECURITY_AUDIT -- [SECURITY_AUDIT] scriptId=test-reflection, result=REJECTED, errors=1, warnings=0
+16:29:44.007 [Test worker] WARN com.example.ruleengine.engine.SecurityAuditService -- 脚本安全审计未通过: scriptId=test-reflection, errors=[检测到危险的反射操作模式]
+16:29:44.008 [Test worker] WARN SECURITY_AUDIT -- [SECURITY_AUDIT] scriptId=test-thread, error=检测到危险的线程操作模式
+16:29:44.008 [Test worker] WARN SECURITY_AUDIT -- [SECURITY_AUDIT] scriptId=test-thread, result=REJECTED, errors=1, warnings=0
+16:29:44.008 [Test worker] WARN com.example.ruleengine.engine.SecurityAuditService -- 脚本安全审计未通过: scriptId=test-thread, errors=[检测到危险的线程操作模式]
+16:29:44.009 [Test worker] INFO SECURITY_AUDIT -- [SECURITY_AUDIT] scriptId=test-nesting, warning=嵌套深度过深, depth=15
+16:29:44.009 [Test worker] INFO SECURITY_AUDIT -- [SECURITY_AUDIT] scriptId=test-nesting, result=PASSED, warnings=1
+16:29:44.013 [Test worker] WARN SECURITY_AUDIT -- [SECURITY_AUDIT] scriptId=test-oversized, error=脚本超长, length=70000
+16:29:44.014 [Test worker] INFO SECURITY_AUDIT -- [SECURITY_AUDIT] scriptId=test-math, result=PASSED, warnings=0
+16:29:44.014 [Test worker] WARN SECURITY_AUDIT -- [SECURITY_AUDIT] scriptId=test-system, error=检测到危险的System 调用模式
+16:29:44.014 [Test worker] WARN SECURITY_AUDIT -- [SECURITY_AUDIT] scriptId=test-system, result=REJECTED, errors=1, warnings=0
+16:29:44.015 [Test worker] WARN com.example.ruleengine.engine.SecurityAuditService -- 脚本安全审计未通过: scriptId=test-system, errors=[检测到危险的System 调用模式]
+16:29:44.015 [Test worker] WARN SECURITY_AUDIT -- [SECURITY_AUDIT] scriptId=test-process, error=检测到危险的进程创建模式
+16:29:44.015 [Test worker] WARN SECURITY_AUDIT -- [SECURITY_AUDIT] scriptId=test-process, result=REJECTED, errors=1, warnings=0
+16:29:44.015 [Test worker] WARN com.example.ruleengine.engine.SecurityAuditService -- 脚本安全审计未通过: scriptId=test-process, errors=[检测到危险的进程创建模式]
+16:29:44.016 [Test worker] WARN SECURITY_AUDIT -- [SECURITY_AUDIT] scriptId=test-network, error=检测到危险的网络操作模式
+16:29:44.016 [Test worker] WARN SECURITY_AUDIT -- [SECURITY_AUDIT] scriptId=test-network, result=REJECTED, errors=1, warnings=0
+16:29:44.016 [Test worker] WARN com.example.ruleengine.engine.SecurityAuditService -- 脚本安全审计未通过: scriptId=test-network, errors=[检测到危险的网络操作模式]
+16:29:44.017 [Test worker] WARN SECURITY_AUDIT -- [SECURITY_AUDIT] scriptId=test-runtime-exec, error=检测到危险的Runtime 调用模式
+16:29:44.017 [Test worker] WARN SECURITY_AUDIT -- [SECURITY_AUDIT] scriptId=test-runtime-exec, error=检测到危险的进程创建模式
+16:29:44.017 [Test worker] WARN SECURITY_AUDIT -- [SECURITY_AUDIT] scriptId=test-runtime-exec, result=REJECTED, errors=2, warnings=0
+16:29:44.017 [Test worker] WARN com.example.ruleengine.engine.SecurityAuditService -- 脚本安全审计未通过: scriptId=test-runtime-exec, errors=[检测到危险的Runtime 调用模式, 检测到危险的进程创建模式]
+16:29:44.018 [Test worker] WARN SECURITY_AUDIT -- [SECURITY_AUDIT] scriptId=test-getclass, error=检测到危险的反射操作模式
+16:29:44.018 [Test worker] WARN SECURITY_AUDIT -- [SECURITY_AUDIT] scriptId=test-getclass, result=REJECTED, errors=1, warnings=0
+16:29:44.018 [Test worker] WARN com.example.ruleengine.engine.SecurityAuditService -- 脚本安全审计未通过: scriptId=test-getclass, errors=[检测到危险的反射操作模式]
+16:29:44.018 [Test worker] WARN SECURITY_AUDIT -- [SECURITY_AUDIT] scriptId=test-file, error=检测到危险的文件操作模式
+16:29:44.018 [Test worker] WARN SECURITY_AUDIT -- [SECURITY_AUDIT] scriptId=test-file, result=REJECTED, errors=1, warnings=0
+16:29:44.018 [Test worker] WARN com.example.ruleengine.engine.SecurityAuditService -- 脚本安全审计未通过: scriptId=test-file, errors=[检测到危险的文件操作模式]
+16:29:44.019 [Test worker] INFO SECURITY_AUDIT -- [SECURITY_AUDIT] scriptId=test-loop, warning=可能的无限循环
+16:29:44.019 [Test worker] INFO SECURITY_AUDIT -- [SECURITY_AUDIT] scriptId=test-loop, result=PASSED, warnings=1
+16:29:44.020 [Test worker] WARN SECURITY_AUDIT -- [SECURITY_AUDIT] scriptId=test-empty, error=空脚本
+]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

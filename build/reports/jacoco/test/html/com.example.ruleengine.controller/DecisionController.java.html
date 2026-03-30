@@ -25,13 +25,13 @@ import org.springframework.web.bind.annotation.*;
 @Timed(value = &quot;decision.api&quot;, description = &quot;Decision API performance&quot;)
 public class DecisionController {
 
-<span class="fc" id="L28">    private static final Logger logger = LoggerFactory.getLogger(DecisionController.class);</span>
+<span class="nc" id="L28">    private static final Logger logger = LoggerFactory.getLogger(DecisionController.class);</span>
 
     private final RuleExecutionService ruleExecutionService;
 
-<span class="fc" id="L32">    public DecisionController(RuleExecutionService ruleExecutionService) {</span>
-<span class="fc" id="L33">        this.ruleExecutionService = ruleExecutionService;</span>
-<span class="fc" id="L34">    }</span>
+<span class="nc" id="L32">    public DecisionController(RuleExecutionService ruleExecutionService) {</span>
+<span class="nc" id="L33">        this.ruleExecutionService = ruleExecutionService;</span>
+<span class="nc" id="L34">    }</span>
 
     /**
      * 决策 API
@@ -46,27 +46,27 @@ public class DecisionController {
         produces = MediaType.APPLICATION_JSON_VALUE
     )
     public ResponseEntity&lt;DecisionResponse&gt; decide(@Valid @RequestBody DecisionRequest request) {
-<span class="fc" id="L49">        logger.info(&quot;Received decision request for rule: {}&quot;, request.getRuleId());</span>
+<span class="nc" id="L49">        logger.info(&quot;Received decision request for rule: {}&quot;, request.getRuleId());</span>
 
         try {
-<span class="fc" id="L52">            DecisionResponse response = ruleExecutionService.executeDecision(request);</span>
+<span class="nc" id="L52">            DecisionResponse response = ruleExecutionService.executeDecision(request);</span>
 
-<span class="fc" id="L54">            logger.debug(&quot;Rule {} executed in {}ms, decision: {}&quot;,</span>
-<span class="fc" id="L55">                request.getRuleId(), response.getExecutionTimeMs(), response.getDecision());</span>
+<span class="nc" id="L54">            logger.debug(&quot;Rule {} executed in {}ms, decision: {}&quot;,</span>
+<span class="nc" id="L55">                request.getRuleId(), response.getExecutionTimeMs(), response.getDecision());</span>
 
-<span class="fc" id="L57">            return ResponseEntity.ok(response);</span>
+<span class="nc" id="L57">            return ResponseEntity.ok(response);</span>
 
-<span class="fc" id="L59">        } catch (Exception e) {</span>
-<span class="fc" id="L60">            logger.error(&quot;Decision request failed for rule: {}&quot;, request.getRuleId(), e);</span>
+<span class="nc" id="L59">        } catch (Exception e) {</span>
+<span class="nc" id="L60">            logger.error(&quot;Decision request failed for rule: {}&quot;, request.getRuleId(), e);</span>
 
             // 返回错误响应
-<span class="fc" id="L63">            DecisionResponse errorResponse = DecisionResponse.builder()</span>
-<span class="fc" id="L64">                .decision(&quot;REJECT&quot;)</span>
-<span class="fc" id="L65">                .reason(&quot;决策请求失败: &quot; + e.getMessage())</span>
-<span class="fc" id="L66">                .executionTimeMs(0)</span>
-<span class="fc" id="L67">                .build();</span>
+<span class="nc" id="L63">            DecisionResponse errorResponse = DecisionResponse.builder()</span>
+<span class="nc" id="L64">                .decision(&quot;REJECT&quot;)</span>
+<span class="nc" id="L65">                .reason(&quot;决策请求失败: &quot; + e.getMessage())</span>
+<span class="nc" id="L66">                .executionTimeMs(0)</span>
+<span class="nc" id="L67">                .build();</span>
 
-<span class="fc" id="L69">            return ResponseEntity.internalServerError().body(errorResponse);</span>
+<span class="nc" id="L69">            return ResponseEntity.internalServerError().body(errorResponse);</span>
         }
     }
 
@@ -75,7 +75,7 @@ public class DecisionController {
      */
     @GetMapping(&quot;/health&quot;)
     public ResponseEntity&lt;String&gt; health() {
-<span class="fc" id="L78">        return ResponseEntity.ok(&quot;OK&quot;);</span>
+<span class="nc" id="L78">        return ResponseEntity.ok(&quot;OK&quot;);</span>
     }
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.11.202310140853</span></div></body></html>

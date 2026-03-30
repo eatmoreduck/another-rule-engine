@@ -19,7 +19,7 @@ import java.util.concurrent.ThreadPoolExecutor;
  * 3. 防止单个规则执行影响整体性能
  */
 @Configuration
-<span class="fc" id="L22">public class Resilience4jConfig {</span>
+<span class="nc" id="L22">public class Resilience4jConfig {</span>
 
     /**
      * 规则执行 TimeLimiter
@@ -27,11 +27,11 @@ import java.util.concurrent.ThreadPoolExecutor;
      */
     @Bean
     public TimeLimiter ruleExecutionTimeLimiter() {
-<span class="fc" id="L30">        TimeLimiterConfig config = TimeLimiterConfig.custom()</span>
-<span class="fc" id="L31">            .timeoutDuration(Duration.ofMillis(50))</span>
-<span class="fc" id="L32">            .build();</span>
+<span class="nc" id="L30">        TimeLimiterConfig config = TimeLimiterConfig.custom()</span>
+<span class="nc" id="L31">            .timeoutDuration(Duration.ofMillis(50))</span>
+<span class="nc" id="L32">            .build();</span>
 
-<span class="fc" id="L34">        return TimeLimiter.of(config);</span>
+<span class="nc" id="L34">        return TimeLimiter.of(config);</span>
     }
 
     /**
@@ -47,20 +47,20 @@ import java.util.concurrent.ThreadPoolExecutor;
      */
     @Bean(name = &quot;ruleExecutorPool&quot;)
     public ThreadPoolTaskExecutor ruleExecutorPool() {
-<span class="fc" id="L50">        int corePoolSize = Runtime.getRuntime().availableProcessors() * 2;</span>
-<span class="fc" id="L51">        int maxPoolSize = corePoolSize * 2;</span>
+<span class="nc" id="L50">        int corePoolSize = Runtime.getRuntime().availableProcessors() * 2;</span>
+<span class="nc" id="L51">        int maxPoolSize = corePoolSize * 2;</span>
 
-<span class="fc" id="L53">        ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();</span>
-<span class="fc" id="L54">        executor.setCorePoolSize(corePoolSize);</span>
-<span class="fc" id="L55">        executor.setMaxPoolSize(maxPoolSize);</span>
-<span class="fc" id="L56">        executor.setQueueCapacity(100);</span>
-<span class="fc" id="L57">        executor.setThreadNamePrefix(&quot;rule-executor-&quot;);</span>
-<span class="fc" id="L58">        executor.setRejectedExecutionHandler(new ThreadPoolExecutor.CallerRunsPolicy());</span>
-<span class="fc" id="L59">        executor.setWaitForTasksToCompleteOnShutdown(true);</span>
-<span class="fc" id="L60">        executor.setAwaitTerminationSeconds(60);</span>
-<span class="fc" id="L61">        executor.initialize();</span>
+<span class="nc" id="L53">        ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();</span>
+<span class="nc" id="L54">        executor.setCorePoolSize(corePoolSize);</span>
+<span class="nc" id="L55">        executor.setMaxPoolSize(maxPoolSize);</span>
+<span class="nc" id="L56">        executor.setQueueCapacity(100);</span>
+<span class="nc" id="L57">        executor.setThreadNamePrefix(&quot;rule-executor-&quot;);</span>
+<span class="nc" id="L58">        executor.setRejectedExecutionHandler(new ThreadPoolExecutor.CallerRunsPolicy());</span>
+<span class="nc" id="L59">        executor.setWaitForTasksToCompleteOnShutdown(true);</span>
+<span class="nc" id="L60">        executor.setAwaitTerminationSeconds(60);</span>
+<span class="nc" id="L61">        executor.initialize();</span>
 
-<span class="fc" id="L63">        return executor;</span>
+<span class="nc" id="L63">        return executor;</span>
     }
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.11.202310140853</span></div></body></html>

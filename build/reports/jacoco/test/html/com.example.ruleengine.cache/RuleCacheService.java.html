@@ -12,8 +12,8 @@ import org.springframework.stereotype.Service;
  * 规则缓存服务
  */
 @Service
-<span class="fc" id="L15">@RequiredArgsConstructor</span>
-<span class="fc" id="L16">@Slf4j</span>
+<span class="nc" id="L15">@RequiredArgsConstructor</span>
+<span class="nc" id="L16">@Slf4j</span>
 public class RuleCacheService {
 
     private final RuleRepository ruleRepository;
@@ -23,8 +23,8 @@ public class RuleCacheService {
      */
     @Cacheable(value = &quot;rules&quot;, key = &quot;#ruleKey&quot;)
     public Rule getRule(String ruleKey) {
-<span class="fc" id="L26">        log.debug(&quot;缓存未命中，从数据库加载规则: ruleKey={}&quot;, ruleKey);</span>
-<span class="fc" id="L27">        return ruleRepository.findByRuleKey(ruleKey).orElse(null);</span>
+<span class="nc" id="L26">        log.debug(&quot;缓存未命中，从数据库加载规则: ruleKey={}&quot;, ruleKey);</span>
+<span class="nc" id="L27">        return ruleRepository.findByRuleKey(ruleKey).orElse(null);</span>
     }
 
     /**
@@ -32,8 +32,8 @@ public class RuleCacheService {
      */
     @Cacheable(value = &quot;rules&quot;, key = &quot;'enabled:' + #ruleKey&quot;)
     public Rule getEnabledRule(String ruleKey) {
-<span class="fc" id="L35">        log.debug(&quot;缓存未命中，从数据库加载启用规则: ruleKey={}&quot;, ruleKey);</span>
-<span class="fc" id="L36">        return ruleRepository.findByRuleKeyAndEnabledTrue(ruleKey).orElse(null);</span>
+<span class="nc" id="L35">        log.debug(&quot;缓存未命中，从数据库加载启用规则: ruleKey={}&quot;, ruleKey);</span>
+<span class="nc" id="L36">        return ruleRepository.findByRuleKeyAndEnabledTrue(ruleKey).orElse(null);</span>
     }
 
     /**
@@ -41,15 +41,15 @@ public class RuleCacheService {
      */
     @CacheEvict(value = &quot;rules&quot;, key = &quot;#ruleKey&quot;)
     public void evictRule(String ruleKey) {
-<span class="fc" id="L44">        log.info(&quot;清除规则缓存: ruleKey={}&quot;, ruleKey);</span>
-<span class="fc" id="L45">    }</span>
+<span class="nc" id="L44">        log.info(&quot;清除规则缓存: ruleKey={}&quot;, ruleKey);</span>
+<span class="nc" id="L45">    }</span>
 
     /**
      * 清除所有缓存
      */
     @CacheEvict(value = {&quot;rules&quot;, &quot;compiled-scripts&quot;}, allEntries = true)
     public void evictAll() {
-<span class="fc" id="L52">        log.info(&quot;清除所有缓存&quot;);</span>
-<span class="fc" id="L53">    }</span>
+<span class="nc" id="L52">        log.info(&quot;清除所有缓存&quot;);</span>
+<span class="nc" id="L53">    }</span>
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.11.202310140853</span></div></body></html>

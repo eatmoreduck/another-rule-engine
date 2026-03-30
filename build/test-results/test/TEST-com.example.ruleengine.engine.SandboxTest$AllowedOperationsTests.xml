@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="正常规则操作 - 不应被拦截" tests="16" skipped="0" failures="0" errors="0" timestamp="2026-03-30T08:29:42" hostname="m1" time="1.126">
+  <properties/>
+  <testcase name="应允许 BigDecimal 运算" classname="com.example.ruleengine.engine.SandboxTest$AllowedOperationsTests" time="0.756"/>
+  <testcase name="应允许使用 GroovyScriptEngine 执行正常规则" classname="com.example.ruleengine.engine.SandboxTest$AllowedOperationsTests" time="0.087"/>
+  <testcase name="应允许变量定义和计算" classname="com.example.ruleengine.engine.SandboxTest$AllowedOperationsTests" time="0.041"/>
+  <testcase name="应允许数学运算" classname="com.example.ruleengine.engine.SandboxTest$AllowedOperationsTests" time="0.02"/>
+  <testcase name="应允许 Map 集合操作" classname="com.example.ruleengine.engine.SandboxTest$AllowedOperationsTests" time="0.021"/>
+  <testcase name="应允许 each/collect 等 Groovy 集合操作" classname="com.example.ruleengine.engine.SandboxTest$AllowedOperationsTests" time="0.041"/>
+  <testcase name="应允许闭包定义" classname="com.example.ruleengine.engine.SandboxTest$AllowedOperationsTests" time="0.022"/>
+  <testcase name="应允许 Math 类调用" classname="com.example.ruleengine.engine.SandboxTest$AllowedOperationsTests" time="0.026"/>
+  <testcase name="应允许 switch 语句" classname="com.example.ruleengine.engine.SandboxTest$AllowedOperationsTests" time="0.021"/>
+  <testcase name="应允许条件判断" classname="com.example.ruleengine.engine.SandboxTest$AllowedOperationsTests" time="0.012"/>
+  <testcase name="应允许字符串方法调用" classname="com.example.ruleengine.engine.SandboxTest$AllowedOperationsTests" time="0.009"/>
+  <testcase name="应允许字符串操作" classname="com.example.ruleengine.engine.SandboxTest$AllowedOperationsTests" time="0.011"/>
+  <testcase name="应允许 List 集合操作" classname="com.example.ruleengine.engine.SandboxTest$AllowedOperationsTests" time="0.011"/>
+  <testcase name="应允许浮点数运算" classname="com.example.ruleengine.engine.SandboxTest$AllowedOperationsTests" time="0.015"/>
+  <testcase name="应允许三元表达式" classname="com.example.ruleengine.engine.SandboxTest$AllowedOperationsTests" time="0.009"/>
+  <testcase name="应允许 find/filter 操作" classname="com.example.ruleengine.engine.SandboxTest$AllowedOperationsTests" time="0.019"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

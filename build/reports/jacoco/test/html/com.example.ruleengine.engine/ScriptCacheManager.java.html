@@ -33,10 +33,10 @@ import java.util.concurrent.ConcurrentMap;
 <span class="fc" id="L33">        String key = buildCacheKey(ruleId, scriptHash);</span>
 <span class="fc" id="L34">        CacheEntry entry = scriptCache.get(key);</span>
 
-<span class="fc bfc" id="L36" title="All 2 branches covered.">        if (entry != null) {</span>
+<span class="pc bpc" id="L36" title="1 of 2 branches missed.">        if (entry != null) {</span>
             // 更新最后访问时间
-<span class="fc" id="L38">            lastAccessTime.put(key, System.currentTimeMillis());</span>
-<span class="fc" id="L39">            return entry.getScriptClass();</span>
+<span class="nc" id="L38">            lastAccessTime.put(key, System.currentTimeMillis());</span>
+<span class="nc" id="L39">            return entry.getScriptClass();</span>
         }
 
 <span class="fc" id="L42">        return null;</span>
@@ -63,10 +63,10 @@ import java.util.concurrent.ConcurrentMap;
      */
     @Scheduled(fixedRate = 3600000) // 1小时
     public void cleanExpiredCache() {
-<span class="fc" id="L66">        long now = System.currentTimeMillis();</span>
-<span class="fc" id="L67">        long expireTime = CACHE_EXPIRE_HOURS * 3600000;</span>
+<span class="nc" id="L66">        long now = System.currentTimeMillis();</span>
+<span class="nc" id="L67">        long expireTime = CACHE_EXPIRE_HOURS * 3600000;</span>
 
-<span class="fc" id="L69">        scriptCache.entrySet().removeIf(entry -&gt; {</span>
+<span class="nc" id="L69">        scriptCache.entrySet().removeIf(entry -&gt; {</span>
 <span class="nc" id="L70">            Long lastAccess = lastAccessTime.get(entry.getKey());</span>
 <span class="nc bnc" id="L71" title="All 4 branches missed.">            if (lastAccess != null &amp;&amp; (now - lastAccess) &gt; expireTime) {</span>
 <span class="nc" id="L72">                lastAccessTime.remove(entry.getKey());</span>
@@ -74,7 +74,7 @@ import java.util.concurrent.ConcurrentMap;
             }
 <span class="nc" id="L75">            return false;</span>
         });
-<span class="fc" id="L77">    }</span>
+<span class="nc" id="L77">    }</span>
 
     /**
      * 清理最旧的缓存条目
@@ -100,7 +100,7 @@ import java.util.concurrent.ConcurrentMap;
      * 获取缓存大小
      */
     public int getCacheSize() {
-<span class="fc" id="L103">        return scriptCache.size();</span>
+<span class="nc" id="L103">        return scriptCache.size();</span>
     }
 
     /**
@@ -122,7 +122,7 @@ import java.util.concurrent.ConcurrentMap;
 <span class="fc" id="L122">        }</span>
 
         public Class&lt;?&gt; getScriptClass() {
-<span class="fc" id="L125">            return scriptClass;</span>
+<span class="nc" id="L125">            return scriptClass;</span>
         }
     }
 }

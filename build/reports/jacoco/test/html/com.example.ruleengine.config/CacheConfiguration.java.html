@@ -18,18 +18,18 @@ import java.util.concurrent.TimeUnit;
  */
 @Configuration
 @EnableCaching
-<span class="fc" id="L21">public class CacheConfiguration {</span>
+<span class="nc" id="L21">public class CacheConfiguration {</span>
 
     /**
      * 特征缓存（用于 FeatureProviderService）
      */
     @Bean(&quot;featureCache&quot;)
     public Cache&lt;String, Object&gt; featureCache() {
-<span class="fc" id="L28">        return Caffeine.newBuilder()</span>
-<span class="fc" id="L29">                .maximumSize(10_000)</span>
-<span class="fc" id="L30">                .expireAfterWrite(30, TimeUnit.MINUTES)</span>
-<span class="fc" id="L31">                .recordStats()</span>
-<span class="fc" id="L32">                .build();</span>
+<span class="nc" id="L28">        return Caffeine.newBuilder()</span>
+<span class="nc" id="L29">                .maximumSize(10_000)</span>
+<span class="nc" id="L30">                .expireAfterWrite(30, TimeUnit.MINUTES)</span>
+<span class="nc" id="L31">                .recordStats()</span>
+<span class="nc" id="L32">                .build();</span>
     }
 
     /**
@@ -37,28 +37,28 @@ import java.util.concurrent.TimeUnit;
      */
     @Bean
     public CacheManager cacheManager() {
-<span class="fc" id="L40">        SimpleCacheManager cacheManager = new SimpleCacheManager();</span>
-<span class="fc" id="L41">        List&lt;CaffeineCache&gt; caches = new ArrayList&lt;&gt;();</span>
+<span class="nc" id="L40">        SimpleCacheManager cacheManager = new SimpleCacheManager();</span>
+<span class="nc" id="L41">        List&lt;CaffeineCache&gt; caches = new ArrayList&lt;&gt;();</span>
 
         // 规则元数据缓存（L2）
-<span class="fc" id="L44">        caches.add(buildCache(&quot;rules&quot;, 5000, 10, TimeUnit.MINUTES));</span>
+<span class="nc" id="L44">        caches.add(buildCache(&quot;rules&quot;, 5000, 10, TimeUnit.MINUTES));</span>
 
         // 编译后的脚本缓存（L1）
-<span class="fc" id="L47">        caches.add(buildCache(&quot;compiled-scripts&quot;, 1000, 5, TimeUnit.MINUTES));</span>
+<span class="nc" id="L47">        caches.add(buildCache(&quot;compiled-scripts&quot;, 1000, 5, TimeUnit.MINUTES));</span>
 
-<span class="fc" id="L49">        cacheManager.setCaches(caches);</span>
-<span class="fc" id="L50">        return cacheManager;</span>
+<span class="nc" id="L49">        cacheManager.setCaches(caches);</span>
+<span class="nc" id="L50">        return cacheManager;</span>
     }
 
     /**
      * 构建 Caffeine 缓存
      */
     private CaffeineCache buildCache(String name, int maxSize, long expireAfter, TimeUnit timeUnit) {
-<span class="fc" id="L57">        return new CaffeineCache(name, Caffeine.newBuilder()</span>
-<span class="fc" id="L58">                .maximumSize(maxSize)</span>
-<span class="fc" id="L59">                .expireAfterWrite(expireAfter, timeUnit)</span>
-<span class="fc" id="L60">                .recordStats()</span>
-<span class="fc" id="L61">                .build());</span>
+<span class="nc" id="L57">        return new CaffeineCache(name, Caffeine.newBuilder()</span>
+<span class="nc" id="L58">                .maximumSize(maxSize)</span>
+<span class="nc" id="L59">                .expireAfterWrite(expireAfter, timeUnit)</span>
+<span class="nc" id="L60">                .recordStats()</span>
+<span class="nc" id="L61">                .build());</span>
     }
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.11.202310140853</span></div></body></html>

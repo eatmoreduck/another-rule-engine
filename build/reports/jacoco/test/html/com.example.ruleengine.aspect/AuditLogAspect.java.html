@@ -24,72 +24,72 @@ import java.util.Map;
  */
 @Aspect
 @Component
-<span class="fc" id="L27">@RequiredArgsConstructor</span>
-<span class="fc" id="L28">@Slf4j</span>
+<span class="nc" id="L27">@RequiredArgsConstructor</span>
+<span class="nc" id="L28">@Slf4j</span>
 public class AuditLogAspect {
 
     private final AuditLogService auditLogService;
-<span class="fc" id="L32">    private final ExpressionParser parser = new SpelExpressionParser();</span>
+<span class="nc" id="L32">    private final ExpressionParser parser = new SpelExpressionParser();</span>
 
     @Around(&quot;@annotation(auditable)&quot;)
     public Object auditMethod(ProceedingJoinPoint joinPoint, Auditable auditable) throws Throwable {
-<span class="fc" id="L36">        String entityType = auditable.entityType();</span>
-<span class="fc" id="L37">        String entityId = null;</span>
-<span class="fc" id="L38">        String operator = &quot;system&quot;;</span>
-<span class="fc" id="L39">        String operatorIp = null;</span>
-<span class="fc" id="L40">        String requestId = null;</span>
+<span class="nc" id="L36">        String entityType = auditable.entityType();</span>
+<span class="nc" id="L37">        String entityId = null;</span>
+<span class="nc" id="L38">        String operator = &quot;system&quot;;</span>
+<span class="nc" id="L39">        String operatorIp = null;</span>
+<span class="nc" id="L40">        String requestId = null;</span>
 
         // 提取请求上下文
-<span class="fc" id="L43">        ServletRequestAttributes attributes = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();</span>
-<span class="pc bpc" id="L44" title="1 of 2 branches missed.">        if (attributes != null) {</span>
-<span class="fc" id="L45">            HttpServletRequest request = attributes.getRequest();</span>
-<span class="fc" id="L46">            operatorIp = getClientIp(request);</span>
-<span class="fc" id="L47">            requestId = request.getHeader(&quot;X-Request-ID&quot;);</span>
-<span class="fc" id="L48">            operator = request.getHeader(&quot;X-Operator&quot;);</span>
-<span class="pc bpc" id="L49" title="1 of 4 branches missed.">            if (operator == null || operator.isEmpty()) {</span>
-<span class="fc" id="L50">                operator = &quot;system&quot;;</span>
+<span class="nc" id="L43">        ServletRequestAttributes attributes = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();</span>
+<span class="nc bnc" id="L44" title="All 2 branches missed.">        if (attributes != null) {</span>
+<span class="nc" id="L45">            HttpServletRequest request = attributes.getRequest();</span>
+<span class="nc" id="L46">            operatorIp = getClientIp(request);</span>
+<span class="nc" id="L47">            requestId = request.getHeader(&quot;X-Request-ID&quot;);</span>
+<span class="nc" id="L48">            operator = request.getHeader(&quot;X-Operator&quot;);</span>
+<span class="nc bnc" id="L49" title="All 4 branches missed.">            if (operator == null || operator.isEmpty()) {</span>
+<span class="nc" id="L50">                operator = &quot;system&quot;;</span>
             }
         }
 
         // 提取实体ID（SpEL）
-<span class="pc bpc" id="L55" title="1 of 2 branches missed.">        if (!auditable.entityIdExpression().isEmpty()) {</span>
-<span class="fc" id="L56">            entityId = evaluateSpel(joinPoint, auditable.entityIdExpression());</span>
+<span class="nc bnc" id="L55" title="All 2 branches missed.">        if (!auditable.entityIdExpression().isEmpty()) {</span>
+<span class="nc" id="L56">            entityId = evaluateSpel(joinPoint, auditable.entityIdExpression());</span>
         }
 
         // 构建操作详情
-<span class="fc" id="L60">        Map&lt;String, Object&gt; details = new HashMap&lt;&gt;();</span>
-<span class="fc" id="L61">        details.put(&quot;method&quot;, joinPoint.getSignature().getName());</span>
-<span class="fc" id="L62">        details.put(&quot;className&quot;, joinPoint.getTarget().getClass().getSimpleName());</span>
+<span class="nc" id="L60">        Map&lt;String, Object&gt; details = new HashMap&lt;&gt;();</span>
+<span class="nc" id="L61">        details.put(&quot;method&quot;, joinPoint.getSignature().getName());</span>
+<span class="nc" id="L62">        details.put(&quot;className&quot;, joinPoint.getTarget().getClass().getSimpleName());</span>
 
-<span class="fc" id="L64">        String status = &quot;SUCCESS&quot;;</span>
-<span class="fc" id="L65">        String errorMessage = null;</span>
-<span class="fc" id="L66">        Object result = null;</span>
+<span class="nc" id="L64">        String status = &quot;SUCCESS&quot;;</span>
+<span class="nc" id="L65">        String errorMessage = null;</span>
+<span class="nc" id="L66">        Object result = null;</span>
 
         try {
-<span class="fc" id="L69">            result = joinPoint.proceed();</span>
-<span class="fc" id="L70">            return result;</span>
-<span class="fc" id="L71">        } catch (Exception e) {</span>
-<span class="fc" id="L72">            status = &quot;FAILED&quot;;</span>
-<span class="fc" id="L73">            errorMessage = e.getMessage();</span>
-<span class="fc" id="L74">            log.error(&quot;审计方法执行失败: {}&quot;, auditable.event(), e);</span>
-<span class="fc" id="L75">            throw e;</span>
+<span class="nc" id="L69">            result = joinPoint.proceed();</span>
+<span class="nc" id="L70">            return result;</span>
+<span class="nc" id="L71">        } catch (Exception e) {</span>
+<span class="nc" id="L72">            status = &quot;FAILED&quot;;</span>
+<span class="nc" id="L73">            errorMessage = e.getMessage();</span>
+<span class="nc" id="L74">            log.error(&quot;审计方法执行失败: {}&quot;, auditable.event(), e);</span>
+<span class="nc" id="L75">            throw e;</span>
         } finally {
             // 异步记录审计日志
-<span class="fc bfc" id="L78" title="All 2 branches covered.">            if (&quot;SUCCESS&quot;.equals(status)) {</span>
-<span class="fc" id="L79">                auditLogService.logOperationWithContext(</span>
+<span class="nc bnc" id="L78" title="All 2 branches missed.">            if (&quot;SUCCESS&quot;.equals(status)) {</span>
+<span class="nc" id="L79">                auditLogService.logOperationWithContext(</span>
                         entityType,
-<span class="pc bpc" id="L81" title="1 of 2 branches missed.">                        entityId != null ? entityId : &quot;unknown&quot;,</span>
-<span class="fc" id="L82">                        auditable.event(),</span>
+<span class="nc bnc" id="L81" title="All 2 branches missed.">                        entityId != null ? entityId : &quot;unknown&quot;,</span>
+<span class="nc" id="L82">                        auditable.event(),</span>
                         operator,
                         details,
                         operatorIp,
                         requestId
                 );
             } else {
-<span class="fc" id="L89">                auditLogService.logFailure(</span>
+<span class="nc" id="L89">                auditLogService.logFailure(</span>
                         entityType,
-<span class="pc bpc" id="L91" title="1 of 2 branches missed.">                        entityId != null ? entityId : &quot;unknown&quot;,</span>
-<span class="fc" id="L92">                        auditable.event(),</span>
+<span class="nc bnc" id="L91" title="All 2 branches missed.">                        entityId != null ? entityId : &quot;unknown&quot;,</span>
+<span class="nc" id="L92">                        auditable.event(),</span>
                         operator,
                         errorMessage
                 );
@@ -102,22 +102,22 @@ public class AuditLogAspect {
      */
     private String evaluateSpel(ProceedingJoinPoint joinPoint, String expressionString) {
         try {
-<span class="fc" id="L105">            StandardEvaluationContext context = new StandardEvaluationContext();</span>
-<span class="fc" id="L106">            context.setVariable(&quot;args&quot;, joinPoint.getArgs());</span>
+<span class="nc" id="L105">            StandardEvaluationContext context = new StandardEvaluationContext();</span>
+<span class="nc" id="L106">            context.setVariable(&quot;args&quot;, joinPoint.getArgs());</span>
 
             // 设置参数名映射（简单实现，实际可以使用 ParameterNameDiscoverer）
-<span class="fc bfc" id="L109" title="All 2 branches covered.">            for (int i = 0; i &lt; joinPoint.getArgs().length; i++) {</span>
-<span class="fc" id="L110">                context.setVariable(&quot;arg&quot; + i, joinPoint.getArgs()[i]);</span>
-<span class="fc" id="L111">                context.setVariable(&quot;p&quot; + i, joinPoint.getArgs()[i]);</span>
+<span class="nc bnc" id="L109" title="All 2 branches missed.">            for (int i = 0; i &lt; joinPoint.getArgs().length; i++) {</span>
+<span class="nc" id="L110">                context.setVariable(&quot;arg&quot; + i, joinPoint.getArgs()[i]);</span>
+<span class="nc" id="L111">                context.setVariable(&quot;p&quot; + i, joinPoint.getArgs()[i]);</span>
                 // 也支持通过索引访问：#p0, #p1 等
             }
 
-<span class="fc" id="L115">            Expression expression = parser.parseExpression(expressionString);</span>
-<span class="fc" id="L116">            Object value = expression.getValue(context);</span>
-<span class="pc bpc" id="L117" title="1 of 2 branches missed.">            return value != null ? value.toString() : null;</span>
-<span class="fc" id="L118">        } catch (Exception e) {</span>
-<span class="fc" id="L119">            log.warn(&quot;SpEL 表达式评估失败: {}&quot;, expressionString, e);</span>
-<span class="fc" id="L120">            return null;</span>
+<span class="nc" id="L115">            Expression expression = parser.parseExpression(expressionString);</span>
+<span class="nc" id="L116">            Object value = expression.getValue(context);</span>
+<span class="nc bnc" id="L117" title="All 2 branches missed.">            return value != null ? value.toString() : null;</span>
+<span class="nc" id="L118">        } catch (Exception e) {</span>
+<span class="nc" id="L119">            log.warn(&quot;SpEL 表达式评估失败: {}&quot;, expressionString, e);</span>
+<span class="nc" id="L120">            return null;</span>
         }
     }
 
@@ -125,14 +125,14 @@ public class AuditLogAspect {
      * 获取客户端IP
      */
     private String getClientIp(HttpServletRequest request) {
-<span class="fc" id="L128">        String ip = request.getHeader(&quot;X-Forwarded-For&quot;);</span>
-<span class="pc bpc" id="L129" title="3 of 4 branches missed.">        if (ip == null || ip.isEmpty()) {</span>
-<span class="fc" id="L130">            ip = request.getHeader(&quot;X-Real-IP&quot;);</span>
+<span class="nc" id="L128">        String ip = request.getHeader(&quot;X-Forwarded-For&quot;);</span>
+<span class="nc bnc" id="L129" title="All 4 branches missed.">        if (ip == null || ip.isEmpty()) {</span>
+<span class="nc" id="L130">            ip = request.getHeader(&quot;X-Real-IP&quot;);</span>
         }
-<span class="pc bpc" id="L132" title="3 of 4 branches missed.">        if (ip == null || ip.isEmpty()) {</span>
-<span class="fc" id="L133">            ip = request.getRemoteAddr();</span>
+<span class="nc bnc" id="L132" title="All 4 branches missed.">        if (ip == null || ip.isEmpty()) {</span>
+<span class="nc" id="L133">            ip = request.getRemoteAddr();</span>
         }
-<span class="fc" id="L135">        return ip;</span>
+<span class="nc" id="L135">        return ip;</span>
     }
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.11.202310140853</span></div></body></html>

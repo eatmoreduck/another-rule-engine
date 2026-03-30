@@ -1,8 +1,0 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<testsuite name="RuleController 集成测试" tests="0" skipped="0" failures="0" errors="0" timestamp="1970-01-01T00:00:00" hostname="m1" time="0.0">
-  <properties/>
-  <system-out><![CDATA[2026-03-29 17:22:49.154 [Test worker] INFO  o.s.t.c.s.AnnotationConfigContextLoaderUtils - Could not detect default configuration classes for test class [com.example.ruleengine.controller.RuleControllerTest]: RuleControllerTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
-2026-03-29 17:22:49.156 [Test worker] INFO  o.s.b.t.c.SpringBootTestContextBootstrapper - Found @SpringBootConfiguration com.example.ruleengine.RuleEngineApplication for test class com.example.ruleengine.controller.RuleControllerTest
-]]></system-out>
-  <system-err><![CDATA[]]></system-err>
-</testsuite>

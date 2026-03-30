@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>ExecutionLogController.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">rule-engine</a> &gt; <a href="index.source.html" class="el_package">com.example.ruleengine.controller</a> &gt; <span class="el_source">ExecutionLogController.java</span></div><h1>ExecutionLogController.java</h1><pre class="source lang-java linenums">package com.example.ruleengine.controller;
+
+import com.example.ruleengine.domain.ExecutionLog;
+import com.example.ruleengine.service.executionlog.ExecutionLogService;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+import java.time.LocalDateTime;
+import java.util.List;
+
+/**
+ * 规则执行日志查询 REST API 控制器
+ */
+@RestController
+@RequestMapping(&quot;/api/v1/logs&quot;)
+<span class="nc" id="L19">@RequiredArgsConstructor</span>
+<span class="nc" id="L20">@Slf4j</span>
+public class ExecutionLogController {
+
+    private final ExecutionLogService executionLogService;
+
+    /**
+     * 查询指定规则的执行日志
+     * GET /api/v1/logs/rules/{ruleKey}
+     *
+     * @param ruleKey 规则Key
+     * @param start 开始时间（可选）
+     * @param end 结束时间（可选）
+     * @return 执行日志列表
+     */
+    @GetMapping(&quot;/rules/{ruleKey}&quot;)
+    public ResponseEntity&lt;List&lt;ExecutionLog&gt;&gt; getLogsByRuleKey(
+            @PathVariable String ruleKey,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime start,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime end) {
+<span class="nc" id="L39">        log.info(&quot;查询规则执行日志: ruleKey={}, start={}, end={}&quot;, ruleKey, start, end);</span>
+
+        List&lt;ExecutionLog&gt; logs;
+<span class="nc bnc" id="L42" title="All 4 branches missed.">        if (start != null &amp;&amp; end != null) {</span>
+<span class="nc" id="L43">            logs = executionLogService.getLogsByRuleKeyAndTimeRange(ruleKey, start, end);</span>
+        } else {
+<span class="nc" id="L45">            logs = executionLogService.getLogsByRuleKey(ruleKey);</span>
+        }
+
+<span class="nc" id="L48">        return ResponseEntity.ok(logs);</span>
+    }
+
+    /**
+     * 查询最近执行日志
+     * GET /api/v1/logs/recent
+     *
+     * @return 最近100条执行日志
+     */
+    @GetMapping(&quot;/recent&quot;)
+    public ResponseEntity&lt;List&lt;ExecutionLog&gt;&gt; getRecentLogs() {
+<span class="nc" id="L59">        log.info(&quot;查询最近执行日志&quot;);</span>
+<span class="nc" id="L60">        List&lt;ExecutionLog&gt; logs = executionLogService.getRecentLogs();</span>
+<span class="nc" id="L61">        return ResponseEntity.ok(logs);</span>
+    }
+
+    /**
+     * 按状态查询执行日志
+     * GET /api/v1/logs/status/{status}
+     *
+     * @param status 执行状态（SUCCESS/TIMEOUT/ERROR）
+     * @return 执行日志列表
+     */
+    @GetMapping(&quot;/status/{status}&quot;)
+    public ResponseEntity&lt;List&lt;ExecutionLog&gt;&gt; getLogsByStatus(@PathVariable String status) {
+<span class="nc" id="L73">        log.info(&quot;按状态查询执行日志: status={}&quot;, status);</span>
+<span class="nc" id="L74">        List&lt;ExecutionLog&gt; logs = executionLogService.getLogsByStatus(status);</span>
+<span class="nc" id="L75">        return ResponseEntity.ok(logs);</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.11.202310140853</span></div></body></html>

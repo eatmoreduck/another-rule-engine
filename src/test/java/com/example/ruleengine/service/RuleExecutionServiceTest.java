@@ -3,9 +3,11 @@ package com.example.ruleengine.service;
 import com.example.ruleengine.cache.RuleCacheService;
 import com.example.ruleengine.engine.GroovyScriptEngine;
 import com.example.ruleengine.exception.RuleExecutionException;
+import com.example.ruleengine.metrics.RuleExecutionMetrics;
 import com.example.ruleengine.model.DecisionRequest;
 import com.example.ruleengine.model.DecisionResponse;
 import com.example.ruleengine.model.FeatureResponse;
+import com.example.ruleengine.service.executionlog.ExecutionLogService;
 import io.github.resilience4j.timelimiter.TimeLimiter;
 import io.github.resilience4j.timelimiter.TimeLimiterConfig;
 import org.junit.jupiter.api.BeforeEach;
@@ -49,6 +51,12 @@ class RuleExecutionServiceTest {
     @Mock
     private RuleCacheService ruleCacheService;
 
+    @Mock
+    private ExecutionLogService executionLogService;
+
+    @Mock
+    private RuleExecutionMetrics ruleExecutionMetrics;
+
     private TimeLimiter timeLimiter;
     private ThreadPoolTaskExecutor taskExecutor;
     private RuleExecutionService ruleExecutionService;
@@ -74,7 +82,9 @@ class RuleExecutionServiceTest {
             featureProvider,
             timeLimiter,
             taskExecutor,
-            ruleCacheService
+            ruleCacheService,
+            executionLogService,
+            ruleExecutionMetrics
         );
     }
 

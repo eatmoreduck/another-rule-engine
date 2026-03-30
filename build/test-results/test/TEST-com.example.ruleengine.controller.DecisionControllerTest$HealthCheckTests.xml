@@ -1,9 +1,0 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<testsuite name="健康检查测试" tests="1" skipped="0" failures="0" errors="0" timestamp="2026-03-29T09:22:49" hostname="m1" time="0.007">
-  <properties/>
-  <testcase name="GET /api/v1/health 应返回 OK" classname="com.example.ruleengine.controller.DecisionControllerTest$HealthCheckTests" time="0.007"/>
-  <system-out><![CDATA[2026-03-29 17:22:48.998 [Test worker] INFO  o.s.t.c.s.AnnotationConfigContextLoaderUtils - Could not detect default configuration classes for test class [com.example.ruleengine.controller.DecisionControllerTest$HealthCheckTests]: HealthCheckTests does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
-2026-03-29 17:22:49.005 [Test worker] INFO  o.s.b.t.c.SpringBootTestContextBootstrapper - Found @SpringBootConfiguration com.example.ruleengine.RuleEngineApplication for test class com.example.ruleengine.controller.DecisionControllerTest$HealthCheckTests
-]]></system-out>
-  <system-err><![CDATA[]]></system-err>
-</testsuite>

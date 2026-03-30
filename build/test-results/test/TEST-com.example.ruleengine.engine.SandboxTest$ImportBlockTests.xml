@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="第一层 - 危险导入拦截" tests="6" skipped="0" failures="0" errors="0" timestamp="2026-03-30T08:29:44" hostname="m1" time="0.032">
+  <properties/>
+  <testcase name="应拦截 import java.io.FileOutputStream" classname="com.example.ruleengine.engine.SandboxTest$ImportBlockTests" time="0.007"/>
+  <testcase name="应拦截 import java.io.File" classname="com.example.ruleengine.engine.SandboxTest$ImportBlockTests" time="0.004"/>
+  <testcase name="应拦截 import java.net.URL" classname="com.example.ruleengine.engine.SandboxTest$ImportBlockTests" time="0.003"/>
+  <testcase name="应拦截 import java.io.FileInputStream" classname="com.example.ruleengine.engine.SandboxTest$ImportBlockTests" time="0.003"/>
+  <testcase name="应拦截 import java.net.Socket" classname="com.example.ruleengine.engine.SandboxTest$ImportBlockTests" time="0.005"/>
+  <testcase name="应拦截 import java.lang.reflect.Method" classname="com.example.ruleengine.engine.SandboxTest$ImportBlockTests" time="0.01"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

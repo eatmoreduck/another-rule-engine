@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="第一层 - 进程创建拦截" tests="1" skipped="0" failures="0" errors="0" timestamp="2026-03-30T08:29:44" hostname="m1" time="0.004">
+  <properties/>
+  <testcase name="应拦截 ProcessBuilder 方法调用" classname="com.example.ruleengine.engine.SandboxTest$ProcessCreationTests" time="0.004"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

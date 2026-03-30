@@ -12,50 +12,50 @@ import java.time.LocalDateTime;
  * 规则查询对象
  * 支持按状态、创建人、时间范围过滤和关键词搜索
  */
-<span class="pc bnc" id="L15" title="All 70 branches missed.">@Data</span>
-<span class="pc" id="L16">@Builder</span>
+<span class="nc bnc" id="L15" title="All 70 branches missed.">@Data</span>
+<span class="nc" id="L16">@Builder</span>
 <span class="nc" id="L17">@NoArgsConstructor</span>
-<span class="fc" id="L18">@AllArgsConstructor</span>
+<span class="nc" id="L18">@AllArgsConstructor</span>
 public class RuleQuery {
 
     /**
      * 规则状态过滤
      */
-<span class="fc" id="L24">    private RuleStatus status;</span>
+<span class="nc" id="L24">    private RuleStatus status;</span>
 
     /**
      * 创建人过滤
      */
-<span class="fc" id="L29">    private String createdBy;</span>
+<span class="nc" id="L29">    private String createdBy;</span>
 
     /**
      * 是否启用过滤
      */
-<span class="fc" id="L34">    private Boolean enabled;</span>
+<span class="nc" id="L34">    private Boolean enabled;</span>
 
     /**
      * 关键词搜索（rule_key, rule_name）
      */
-<span class="fc" id="L39">    private String keyword;</span>
+<span class="nc" id="L39">    private String keyword;</span>
 
     /**
      * 创建时间范围-开始
      */
-<span class="fc" id="L44">    private LocalDateTime createdAtStart;</span>
+<span class="nc" id="L44">    private LocalDateTime createdAtStart;</span>
 
     /**
      * 创建时间范围-结束
      */
-<span class="fc" id="L49">    private LocalDateTime createdAtEnd;</span>
+<span class="nc" id="L49">    private LocalDateTime createdAtEnd;</span>
 
     /**
      * 更新时间范围-开始
      */
-<span class="fc" id="L54">    private LocalDateTime updatedAtStart;</span>
+<span class="nc" id="L54">    private LocalDateTime updatedAtStart;</span>
 
     /**
      * 更新时间范围-结束
      */
-<span class="fc" id="L59">    private LocalDateTime updatedAtEnd;</span>
+<span class="nc" id="L59">    private LocalDateTime updatedAtEnd;</span>
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.11.202310140853</span></div></body></html>

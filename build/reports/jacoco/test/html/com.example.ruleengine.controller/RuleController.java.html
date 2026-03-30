@@ -21,8 +21,8 @@ import org.springframework.web.bind.annotation.*;
  */
 @RestController
 @RequestMapping(&quot;/api/v1/rules&quot;)
-<span class="fc" id="L24">@RequiredArgsConstructor</span>
-<span class="fc" id="L25">@Slf4j</span>
+<span class="nc" id="L24">@RequiredArgsConstructor</span>
+<span class="nc" id="L25">@Slf4j</span>
 public class RuleController {
 
     private final RuleLifecycleService ruleLifecycleService;
@@ -36,9 +36,9 @@ public class RuleController {
     public ResponseEntity&lt;Rule&gt; createRule(
             @Valid @RequestBody CreateRuleRequest request,
             @RequestHeader(value = &quot;X-Operator&quot;, defaultValue = &quot;system&quot;) String operator) {
-<span class="fc" id="L39">        log.info(&quot;创建规则: ruleKey={}, operator={}&quot;, request.getRuleKey(), operator);</span>
-<span class="fc" id="L40">        Rule rule = ruleLifecycleService.createRule(request, operator);</span>
-<span class="fc" id="L41">        return ResponseEntity.ok(rule);</span>
+<span class="nc" id="L39">        log.info(&quot;创建规则: ruleKey={}, operator={}&quot;, request.getRuleKey(), operator);</span>
+<span class="nc" id="L40">        Rule rule = ruleLifecycleService.createRule(request, operator);</span>
+<span class="nc" id="L41">        return ResponseEntity.ok(rule);</span>
     }
 
     /**
@@ -50,9 +50,9 @@ public class RuleController {
             @PathVariable String ruleKey,
             @Valid @RequestBody UpdateRuleRequest request,
             @RequestHeader(value = &quot;X-Operator&quot;, defaultValue = &quot;system&quot;) String operator) {
-<span class="fc" id="L53">        log.info(&quot;更新规则: ruleKey={}, operator={}&quot;, ruleKey, operator);</span>
-<span class="fc" id="L54">        Rule rule = ruleLifecycleService.updateRule(ruleKey, request, operator);</span>
-<span class="fc" id="L55">        return ResponseEntity.ok(rule);</span>
+<span class="nc" id="L53">        log.info(&quot;更新规则: ruleKey={}, operator={}&quot;, ruleKey, operator);</span>
+<span class="nc" id="L54">        Rule rule = ruleLifecycleService.updateRule(ruleKey, request, operator);</span>
+<span class="nc" id="L55">        return ResponseEntity.ok(rule);</span>
     }
 
     /**
@@ -63,9 +63,9 @@ public class RuleController {
     public ResponseEntity&lt;Void&gt; deleteRule(
             @PathVariable String ruleKey,
             @RequestHeader(value = &quot;X-Operator&quot;, defaultValue = &quot;system&quot;) String operator) {
-<span class="fc" id="L66">        log.info(&quot;删除规则: ruleKey={}, operator={}&quot;, ruleKey, operator);</span>
-<span class="fc" id="L67">        ruleLifecycleService.deleteRule(ruleKey, operator);</span>
-<span class="fc" id="L68">        return ResponseEntity.ok().build();</span>
+<span class="nc" id="L66">        log.info(&quot;删除规则: ruleKey={}, operator={}&quot;, ruleKey, operator);</span>
+<span class="nc" id="L67">        ruleLifecycleService.deleteRule(ruleKey, operator);</span>
+<span class="nc" id="L68">        return ResponseEntity.ok().build();</span>
     }
 
     /**
@@ -76,9 +76,9 @@ public class RuleController {
     public ResponseEntity&lt;Rule&gt; enableRule(
             @PathVariable String ruleKey,
             @RequestHeader(value = &quot;X-Operator&quot;, defaultValue = &quot;system&quot;) String operator) {
-<span class="fc" id="L79">        log.info(&quot;启用规则: ruleKey={}, operator={}&quot;, ruleKey, operator);</span>
-<span class="fc" id="L80">        Rule rule = ruleLifecycleService.enableRule(ruleKey, operator);</span>
-<span class="fc" id="L81">        return ResponseEntity.ok(rule);</span>
+<span class="nc" id="L79">        log.info(&quot;启用规则: ruleKey={}, operator={}&quot;, ruleKey, operator);</span>
+<span class="nc" id="L80">        Rule rule = ruleLifecycleService.enableRule(ruleKey, operator);</span>
+<span class="nc" id="L81">        return ResponseEntity.ok(rule);</span>
     }
 
     /**
@@ -89,9 +89,9 @@ public class RuleController {
     public ResponseEntity&lt;Rule&gt; disableRule(
             @PathVariable String ruleKey,
             @RequestHeader(value = &quot;X-Operator&quot;, defaultValue = &quot;system&quot;) String operator) {
-<span class="fc" id="L92">        log.info(&quot;禁用规则: ruleKey={}, operator={}&quot;, ruleKey, operator);</span>
-<span class="fc" id="L93">        Rule rule = ruleLifecycleService.disableRule(ruleKey, operator);</span>
-<span class="fc" id="L94">        return ResponseEntity.ok(rule);</span>
+<span class="nc" id="L92">        log.info(&quot;禁用规则: ruleKey={}, operator={}&quot;, ruleKey, operator);</span>
+<span class="nc" id="L93">        Rule rule = ruleLifecycleService.disableRule(ruleKey, operator);</span>
+<span class="nc" id="L94">        return ResponseEntity.ok(rule);</span>
     }
 
     /**
@@ -100,8 +100,8 @@ public class RuleController {
      */
     @GetMapping(&quot;/{ruleKey}&quot;)
     public ResponseEntity&lt;Rule&gt; getRule(@PathVariable String ruleKey) {
-<span class="fc" id="L103">        Rule rule = ruleLifecycleService.getRule(ruleKey);</span>
-<span class="fc" id="L104">        return ResponseEntity.ok(rule);</span>
+<span class="nc" id="L103">        Rule rule = ruleLifecycleService.getRule(ruleKey);</span>
+<span class="nc" id="L104">        return ResponseEntity.ok(rule);</span>
     }
 
     /**
@@ -110,8 +110,8 @@ public class RuleController {
      */
     @GetMapping
     public ResponseEntity&lt;Page&lt;Rule&gt;&gt; listRules(Pageable pageable) {
-<span class="fc" id="L113">        Page&lt;Rule&gt; rules = ruleLifecycleService.listRules(pageable);</span>
-<span class="fc" id="L114">        return ResponseEntity.ok(rules);</span>
+<span class="nc" id="L113">        Page&lt;Rule&gt; rules = ruleLifecycleService.listRules(pageable);</span>
+<span class="nc" id="L114">        return ResponseEntity.ok(rules);</span>
     }
 
     /**
@@ -134,15 +134,15 @@ public class RuleController {
     @PostMapping(&quot;/validate&quot;)
     public ResponseEntity&lt;ValidateScriptResponse&gt; validateScript(
             @Valid @RequestBody ValidateScriptRequest request) {
-<span class="fc" id="L137">        log.info(&quot;验证Groovy脚本&quot;);</span>
-<span class="fc" id="L138">        GroovyScriptValidator.ValidationResult validation = scriptValidator.validate(request.getGroovyScript());</span>
+<span class="nc" id="L137">        log.info(&quot;验证Groovy脚本&quot;);</span>
+<span class="nc" id="L138">        GroovyScriptValidator.ValidationResult validation = scriptValidator.validate(request.getGroovyScript());</span>
 
-<span class="fc bfc" id="L140" title="All 2 branches covered.">        if (validation.isValid()) {</span>
-<span class="fc" id="L141">            return ResponseEntity.ok(ValidateScriptResponse.success());</span>
+<span class="nc bnc" id="L140" title="All 2 branches missed.">        if (validation.isValid()) {</span>
+<span class="nc" id="L141">            return ResponseEntity.ok(ValidateScriptResponse.success());</span>
         } else {
-<span class="fc" id="L143">            return ResponseEntity.ok(ValidateScriptResponse.error(</span>
+<span class="nc" id="L143">            return ResponseEntity.ok(ValidateScriptResponse.error(</span>
                     &quot;Groovy脚本语法错误&quot;,
-<span class="fc" id="L145">                    validation.getErrorMessage()</span>
+<span class="nc" id="L145">                    validation.getErrorMessage()</span>
             ));
         }
     }
