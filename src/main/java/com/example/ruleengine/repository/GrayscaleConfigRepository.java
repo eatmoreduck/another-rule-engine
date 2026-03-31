@@ -33,4 +33,14 @@ public interface GrayscaleConfigRepository extends JpaRepository<GrayscaleConfig
      * 查询指定规则是否有运行中的灰度配置
      */
     boolean existsByRuleKeyAndStatus(String ruleKey, GrayscaleStatus status);
+
+    /**
+     * 查询所有灰度配置（按创建时间降序）
+     */
+    List<GrayscaleConfig> findAllByOrderByCreatedAtDesc();
+
+    /**
+     * 根据规则Key和状态查询灰度配置（按创建时间降序）
+     */
+    List<GrayscaleConfig> findByRuleKeyAndStatusOrderByCreatedAtDesc(String ruleKey, GrayscaleStatus status);
 }

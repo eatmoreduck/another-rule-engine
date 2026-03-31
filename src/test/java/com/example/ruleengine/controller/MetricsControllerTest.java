@@ -2,6 +2,7 @@ package com.example.ruleengine.controller;
 
 import com.example.ruleengine.metrics.RuleExecutionMetrics;
 import com.example.ruleengine.model.dto.ExecutionStats;
+import io.micrometer.core.instrument.MeterRegistry;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -30,6 +31,9 @@ class MetricsControllerTest {
 
     @MockBean
     private RuleExecutionMetrics ruleExecutionMetrics;
+
+    @MockBean
+    private MeterRegistry meterRegistry;
 
     @Nested
     @DisplayName("GET /api/v1/metrics/rules/{ruleKey} 测试")

@@ -1,6 +1,7 @@
 package com.example.ruleengine.controller;
 
 import com.example.ruleengine.domain.ExecutionLog;
+import com.example.ruleengine.model.dto.ExecutionLogResponse;
 import com.example.ruleengine.service.executionlog.ExecutionLogService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -10,6 +11,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * 规则执行日志查询 REST API 控制器
@@ -32,7 +34,7 @@ public class ExecutionLogController {
      * @return 执行日志列表
      */
     @GetMapping("/rules/{ruleKey}")
-    public ResponseEntity<List<ExecutionLog>> getLogsByRuleKey(
+    public ResponseEntity<List<ExecutionLogResponse>> getLogsByRuleKey(
             @PathVariable String ruleKey,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime start,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime end) {
@@ -45,20 +47,45 @@ public class ExecutionLogController {
             logs = executionLogService.getLogsByRuleKey(ruleKey);
         }
 
-        return ResponseEntity.ok(logs);
+        List<ExecutionLogResponse> responses = logs.stream()
+                .map(ExecutionLogResponse::fromEntity)
+                .collect(Collectors.toList());
+
+        return ResponseEntity.ok(responses);
     }
 
     /**
      * 查询最近执行日志
      * GET /api/v1/logs/recent
      *
-     * @return 最近100条执行日志
+     * @param limit 返回数量限制（默认20）
+     * @param level 日志级别过滤（可选）
+     * @return 最近执行日志
      */
     @GetMapping("/recent")
-    public ResponseEntity<List<ExecutionLog>> getRecentLogs() {
-        log.info("查询最近执行日志");
+    public ResponseEntity<List<ExecutionLogResponse>> getRecentLogs(
+            @RequestParam(required = false, defaultValue = "20") int limit,
+            @RequestParam(required = false) String level) {
+        log.info("查询最近执行日志: limit={}, level={}", limit, level);
         List<ExecutionLog> logs = executionLogService.getRecentLogs();
-        return ResponseEntity.ok(logs);
+
+        List<ExecutionLogResponse> responses = logs.stream()
+                .map(ExecutionLogResponse::fromEntity)
+                .collect(Collectors.toList());
+
+        // 按级别过滤
+        if (level != null && !level.isBlank()) {
+            responses = responses.stream()
+                    .filter(r -> level.equalsIgnoreCase(r.getLevel()))
+                    .collect(Collectors.toList());
+        }
+
+        // 限制返回数量
+        if (limit > 0 && responses.size() > limit) {
+            responses = responses.subList(0, limit);
+        }
+
+        return ResponseEntity.ok(responses);
     }
 
     /**
@@ -69,9 +96,12 @@ public class ExecutionLogController {
      * @return 执行日志列表
      */
     @GetMapping("/status/{status}")
-    public ResponseEntity<List<ExecutionLog>> getLogsByStatus(@PathVariable String status) {
+    public ResponseEntity<List<ExecutionLogResponse>> getLogsByStatus(@PathVariable String status) {
         log.info("按状态查询执行日志: status={}", status);
         List<ExecutionLog> logs = executionLogService.getLogsByStatus(status);
-        return ResponseEntity.ok(logs);
+        List<ExecutionLogResponse> responses = logs.stream()
+                .map(ExecutionLogResponse::fromEntity)
+                .collect(Collectors.toList());
+        return ResponseEntity.ok(responses);
     }
 }

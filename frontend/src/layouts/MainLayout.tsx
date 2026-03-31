@@ -1,5 +1,5 @@
 import { Layout, Menu, Typography } from 'antd';
-import { SafetyOutlined, SettingOutlined, ExperimentOutlined, BugOutlined, BarChartOutlined, DashboardOutlined } from '@ant-design/icons';
+import { SafetyOutlined, SettingOutlined, ExperimentOutlined, BugOutlined, BarChartOutlined, DashboardOutlined, TableOutlined, CloudServerOutlined, ImportOutlined, FileTextOutlined } from '@ant-design/icons';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 
 const { Header, Content } = Layout;
@@ -12,9 +12,29 @@ const menuItems = [
     label: '规则管理',
   },
   {
+    key: '/decision-table',
+    icon: <TableOutlined />,
+    label: '决策表',
+  },
+  {
     key: '/grayscale',
     icon: <ExperimentOutlined />,
     label: '灰度发布',
+  },
+  {
+    key: '/environments',
+    icon: <CloudServerOutlined />,
+    label: '多环境',
+  },
+  {
+    key: '/import-export',
+    icon: <ImportOutlined />,
+    label: '导入导出',
+  },
+  {
+    key: '/templates',
+    icon: <FileTextOutlined />,
+    label: '模板库',
   },
   {
     key: '/monitoring',

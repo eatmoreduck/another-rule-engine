@@ -327,6 +327,34 @@ public class GrayscaleService {
                 .collect(Collectors.toList());
     }
 
+    /**
+     * 查询灰度配置列表（支持按状态和规则Key过滤）
+     *
+     * @param status  状态过滤（可选）
+     * @param ruleKey 规则Key过滤（可选）
+     * @return 灰度配置列表
+     */
+    public List<GrayscaleConfigResponse> listGrayscaleConfigs(String status, String ruleKey) {
+        List<GrayscaleConfig> configs;
+
+        if (ruleKey != null && !ruleKey.isBlank() && status != null && !status.isBlank()) {
+            GrayscaleStatus grayscaleStatus = GrayscaleStatus.valueOf(status);
+            configs = grayscaleConfigRepository
+                    .findByRuleKeyAndStatusOrderByCreatedAtDesc(ruleKey, grayscaleStatus);
+        } else if (ruleKey != null && !ruleKey.isBlank()) {
+            configs = grayscaleConfigRepository.findByRuleKeyOrderByCreatedAtDesc(ruleKey);
+        } else if (status != null && !status.isBlank()) {
+            GrayscaleStatus grayscaleStatus = GrayscaleStatus.valueOf(status);
+            configs = grayscaleConfigRepository.findByStatus(grayscaleStatus);
+        } else {
+            configs = grayscaleConfigRepository.findAllByOrderByCreatedAtDesc();
+        }
+
+        return configs.stream()
+                .map(GrayscaleConfigResponse::fromEntity)
+                .collect(Collectors.toList());
+    }
+
     // ========== 私有方法 ==========
 
     /**

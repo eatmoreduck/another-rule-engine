@@ -8,6 +8,10 @@ import MonitoringPage from './pages/MonitoringPage';
 import GrayscalePage from './pages/GrayscalePage';
 import TestPage from './pages/TestPage';
 import AnalyticsPage from './pages/AnalyticsPage';
+import DecisionTablePage from './pages/DecisionTablePage';
+import EnvironmentPage from './pages/EnvironmentPage';
+import ImportExportPage from './pages/ImportExportPage';
+import TemplatePage from './pages/TemplatePage';
 
 export default function App() {
   return (
@@ -22,6 +26,10 @@ export default function App() {
         <Route path="/rules/:ruleKey/edit/flow" element={<FlowEditorPage />} />
         <Route path="/monitoring" element={<MonitoringPage />} />
         <Route path="/grayscale" element={<GrayscalePage />} />
+        <Route path="/decision-table" element={<DecisionTablePage />} />
+        <Route path="/environments" element={<EnvironmentPage />} />
+        <Route path="/import-export" element={<ImportExportPage />} />
+        <Route path="/templates" element={<TemplatePage />} />
         <Route path="/test" element={<TestPage />} />
         <Route path="/analytics" element={<AnalyticsPage />} />
         <Route path="*" element={<Navigate to="/rules" replace />} />

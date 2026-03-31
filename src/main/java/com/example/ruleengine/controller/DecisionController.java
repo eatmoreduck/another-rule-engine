@@ -11,6 +11,8 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Map;
+
 /**
  * 决策 API 控制器
  * Source: CONTEXT.md 决策 D-16, D-17, D-18, D-19
@@ -60,6 +62,51 @@ public class DecisionController {
             logger.error("Decision request failed for rule: {}", request.getRuleId(), e);
 
             // 返回错误响应
+            DecisionResponse errorResponse = DecisionResponse.builder()
+                .decision("REJECT")
+                .reason("决策请求失败: " + e.getMessage())
+                .executionTimeMs(0)
+                .build();
+
+            return ResponseEntity.internalServerError().body(errorResponse);
+        }
+    }
+
+    /**
+     * 通过规则Key执行决策（从缓存加载规则）
+     * POST /api/v1/decide/{ruleKey}
+     * 支持灰度分流，无需在请求体中传递脚本
+     *
+     * @param ruleKey 规则Key
+     * @param request 决策请求（仅需 features，无需 script）
+     * @return 决策响应
+     */
+    @PostMapping(
+        value = "/decide/{ruleKey}",
+        consumes = MediaType.APPLICATION_JSON_VALUE,
+        produces = MediaType.APPLICATION_JSON_VALUE
+    )
+    public ResponseEntity<DecisionResponse> decideByKey(
+            @PathVariable String ruleKey,
+            @RequestBody Map<String, Object> features) {
+        logger.info("Received cache-aware decision request for ruleKey: {}", ruleKey);
+
+        try {
+            DecisionRequest request = new DecisionRequest();
+            request.setRuleId(ruleKey);
+            request.setFeatures(features);
+            request.setTimeoutMs(50);
+
+            DecisionResponse response = ruleExecutionService.decide(ruleKey, request);
+
+            logger.debug("RuleKey {} executed in {}ms, decision: {}",
+                ruleKey, response.getExecutionTimeMs(), response.getDecision());
+
+            return ResponseEntity.ok(response);
+
+        } catch (Exception e) {
+            logger.error("Cache-aware decision request failed for ruleKey: {}", ruleKey, e);
+
             DecisionResponse errorResponse = DecisionResponse.builder()
                 .decision("REJECT")
                 .reason("决策请求失败: " + e.getMessage())

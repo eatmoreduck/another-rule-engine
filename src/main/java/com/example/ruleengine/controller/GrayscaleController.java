@@ -11,6 +11,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * 灰度发布管理 REST API 控制器
@@ -24,6 +25,44 @@ import java.util.List;
 public class GrayscaleController {
 
     private final GrayscaleService grayscaleService;
+
+    /**
+     * 查询灰度配置列表（分页）
+     * GET /api/v1/grayscale
+     *
+     * @param status  状态过滤（可选）
+     * @param ruleKey 规则Key过滤（可选）
+     * @param page    页码（从0开始）
+     * @param size    每页大小
+     * @return 分页灰度配置列表
+     */
+    @GetMapping
+    public ResponseEntity<Map<String, Object>> listGrayscales(
+            @RequestParam(required = false) String status,
+            @RequestParam(required = false) String ruleKey,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size) {
+        log.info("查询灰度列表: status={}, ruleKey={}, page={}, size={}", status, ruleKey, page, size);
+
+        List<GrayscaleConfigResponse> allConfigs = grayscaleService.listGrayscaleConfigs(status, ruleKey);
+
+        // 分页处理
+        int totalElements = allConfigs.size();
+        int totalPages = size > 0 ? (int) Math.ceil((double) totalElements / size) : 1;
+        int fromIndex = Math.min(page * size, totalElements);
+        int toIndex = Math.min(fromIndex + size, totalElements);
+        List<GrayscaleConfigResponse> content = allConfigs.subList(fromIndex, toIndex);
+
+        Map<String, Object> pageResponse = Map.of(
+                "content", content,
+                "totalElements", totalElements,
+                "totalPages", totalPages,
+                "number", page,
+                "size", size
+        );
+
+        return ResponseEntity.ok(pageResponse);
+    }
 
     /**
      * 创建灰度配置
