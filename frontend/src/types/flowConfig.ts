@@ -6,6 +6,11 @@
 import type { Node, Edge } from '@xyflow/react';
 import type { Action, Operator } from './ruleConfig';
 
+/** 生成简易唯一 ID */
+export function genId(): string {
+  return Math.random().toString(36).slice(2, 10);
+}
+
 // --- 节点数据类型 ---
 
 export interface StartNodeData {
@@ -39,14 +44,33 @@ export interface ActionNodeData {
   reason: string;
 }
 
+/** 规则集节点中的单个条件项 */
+export interface RuleSetConditionItem {
+  id: string;
+  fieldName: string;
+  operator: Operator;
+  threshold: string | number;
+}
+
+export interface RuleSetNodeData {
+  [key: string]: unknown;
+  label: string;
+  nodeType: 'ruleset';
+  /** 条件之间的逻辑关系 */
+  logic: 'AND' | 'OR';
+  /** 引用的规则 Key 列表 */
+  ruleKeys: string[];
+}
+
 // --- 节点类型联合 ---
 
 export type ConditionNode = Node<ConditionNodeData, 'condition'>;
 export type ActionNode = Node<ActionNodeData, 'action'>;
 export type StartNode = Node<StartNodeData, 'start'>;
 export type EndNode = Node<EndNodeData, 'end'>;
+export type RuleSetNode = Node<RuleSetNodeData, 'ruleset'>;
 
-export type FlowNode = ConditionNode | ActionNode | StartNode | EndNode;
+export type FlowNode = ConditionNode | ActionNode | StartNode | EndNode | RuleSetNode;
 
 /** 条件分支边的数据 */
 export interface ConditionEdgeData {

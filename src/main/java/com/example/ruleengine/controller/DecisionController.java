@@ -2,6 +2,7 @@ package com.example.ruleengine.controller;
 
 import com.example.ruleengine.model.DecisionRequest;
 import com.example.ruleengine.model.DecisionResponse;
+import com.example.ruleengine.service.DecisionFlowExecutionService;
 import com.example.ruleengine.service.RuleExecutionService;
 import io.micrometer.core.annotation.Timed;
 import jakarta.validation.Valid;
@@ -30,9 +31,12 @@ public class DecisionController {
     private static final Logger logger = LoggerFactory.getLogger(DecisionController.class);
 
     private final RuleExecutionService ruleExecutionService;
+    private final DecisionFlowExecutionService decisionFlowExecutionService;
 
-    public DecisionController(RuleExecutionService ruleExecutionService) {
+    public DecisionController(RuleExecutionService ruleExecutionService,
+                              DecisionFlowExecutionService decisionFlowExecutionService) {
         this.ruleExecutionService = ruleExecutionService;
+        this.decisionFlowExecutionService = decisionFlowExecutionService;
     }
 
     /**
@@ -123,5 +127,34 @@ public class DecisionController {
     @GetMapping("/health")
     public ResponseEntity<String> health() {
         return ResponseEntity.ok("OK");
+    }
+
+    /**
+     * 通过决策流Key执行决策
+     * POST /api/v1/decision-flows/{flowKey}/execute
+     */
+    @PostMapping(
+        value = "/decision-flows/{flowKey}/execute",
+        consumes = MediaType.APPLICATION_JSON_VALUE,
+        produces = MediaType.APPLICATION_JSON_VALUE
+    )
+    public ResponseEntity<DecisionResponse> decideByFlow(
+            @PathVariable String flowKey,
+            @RequestBody Map<String, Object> features) {
+        logger.info("Received decision flow request for flowKey: {}", flowKey);
+        try {
+            DecisionResponse response = decisionFlowExecutionService.executeFlow(flowKey, features);
+            logger.debug("DecisionFlow {} executed in {}ms, decision: {}",
+                flowKey, response.getExecutionTimeMs(), response.getDecision());
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            logger.error("Decision flow request failed for flowKey: {}", flowKey, e);
+            DecisionResponse errorResponse = DecisionResponse.builder()
+                .decision("REJECT")
+                .reason("决策流执行失败: " + e.getMessage())
+                .executionTimeMs(0)
+                .build();
+            return ResponseEntity.internalServerError().body(errorResponse);
+        }
     }
 }

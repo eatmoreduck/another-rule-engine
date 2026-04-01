@@ -3,16 +3,23 @@
  * 右侧面板，选中节点后可编辑节点属性
  */
 
-import { useCallback } from 'react';
+import { useCallback, useState, useEffect } from 'react';
 import { Select, Input, Divider, Typography, Tag } from 'antd';
-import type { FlowNode, ConditionNodeData, ActionNodeData, EndNodeData } from '../../types/flowConfig';
+import type {
+  FlowNode,
+  ConditionNodeData,
+  ActionNodeData,
+  EndNodeData,
+  RuleSetNodeData,
+} from '../../types/flowConfig';
 import { OPERATOR_LABELS, ACTION_LABELS, type Operator, type Action } from '../../types/ruleConfig';
+import { getRulesForSelect } from '../../api/rules';
 
 const { Text } = Typography;
 
 interface NodeConfigPanelProps {
   node: FlowNode;
-  onUpdate: (nodeId: string, newData: Partial<ConditionNodeData | ActionNodeData | EndNodeData>) => void;
+  onUpdate: (nodeId: string, newData: Partial<ConditionNodeData | ActionNodeData | EndNodeData | RuleSetNodeData>) => void;
 }
 
 /** 条件节点配置表单 */
@@ -167,9 +174,71 @@ function EndConfig({
   );
 }
 
+/** 规则集节点配置表单 - 引用已有规则 */
+function RuleSetConfig({
+  data,
+  onUpdate,
+}: {
+  data: RuleSetNodeData;
+  onUpdate: (updates: Partial<RuleSetNodeData>) => void;
+}) {
+  const [rules, setRules] = useState<Array<{ ruleKey: string; ruleName: string }>>([]);
+  const [loadingRules, setLoadingRules] = useState(false);
+
+  useEffect(() => {
+    setLoadingRules(true);
+    getRulesForSelect()
+      .then(setRules)
+      .catch(() => {})
+      .finally(() => setLoadingRules(false));
+  }, []);
+
+  return (
+    <>
+      <div style={{ marginBottom: 12 }}>
+        <Text type="secondary" style={{ fontSize: 12 }}>节点标签</Text>
+        <Input value={data.label} onChange={(e) => onUpdate({ label: e.target.value })}
+          size="small" style={{ marginTop: 4 }} />
+      </div>
+      <Divider style={{ margin: '8px 0' }} />
+      <div style={{ marginBottom: 12 }}>
+        <Text type="secondary" style={{ fontSize: 12 }}>逻辑关系</Text>
+        <Select value={data.logic} onChange={(v) => onUpdate({ logic: v as 'AND' | 'OR' })}
+          size="small" style={{ width: '100%', marginTop: 4 }}
+          options={[
+            { value: 'AND', label: '全部满足 (AND)' },
+            { value: 'OR', label: '任一满足 (OR)' },
+          ]}
+        />
+      </div>
+      <Divider style={{ margin: '8px 0' }} />
+      <div style={{ marginBottom: 12 }}>
+        <Text type="secondary" style={{ fontSize: 12 }}>引用规则</Text>
+        <Select
+          mode="multiple"
+          value={data.ruleKeys ?? []}
+          onChange={(value: string[]) => onUpdate({ ruleKeys: value })}
+          loading={loadingRules}
+          size="small"
+          style={{ width: '100%', marginTop: 4 }}
+          placeholder="选择要引用的规则"
+          options={rules.map(r => ({ value: r.ruleKey, label: `${r.ruleName} (${r.ruleKey})` }))}
+          optionFilterProp="label"
+          showSearch
+        />
+      </div>
+      {data.ruleKeys && data.ruleKeys.length > 0 && (
+        <div style={{ fontSize: 11, color: '#8c8c8c' }}>
+          已引用 {data.ruleKeys.length} 条规则
+        </div>
+      )}
+    </>
+  );
+}
+
 export default function NodeConfigPanel({ node, onUpdate }: NodeConfigPanelProps) {
   const handleUpdate = useCallback(
-    (updates: Partial<ConditionNodeData | ActionNodeData | EndNodeData>) => {
+    (updates: Partial<ConditionNodeData | ActionNodeData | EndNodeData | RuleSetNodeData>) => {
       onUpdate(node.id, updates);
     },
     [node.id, onUpdate],
@@ -182,8 +251,8 @@ export default function NodeConfigPanel({ node, onUpdate }: NodeConfigPanelProps
     end: { text: '结束节点', color: 'red' },
     condition: { text: '条件节点', color: 'blue' },
     action: { text: '决策节点', color: 'orange' },
+    ruleset: { text: '规则集节点', color: 'purple' },
   };
-
   const info = typeLabel[nodeType] ?? { text: nodeType, color: 'default' };
 
   return (
@@ -204,6 +273,9 @@ export default function NodeConfigPanel({ node, onUpdate }: NodeConfigPanelProps
       )}
       {nodeType === 'end' && (
         <EndConfig data={node.data as EndNodeData} onUpdate={handleUpdate} />
+      )}
+      {nodeType === 'ruleset' && (
+        <RuleSetConfig data={node.data as RuleSetNodeData} onUpdate={handleUpdate} />
       )}
       {nodeType === 'start' && (
         <div style={{ color: '#999', fontSize: 13 }}>开始节点无需配置</div>

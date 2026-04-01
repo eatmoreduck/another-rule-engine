@@ -132,6 +132,10 @@
   border-color: #faad14;
   background: #fffbe6;
 }
+.custom-node-ruleset {
+  border-color: #722ed1;
+  background: #f9f0ff;
+}
 
 .custom-node-title {
   font-weight: 600;

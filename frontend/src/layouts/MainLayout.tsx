@@ -1,5 +1,5 @@
 import { Layout, Menu, Typography } from 'antd';
-import { SafetyOutlined, SettingOutlined, ExperimentOutlined, BugOutlined, BarChartOutlined, DashboardOutlined, TableOutlined, CloudServerOutlined, ImportOutlined, FileTextOutlined } from '@ant-design/icons';
+import { SafetyOutlined, SettingOutlined, ExperimentOutlined, BugOutlined, BarChartOutlined, DashboardOutlined, TableOutlined, CloudServerOutlined, ImportOutlined, FileTextOutlined, ApartmentOutlined } from '@ant-design/icons';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 
 const { Header, Content } = Layout;
@@ -9,7 +9,12 @@ const menuItems = [
   {
     key: '/rules',
     icon: <SafetyOutlined />,
-    label: '规则管理',
+    label: '规则配置',
+  },
+  {
+    key: '/decision-flows',
+    icon: <ApartmentOutlined />,
+    label: '决策流',
   },
   {
     key: '/decision-table',

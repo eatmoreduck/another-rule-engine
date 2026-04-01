@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
-import { Button, Input, Select, Space, Card, Dropdown, Breadcrumb } from 'antd';
-import { PlusOutlined, EditOutlined, ApartmentOutlined } from '@ant-design/icons';
+import { Button, Input, Select, Space, Card, Breadcrumb } from 'antd';
+import { PlusOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import RuleTable from '../components/rules/RuleTable';
 import CreateRuleModal from '../components/rules/CreateRuleModal';
@@ -44,7 +44,7 @@ export default function RuleListPage() {
     <>
       <Breadcrumb
         style={{ marginBottom: 16 }}
-        items={[{ title: '规则管理' }]}
+        items={[{ title: '规则配置' }]}
       />
 
       <Card style={{ marginBottom: 16 }}>
@@ -68,33 +68,9 @@ export default function RuleListPage() {
               ]}
             />
           </Space>
-          <Dropdown
-            menu={{
-              items: [
-                {
-                  key: 'form',
-                  icon: <EditOutlined />,
-                  label: '表单创建',
-                  onClick: () => navigate('/rules/new'),
-                },
-                {
-                  key: 'flow',
-                  icon: <ApartmentOutlined />,
-                  label: '可视化创建',
-                  onClick: () => navigate('/rules/new/flow'),
-                },
-                {
-                  key: 'quick',
-                  label: '快速创建',
-                  onClick: () => setModalOpen(true),
-                },
-              ],
-            }}
-          >
-            <Button type="primary" icon={<PlusOutlined />}>
-              新建规则
-            </Button>
-          </Dropdown>
+          <Button type="primary" icon={<PlusOutlined />} onClick={() => navigate('/rules/new')}>
+            新建规则
+          </Button>
         </div>
         <RuleTable
           rules={rules}

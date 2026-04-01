@@ -4,7 +4,7 @@
  */
 
 import { useCallback, type DragEvent } from 'react';
-import { QuestionCircleOutlined, ThunderboltOutlined } from '@ant-design/icons';
+import { QuestionCircleOutlined, ThunderboltOutlined, ApartmentOutlined } from '@ant-design/icons';
 
 const NODE_TYPES = [
   {
@@ -18,6 +18,12 @@ const NODE_TYPES = [
     label: '决策节点',
     description: '执行决策动作',
     icon: <ThunderboltOutlined style={{ color: '#faad14', fontSize: 20 }} />,
+  },
+  {
+    type: 'ruleset',
+    label: '规则集节点',
+    description: '引用已有规则',
+    icon: <ApartmentOutlined style={{ color: '#722ed1', fontSize: 20 }} />,
   },
 ];
 

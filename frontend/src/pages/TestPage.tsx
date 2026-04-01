@@ -10,7 +10,6 @@ import {
   Breadcrumb,
   message,
   Descriptions,
-  InputNumber,
   Divider,
   Alert,
 } from 'antd';

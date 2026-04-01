@@ -26,7 +26,7 @@ import { getRule, createRule, updateRule } from '../api/rules';
 import type { Rule } from '../types/rule';
 import type {
   FlowNode, FlowEdge,
-  ConditionNodeData, ActionNodeData, EndNodeData,
+  ConditionNodeData, ActionNodeData, EndNodeData, RuleSetNodeData,
 } from '../types/flowConfig';
 import { createInitialNodes, createInitialEdges } from '../types/flowConfig';
 import { generateGroovyFromFlow } from '../utils/flowDslGenerator';
@@ -111,7 +111,7 @@ function FlowEditorInner() {
 
   // 更新节点属性（来自 NodeConfigPanel）
   const handleNodeDataUpdate = useCallback(
-    (nodeId: string, updates: Partial<ConditionNodeData | ActionNodeData | EndNodeData>) => {
+    (nodeId: string, updates: Partial<ConditionNodeData | ActionNodeData | EndNodeData | RuleSetNodeData>) => {
       setNodes((nds) =>
         nds.map((n) => {
           if (n.id === nodeId) {
@@ -132,13 +132,16 @@ function FlowEditorInner() {
     return generateGroovyFromFlow(nodes, edges);
   }, [nodes, edges]);
 
-  // 离开页面确认
+  // 离开页面确认（模式切换不拦截）
   useBlocker(
     ({ currentLocation, nextLocation }) => {
-      if (dirty && currentLocation.pathname !== nextLocation.pathname) {
-        return !window.confirm('有未保存的修改，确认离开？');
-      }
-      return false;
+      if (!dirty) return false;
+      if (currentLocation.pathname === nextLocation.pathname) return false;
+      // 模式切换（表单↔流程图）不拦截
+      const isRuleEditSwitch = nextLocation.pathname.startsWith('/rules/')
+        && (nextLocation.pathname.endsWith('/edit') || nextLocation.pathname.endsWith('/flow') || nextLocation.pathname === '/rules/new' || nextLocation.pathname === '/rules/new/flow');
+      if (isRuleEditSwitch) return false;
+      return !window.confirm('有未保存的修改，确认离开？');
     },
   );
 

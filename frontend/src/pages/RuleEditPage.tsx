@@ -15,7 +15,7 @@ import { getRule, createRule, updateRule } from '../api/rules';
 import type { Rule } from '../types/rule';
 import type { FormRuleConfig, Action, ConditionActionRule } from '../types/ruleConfig';
 import { generateGroovyFromForm } from '../utils/dslGenerator';
-import ModeSwitch from '../components/rules/ModeSwitch';
+import { parseGroovyToConfig } from '../utils/dslParser';
 import ScriptPreview from '../components/rules/ScriptPreview';
 import ConditionForm from '../components/rules/form/ConditionForm';
 import '../styles/editor.css';
@@ -51,6 +51,13 @@ export default function RuleEditPage() {
             ruleName: rule.ruleName,
             ruleDescription: rule.ruleDescription ?? '',
           });
+          // 解析已有 groovyScript 回填条件表单
+          if (rule.groovyScript) {
+            const parsed = parseGroovyToConfig(rule.groovyScript);
+            setConditions(parsed.rules);
+            setDefaultAction(parsed.defaultAction);
+            setDefaultReason(parsed.defaultReason);
+          }
         })
         .catch(() => message.error('加载规则失败'))
         .finally(() => setLoading(false));
@@ -67,13 +74,16 @@ export default function RuleEditPage() {
     return generateGroovyFromForm(config);
   }, [conditions, defaultAction, defaultReason]);
 
-  // 离开页面确认
+  // 离开页面确认（仅在离开规则编辑相关页面时触发，模式切换不拦截）
   useBlocker(
     ({ currentLocation, nextLocation }) => {
-      if (dirty && currentLocation.pathname !== nextLocation.pathname) {
-        return !window.confirm('有未保存的修改，确认离开？');
-      }
-      return false;
+      if (!dirty) return false;
+      if (currentLocation.pathname === nextLocation.pathname) return false;
+      // 模式切换（表单↔流程图）不拦截
+      const isRuleEditSwitch = nextLocation.pathname.startsWith('/rules/')
+        && (nextLocation.pathname.endsWith('/edit') || nextLocation.pathname.endsWith('/flow') || nextLocation.pathname === '/rules/new' || nextLocation.pathname === '/rules/new/flow');
+      if (isRuleEditSwitch) return false;
+      return !window.confirm('有未保存的修改，确认离开？');
     },
   );
 
@@ -132,7 +142,7 @@ export default function RuleEditPage() {
       <Breadcrumb
         style={{ marginBottom: 16 }}
         items={[
-          { title: <a onClick={() => navigate('/rules')}>规则管理</a> },
+          { title: <a onClick={() => navigate('/rules')}>规则配置</a> },
           ...(isNew
             ? [{ title: '新建规则' }]
             : [
@@ -148,7 +158,6 @@ export default function RuleEditPage() {
             {isNew ? '新建规则（表单模式）' : `编辑规则 - ${existingRule?.ruleName ?? ruleKey}`}
           </Title>
           <div className="page-header-actions">
-            <ModeSwitch currentMode="form" ruleKey={ruleKey} />
             <Button
               icon={<EyeOutlined />}
               onClick={() => setPreviewOpen(true)}

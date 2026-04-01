@@ -1,5 +1,5 @@
 import { Table, Switch, Popconfirm, Button, Space, Tooltip } from 'antd';
-import { DeleteOutlined, EyeOutlined, EditOutlined, ApartmentOutlined } from '@ant-design/icons';
+import { DeleteOutlined, EyeOutlined, EditOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import type { ColumnsType } from 'antd/es/table';
 import type { Rule } from '../../types/rule';
@@ -107,16 +107,6 @@ export default function RuleTable({
               onClick={() => navigate(`/rules/${record.ruleKey}/edit`)}
             >
               编辑
-            </Button>
-          </Tooltip>
-          <Tooltip title="可视化编辑">
-            <Button
-              type="link"
-              size="small"
-              icon={<ApartmentOutlined />}
-              onClick={() => navigate(`/rules/${record.ruleKey}/edit/flow`)}
-            >
-              可视化
             </Button>
           </Tooltip>
           <Popconfirm

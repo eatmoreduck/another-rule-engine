@@ -67,3 +67,9 @@ export async function validateScript(groovyScript: string): Promise<ValidateScri
   });
   return response.data;
 }
+
+/** 获取规则列表供规则集节点选择器使用（轻量查询） */
+export async function getRulesForSelect(): Promise<Array<{ ruleKey: string; ruleName: string }>> {
+  const response = await getRules({ page: 0, size: 200 });
+  return response.content.map(r => ({ ruleKey: r.ruleKey, ruleName: r.ruleName }));
+}

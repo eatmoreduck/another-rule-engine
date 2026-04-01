@@ -11,6 +11,7 @@ import type {
   ActionNodeData,
   EndNodeData,
   ConditionEdgeData,
+  RuleSetNodeData,
 } from '../types/flowConfig';
 import {
   generateScriptHeader,
@@ -68,6 +69,17 @@ function generateConditionBlock(
   lines.push(`${indent}}`);
 }
 
+/** 生成规则集节点的复合条件表达式 */
+function generateRuleSetExpression(data: RuleSetNodeData): string {
+  // 规则集节点现在引用已有规则，不再内联条件
+  // 此处为向后兼容保留，实际决策流通过后端引擎执行
+  const ruleKeys = (data as Record<string, unknown>).ruleKeys;
+  if (Array.isArray(ruleKeys) && ruleKeys.length > 0) {
+    return `/* 规则集引用: ${ruleKeys.join(', ')} - 由后端执行引擎处理 */`;
+  }
+  return 'true';
+}
+
 /** 处理单个节点，根据类型生成对应代码 */
 function processNode(
   node: FlowNode,
@@ -88,6 +100,26 @@ function processNode(
     }
     case 'condition': {
       generateConditionBlock(node, edges, nodes, indent, lines);
+      break;
+    }
+    case 'ruleset': {
+      // 规则集节点：生成复合条件分支
+      const data = getNodeData<RuleSetNodeData>(node);
+      const expression = generateRuleSetExpression(data);
+
+      // 查找 true 分支和 false 分支
+      const trueNode = findTargetNode(node.id, edges, nodes, true);
+      const falseNode = findTargetNode(node.id, edges, nodes, false);
+
+      lines.push(`${indent}if (${expression}) {`);
+      if (trueNode) {
+        processNode(trueNode, edges, nodes, indent + '  ', lines);
+      }
+      lines.push(`${indent}} else {`);
+      if (falseNode) {
+        processNode(falseNode, edges, nodes, indent + '  ', lines);
+      }
+      lines.push(`${indent}}`);
       break;
     }
     case 'action': {

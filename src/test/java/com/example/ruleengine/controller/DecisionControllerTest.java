@@ -2,6 +2,7 @@ package com.example.ruleengine.controller;
 
 import com.example.ruleengine.model.DecisionRequest;
 import com.example.ruleengine.model.DecisionResponse;
+import com.example.ruleengine.service.DecisionFlowExecutionService;
 import com.example.ruleengine.service.RuleExecutionService;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -41,6 +42,9 @@ class DecisionControllerTest {
 
     @MockBean
     private RuleExecutionService ruleExecutionService;
+
+    @MockBean
+    private DecisionFlowExecutionService decisionFlowExecutionService;
 
     // ==================== 正常请求测试 ====================
 

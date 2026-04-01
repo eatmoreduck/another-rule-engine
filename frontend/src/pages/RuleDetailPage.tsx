@@ -1,21 +1,23 @@
 /**
  * RuleDetailPage - 规则详情页
- * Plan 03-04: 支持双模式编辑入口，启用/禁用，脚本查看
+ * 支持人类可读的规则逻辑展示 + 原始 Groovy 脚本查看
  */
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   Card, Descriptions, Button, Space, Breadcrumb, Popconfirm, message,
-  Collapse, Switch, Typography, Spin,
+  Collapse, Switch, Typography, Spin, Table, Tag,
 } from 'antd';
 import {
-  EditOutlined, ApartmentOutlined, DeleteOutlined, ArrowLeftOutlined,
+  EditOutlined, DeleteOutlined, ArrowLeftOutlined,
   CheckCircleOutlined, StopOutlined,
 } from '@ant-design/icons';
 import { useParams, useNavigate } from 'react-router-dom';
 import { getRule, deleteRule, enableRule, disableRule } from '../api/rules';
 import type { Rule } from '../types/rule';
 import RuleStatusBadge from '../components/rules/RuleStatusBadge';
+import { parseGroovyForDisplay } from '../utils/dslParser';
+import { OPERATOR_LABELS, ACTION_LABELS } from '../types/ruleConfig';
 
 const { Text } = Typography;
 
@@ -66,6 +68,12 @@ export default function RuleDetailPage() {
     }
   }, [rule, navigate]);
 
+  // 在顶层解析 Groovy 脚本（必须在 early return 之前调用 hooks）
+  const parsedDisplay = useMemo(() => {
+    if (!rule?.groovyScript) return null;
+    return parseGroovyForDisplay(rule.groovyScript, OPERATOR_LABELS, ACTION_LABELS);
+  }, [rule?.groovyScript]);
+
   if (loading) {
     return (
       <div style={{ textAlign: 'center', padding: 48 }}>
@@ -86,12 +94,15 @@ export default function RuleDetailPage() {
     );
   }
 
+  const actionTagColor = (label: string) =>
+    label === '通过' ? 'green' : label === '拒绝' ? 'red' : 'orange';
+
   return (
     <div>
       <Breadcrumb
         style={{ marginBottom: 16 }}
         items={[
-          { title: <a onClick={() => navigate('/rules')}>规则管理</a> },
+          { title: <a onClick={() => navigate('/rules')}>规则配置</a> },
           { title: rule.ruleName },
         ]}
       />
@@ -119,13 +130,7 @@ export default function RuleDetailPage() {
               icon={<EditOutlined />}
               onClick={() => navigate(`/rules/${rule.ruleKey}/edit`)}
             >
-              表单编辑
-            </Button>
-            <Button
-              icon={<ApartmentOutlined />}
-              onClick={() => navigate(`/rules/${rule.ruleKey}/edit/flow`)}
-            >
-              可视化编辑
+              编辑
             </Button>
             <Popconfirm
               title="确认删除此规则？删除后不可恢复。"
@@ -167,11 +172,60 @@ export default function RuleDetailPage() {
           </Descriptions.Item>
         </Descriptions>
 
+        {/* 人类可读的规则逻辑展示 */}
+        {parsedDisplay && (() => {
+          if (parsedDisplay.conditions.length === 0) {
+            return (
+              <Card title="规则逻辑" size="small" style={{ marginBottom: 16 }}>
+                <Space>
+                  <Text type="secondary">无条件规则，默认动作：</Text>
+                  <Tag color={actionTagColor(parsedDisplay.defaultActionLabel)}>
+                    {parsedDisplay.defaultActionLabel}
+                  </Tag>
+                  <Text type="secondary">{parsedDisplay.defaultReason}</Text>
+                </Space>
+              </Card>
+            );
+          }
+          return (
+            <Card title="规则逻辑" size="small" style={{ marginBottom: 16 }}>
+              <Table
+                size="small"
+                pagination={false}
+                dataSource={parsedDisplay.conditions.map((c, i) => ({ ...c, key: i }))}
+                columns={[
+                  { title: '字段', dataIndex: 'fieldName', width: 140 },
+                  { title: '运算符', dataIndex: 'operatorLabel', width: 100 },
+                  { title: '阈值', dataIndex: 'threshold', width: 120 },
+                  {
+                    title: '命中动作',
+                    dataIndex: 'actionLabel',
+                    width: 100,
+                    render: (text: string) => (
+                      <Tag color={actionTagColor(text)}>{text}</Tag>
+                    ),
+                  },
+                  { title: '原因', dataIndex: 'reason' },
+                ]}
+              />
+              <div style={{ marginTop: 12, padding: '8px 12px', background: '#fafafa', borderRadius: 6 }}>
+                <Space>
+                  <Text type="secondary">默认动作（无匹配条件时）：</Text>
+                  <Tag color={actionTagColor(parsedDisplay.defaultActionLabel)}>
+                    {parsedDisplay.defaultActionLabel}
+                  </Tag>
+                  <Text type="secondary">{parsedDisplay.defaultReason}</Text>
+                </Space>
+              </div>
+            </Card>
+          );
+        })()}
+
         <Collapse
           items={[
             {
               key: 'script',
-              label: 'Groovy 脚本',
+              label: 'Groovy 脚本（原始代码）',
               children: (
                 <pre
                   style={{

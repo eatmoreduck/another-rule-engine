@@ -17,22 +17,21 @@ import {
 } from '@xyflow/react';
 import type { FlowNode, FlowEdge } from '../../types/flowConfig';
 
+import { genId } from '../../types/flowConfig';
+
 import StartNodeComponent from './nodes/StartNode';
 import EndNodeComponent from './nodes/EndNode';
 import ConditionNodeComponent from './nodes/ConditionNode';
 import ActionNodeComponent from './nodes/ActionNode';
+import RuleSetNodeComponent from './nodes/RuleSetNode';
 
 const nodeTypes: NodeTypes = {
   start: StartNodeComponent,
   end: EndNodeComponent,
   condition: ConditionNodeComponent,
   action: ActionNodeComponent,
+  ruleset: RuleSetNodeComponent,
 };
-
-let nodeIdCounter = 100;
-function getNextId(): string {
-  return `node-${++nodeIdCounter}`;
-}
 
 function getDefaultConditionData() {
   return {
@@ -50,6 +49,14 @@ function getDefaultActionData() {
     nodeType: 'action' as const,
     action: 'REJECT' as const,
     reason: '',
+  };
+}
+function getDefaultRuleSetData() {
+  return {
+    label: '规则集',
+    nodeType: 'ruleset' as const,
+    logic: 'AND' as const,
+    ruleKeys: [] as string[],
   };
 }
 
@@ -71,7 +78,6 @@ export default function FlowCanvas({
   onNodeDoubleClick,
 }: FlowCanvasProps) {
   const { screenToFlowPosition, addNodes } = useReactFlow();
-
   const onDragOver = useCallback((event: DragEvent) => {
     event.preventDefault();
     event.dataTransfer.dropEffect = 'move';
@@ -80,40 +86,41 @@ export default function FlowCanvas({
   const onDrop = useCallback(
     (event: DragEvent) => {
       event.preventDefault();
-
       const type = event.dataTransfer.getData('application/reactflow');
       if (!type) return;
-
       const position = screenToFlowPosition({
         x: event.clientX,
         y: event.clientY,
       });
-
       let newNode: FlowNode;
-
       if (type === 'condition') {
         newNode = {
-          id: getNextId(),
+          id: genId(),
           type: 'condition',
           position,
           data: getDefaultConditionData(),
         };
       } else if (type === 'action') {
         newNode = {
-          id: getNextId(),
+          id: genId(),
           type: 'action',
           position,
           data: getDefaultActionData(),
         };
+      } else if (type === 'ruleset') {
+        newNode = {
+          id: genId(),
+          type: 'ruleset',
+          position,
+          data: getDefaultRuleSetData(),
+        };
       } else {
         return;
       }
-
       addNodes(newNode);
     },
     [screenToFlowPosition, addNodes],
   );
-
   return (
     <ReactFlow
       nodes={nodes}

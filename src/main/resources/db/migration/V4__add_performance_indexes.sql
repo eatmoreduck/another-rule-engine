@@ -44,29 +44,33 @@ CREATE INDEX IF NOT EXISTS idx_rule_versions_rule_key ON rule_versions(rule_key)
 -- 10.2 为 version 字段创建索引
 CREATE INDEX IF NOT EXISTS idx_rule_versions_version ON rule_versions(version);
 
--- 10.3 为 created_at 字段创建索引
-CREATE INDEX IF NOT EXISTS idx_rule_versions_created_at ON rule_versions(created_at);
+-- 10.3 为 changed_at 字段创建索引
+CREATE INDEX IF NOT EXISTS idx_rule_versions_changed_at ON rule_versions(changed_at);
 
 -- 10.4 创建复合索引：(rule_key, version)
 -- 用途：优化查询指定规则的特定版本
 CREATE INDEX IF NOT EXISTS idx_rule_versions_rule_key_version ON rule_versions(rule_key, version DESC);
 
 -- 11. 为审计日志表添加索引
--- 11.1 为 rule_key 字段创建索引
-CREATE INDEX IF NOT EXISTS idx_audit_logs_rule_key ON audit_logs(rule_key);
+-- 11.1 为 (entity_type, entity_id) 创建复合索引
+-- 用途：优化查询指定实体的审计日志
+CREATE INDEX IF NOT EXISTS idx_audit_logs_entity_type_id ON audit_logs(entity_type, entity_id);
 
--- 11.2 为 event_type 字段创建索引
-CREATE INDEX IF NOT EXISTS idx_audit_logs_event_type ON audit_logs(event_type);
+-- 11.2 为 operation 字段创建索引
+-- 用途：优化按操作类型查询审计日志
+CREATE INDEX IF NOT EXISTS idx_audit_logs_operation ON audit_logs(operation);
 
--- 11.3 为 created_at 字段创建索引
-CREATE INDEX IF NOT EXISTS idx_audit_logs_created_at ON audit_logs(created_at);
+-- 11.3 为 operation_time 字段创建索引
+-- 用途：优化按操作时间排序查询
+CREATE INDEX IF NOT EXISTS idx_audit_logs_operation_time ON audit_logs(operation_time);
 
--- 11.4 为 actor 字段创建索引
-CREATE INDEX IF NOT EXISTS idx_audit_logs_actor ON audit_logs(actor);
+-- 11.4 为 operator 字段创建索引
+-- 用途：优化按操作人查询审计日志
+CREATE INDEX IF NOT EXISTS idx_audit_logs_operator ON audit_logs(operator);
 
--- 11.5 创建复合索引：(rule_key, created_at)
--- 用途：优化查询指定规则的审计历史
-CREATE INDEX IF NOT EXISTS idx_audit_logs_rule_key_created_at ON audit_logs(rule_key, created_at DESC);
+-- 11.5 创建复合索引：(entity_type, entity_id, operation_time)
+-- 用途：优化查询指定实体的审计历史
+CREATE INDEX IF NOT EXISTS idx_audit_logs_entity_time ON audit_logs(entity_type, entity_id, operation_time DESC);
 
 -- 注释：索引策略
 -- 1. 单列索引：用于单个字段的查询优化
