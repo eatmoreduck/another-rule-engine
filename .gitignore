@@ -39,3 +39,9 @@ frontend/.env.local
 *.bak
 *.swp
 *~
+
+# Claude Code
+.claude/
+
+# Local docs
+docs/
