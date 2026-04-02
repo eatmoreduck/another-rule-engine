@@ -1,6 +1,5 @@
 package com.example.ruleengine.cache;
 
-import com.example.ruleengine.constants.RuleStatus;
 import com.example.ruleengine.domain.Rule;
 import com.example.ruleengine.metrics.CacheMetrics;
 import com.example.ruleengine.repository.RuleRepository;
@@ -65,7 +64,6 @@ class CachePerformanceTest {
                 .ruleDescription("用于测试缓存性能")
                 .groovyScript("def amount = context['amount'] as double; return amount > 1000.0")
                 .version(1)
-                .status(RuleStatus.ACTIVE)
                 .enabled(true)
                 .createdBy("test")
                 .build();

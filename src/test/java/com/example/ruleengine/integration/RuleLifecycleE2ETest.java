@@ -1,6 +1,5 @@
 package com.example.ruleengine.integration;
 
-import com.example.ruleengine.constants.RuleStatus;
 import com.example.ruleengine.domain.Rule;
 import com.example.ruleengine.model.dto.CreateRuleRequest;
 import com.example.ruleengine.model.dto.UpdateRuleRequest;
@@ -25,11 +24,11 @@ import static org.mockito.Mockito.*;
 /**
  * 规则生命周期端到端测试
  * 测试完整的规则生命周期流程：
- * 1. 创建规则 → 状态为 DRAFT
- * 2. 启用规则 → 状态为 ACTIVE
+ * 1. 创建规则 → enabled=true
+ * 2. 启用规则 → enabled=true
  * 3. 更新规则 → 创建版本 2
  * 4. 禁用规则 → enabled=false
- * 5. 删除规则 → status=DELETED
+ * 5. 删除规则 → deleted=true, enabled=false
  */
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = Strictness.LENIENT)
@@ -80,7 +79,6 @@ class RuleLifecycleE2ETest {
                 .ruleDescription("用于端到端测试的规则")
                 .groovyScript("return features.amount > 1000")
                 .version(1)
-                .status(RuleStatus.DRAFT)
                 .createdBy("test_user")
                 .enabled(true)
                 .build();
@@ -96,21 +94,19 @@ class RuleLifecycleE2ETest {
     void testCompleteRuleLifecycle() {
         String operator = "e2e_test_user";
 
-        // 步骤 1: 创建规则 → 状态为 DRAFT
+        // 步骤 1: 创建规则 → enabled=true
         when(ruleRepository.save(any(Rule.class))).thenReturn(testRule);
         Rule createdRule = ruleLifecycleService.createRule(createRequest, operator);
 
         assertNotNull(createdRule);
         assertEquals("e2e_test_rule", createdRule.getRuleKey());
-        assertEquals(RuleStatus.DRAFT, createdRule.getStatus());
         assertEquals(1, createdRule.getVersion());
         assertTrue(createdRule.getEnabled());
 
-        // 步骤 2: 启用规则 → 状态为 ACTIVE
+        // 步骤 2: 启用规则 → enabled=true
         Rule activeRule = Rule.builder()
                 .id(1L)
                 .ruleKey("e2e_test_rule")
-                .status(RuleStatus.ACTIVE)
                 .enabled(true)
                 .build();
 
@@ -120,7 +116,6 @@ class RuleLifecycleE2ETest {
         Rule enabledRule = ruleLifecycleService.enableRule("e2e_test_rule", operator);
 
         assertNotNull(enabledRule);
-        assertEquals(RuleStatus.ACTIVE, enabledRule.getStatus());
         assertTrue(enabledRule.getEnabled());
 
         // 步骤 3: 更新规则 → 创建版本 2
@@ -130,7 +125,6 @@ class RuleLifecycleE2ETest {
                 .ruleName("更新后的端到端测试规则")
                 .groovyScript("return features.amount > 2000")
                 .version(2)
-                .status(RuleStatus.ACTIVE)
                 .enabled(true)
                 .build();
 
@@ -151,7 +145,6 @@ class RuleLifecycleE2ETest {
         Rule disabledRule = Rule.builder()
                 .id(1L)
                 .ruleKey("e2e_test_rule")
-                .status(RuleStatus.ACTIVE)
                 .enabled(false)
                 .build();
 
@@ -163,11 +156,11 @@ class RuleLifecycleE2ETest {
         assertNotNull(result2);
         assertFalse(result2.getEnabled());
 
-        // 步骤 5: 删除规则 → status=DELETED
+        // 步骤 5: 删除规则 → deleted=true, enabled=false
         Rule deletedRule = Rule.builder()
                 .id(1L)
                 .ruleKey("e2e_test_rule")
-                .status(RuleStatus.DELETED)
+                .deleted(true)
                 .enabled(false)
                 .build();
 
@@ -177,7 +170,7 @@ class RuleLifecycleE2ETest {
         ruleLifecycleService.deleteRule("e2e_test_rule", operator);
 
         Rule finalRule = ruleLifecycleService.getRule("e2e_test_rule");
-        assertEquals(RuleStatus.DELETED, finalRule.getStatus());
+        assertTrue(finalRule.getDeleted());
         assertFalse(finalRule.getEnabled());
     }
 
@@ -189,13 +182,12 @@ class RuleLifecycleE2ETest {
         // 创建规则
         when(ruleRepository.save(any(Rule.class))).thenReturn(testRule);
         Rule rule = ruleLifecycleService.createRule(createRequest, operator);
-        assertEquals(RuleStatus.DRAFT, rule.getStatus());
+        assertTrue(rule.getEnabled());
 
-        // DRAFT → ACTIVE
+        // 启用规则
         Rule activeRule = Rule.builder()
                 .id(1L)
                 .ruleKey("e2e_test_rule")
-                .status(RuleStatus.ACTIVE)
                 .enabled(true)
                 .build();
 
@@ -203,13 +195,12 @@ class RuleLifecycleE2ETest {
         when(ruleRepository.save(any(Rule.class))).thenReturn(activeRule);
 
         Rule result = ruleLifecycleService.enableRule("e2e_test_rule", operator);
-        assertEquals(RuleStatus.ACTIVE, result.getStatus());
+        assertTrue(result.getEnabled());
 
-        // ACTIVE → DRAFT (禁用)
+        // 禁用规则
         Rule disabledRule = Rule.builder()
                 .id(1L)
                 .ruleKey("e2e_test_rule")
-                .status(RuleStatus.ACTIVE)
                 .enabled(false)
                 .build();
 
@@ -217,15 +208,13 @@ class RuleLifecycleE2ETest {
         when(ruleRepository.save(any(Rule.class))).thenReturn(disabledRule);
 
         Rule result2 = ruleLifecycleService.disableRule("e2e_test_rule", operator);
-        // 禁用不改变状态，只改变 enabled
-        assertEquals(RuleStatus.ACTIVE, result2.getStatus());
         assertFalse(result2.getEnabled());
 
-        // 任何状态 → DELETED
+        // 删除规则 → deleted=true
         Rule deletedRule = Rule.builder()
                 .id(1L)
                 .ruleKey("e2e_test_rule")
-                .status(RuleStatus.DELETED)
+                .deleted(true)
                 .enabled(false)
                 .build();
 
@@ -235,7 +224,7 @@ class RuleLifecycleE2ETest {
         ruleLifecycleService.deleteRule("e2e_test_rule", operator);
 
         Rule finalRule = ruleLifecycleService.getRule("e2e_test_rule");
-        assertEquals(RuleStatus.DELETED, finalRule.getStatus());
+        assertTrue(finalRule.getDeleted());
         assertFalse(finalRule.getEnabled());
     }
 

@@ -1,6 +1,5 @@
 package com.example.ruleengine.validator;
 
-import com.example.ruleengine.constants.RuleStatus;
 import com.example.ruleengine.domain.Rule;
 import com.example.ruleengine.repository.RuleRepository;
 import java.util.ArrayList;
@@ -55,11 +54,11 @@ public class RuleUsageChecker {
       }
 
       boolean inUse = Boolean.TRUE.equals(rule.getEnabled())
-          && rule.getStatus() == RuleStatus.ACTIVE;
+          && !rule.getDeleted();
 
       if (inUse) {
-        log.debug("规则正在使用中: ruleKey={}, status={}, enabled={}",
-            ruleKey, rule.getStatus(), rule.getEnabled());
+        log.debug("规则正在使用中: ruleKey={}, enabled={}, deleted={}",
+            ruleKey, rule.getEnabled(), rule.getDeleted());
       }
 
       return inUse;
@@ -109,8 +108,8 @@ public class RuleUsageChecker {
     info.setRuleKey(ruleKey);
     info.setRuleName(rule.getRuleName());
     info.setActive(Boolean.TRUE.equals(rule.getEnabled())
-        && rule.getStatus() == RuleStatus.ACTIVE);
-    info.setStatus(rule.getStatus().getDescription());
+        && !rule.getDeleted());
+    info.setStatus(Boolean.TRUE.equals(rule.getEnabled()) ? "启用" : "禁用");
     info.setEnabled(rule.getEnabled());
     info.setVersion(rule.getVersion());
     info.setCreatedBy(rule.getCreatedBy());
@@ -124,23 +123,19 @@ public class RuleUsageChecker {
 
   /**
    * 检查规则是否可以安全删除
-   *
-   * @param ruleKey 规则Key
-   * @return true 如果规则可以安全删除，false 否则
+   * 当前实现：只要规则存在就可以软删除（软删除会自动禁用）
+   * 后续增强：检查是否被决策流引用
    */
   public boolean canSafelyDelete(String ruleKey) {
-    if (isInUse(ruleKey)) {
-      log.warn("规则正在使用中，不能删除: ruleKey={}", ruleKey);
+    Rule rule = ruleRepository.findByRuleKey(ruleKey).orElse(null);
+    if (rule == null) {
       return false;
     }
-
-    List<String> dependentRules = getDependentRules(ruleKey);
-    if (!dependentRules.isEmpty()) {
-      log.warn("规则存在依赖关系，不能删除: ruleKey={}, dependentRules={}",
-          ruleKey, dependentRules);
+    if (rule.getDeleted()) {
+      log.warn("规则已经被删除: ruleKey={}", ruleKey);
       return false;
     }
-
+    // TODO: 检查是否被决策流引用，如果被引用需要二次确认
     return true;
   }
 

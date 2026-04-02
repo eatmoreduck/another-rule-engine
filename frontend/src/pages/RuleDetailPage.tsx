@@ -1,12 +1,12 @@
 /**
  * RuleDetailPage - 规则详情页
- * 支持人类可读的规则逻辑展示 + 原始 Groovy 脚本查看
+ * 单规则模型：条件树 + 匹配动作 + 不匹配默认动作
  */
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   Card, Descriptions, Button, Space, Breadcrumb, Popconfirm, message,
-  Collapse, Switch, Typography, Spin, Table, Tag,
+  Switch, Typography, Spin, Tag, Alert, Row, Col,
 } from 'antd';
 import {
   EditOutlined, DeleteOutlined, ArrowLeftOutlined,
@@ -15,11 +15,56 @@ import {
 import { useParams, useNavigate } from 'react-router-dom';
 import { getRule, deleteRule, enableRule, disableRule } from '../api/rules';
 import type { Rule } from '../types/rule';
-import RuleStatusBadge from '../components/rules/RuleStatusBadge';
-import { parseGroovyForDisplay } from '../utils/dslParser';
+import { parseSingleRuleForDisplay } from '../utils/dslParser';
+import type { ConditionTreeDisplayNode } from '../utils/dslParser';
 import { OPERATOR_LABELS, ACTION_LABELS } from '../types/ruleConfig';
 
+/** 判断展示节点是否为空条件 */
+function isEmptyDisplayNode(node: ConditionTreeDisplayNode): boolean {
+  if (node.type === 'condition') {
+    return !node.fieldName || node.fieldName.trim() === '';
+  }
+  if (node.type === 'group') {
+    return !node.children || node.children.length === 0 || node.children.every(isEmptyDisplayNode);
+  }
+  return false;
+}
+
 const { Text } = Typography;
+
+/** 递归渲染条件树展示节点 */
+function ConditionTreeDisplay({ node }: { node: ConditionTreeDisplayNode }) {
+  if (node.type === 'condition') {
+    return (
+      <span style={{ marginRight: 8 }}>
+        <Text strong>{node.fieldName}</Text>
+        {' '}
+        <Tag color="blue">{node.operatorLabel}</Tag>
+        {' '}
+        <Text code>{node.threshold}</Text>
+      </span>
+    );
+  }
+
+  // group
+  const logicColor = node.logic === 'AND' ? 'blue' : 'orange';
+  return (
+    <span>
+      {'('}
+      {node.children?.map((child, i) => (
+        <span key={i}>
+          {i > 0 && (
+            <Tag color={logicColor} style={{ margin: '0 4px' }}>
+              {node.logic}
+            </Tag>
+          )}
+          <ConditionTreeDisplay node={child} />
+        </span>
+      ))}
+      {')'}
+    </span>
+  );
+}
 
 export default function RuleDetailPage() {
   const { ruleKey } = useParams<{ ruleKey: string }>();
@@ -68,10 +113,10 @@ export default function RuleDetailPage() {
     }
   }, [rule, navigate]);
 
-  // 在顶层解析 Groovy 脚本（必须在 early return 之前调用 hooks）
+  // 单规则解析展示
   const parsedDisplay = useMemo(() => {
     if (!rule?.groovyScript) return null;
-    return parseGroovyForDisplay(rule.groovyScript, OPERATOR_LABELS, ACTION_LABELS);
+    return parseSingleRuleForDisplay(rule.groovyScript, OPERATOR_LABELS, ACTION_LABELS);
   }, [rule?.groovyScript]);
 
   if (loading) {
@@ -148,7 +193,11 @@ export default function RuleDetailPage() {
         <Descriptions bordered column={2} style={{ marginBottom: 24 }}>
           <Descriptions.Item label="规则标识">{rule.ruleKey}</Descriptions.Item>
           <Descriptions.Item label="状态">
-            <RuleStatusBadge status={rule.status} />
+            {rule.enabled ? (
+              <Tag color="green">已启用</Tag>
+            ) : (
+              <Tag color="default">已禁用</Tag>
+            )}
           </Descriptions.Item>
           <Descriptions.Item label="版本">{rule.version}</Descriptions.Item>
           <Descriptions.Item label="启用状态">
@@ -172,81 +221,97 @@ export default function RuleDetailPage() {
           </Descriptions.Item>
         </Descriptions>
 
-        {/* 人类可读的规则逻辑展示 */}
-        {parsedDisplay && (() => {
-          if (parsedDisplay.conditions.length === 0) {
-            return (
-              <Card title="规则逻辑" size="small" style={{ marginBottom: 16 }}>
-                <Space>
-                  <Text type="secondary">无条件规则，默认动作：</Text>
-                  <Tag color={actionTagColor(parsedDisplay.defaultActionLabel)}>
-                    {parsedDisplay.defaultActionLabel}
-                  </Tag>
-                  <Text type="secondary">{parsedDisplay.defaultReason}</Text>
-                </Space>
-              </Card>
-            );
-          }
-          return (
-            <Card title="规则逻辑" size="small" style={{ marginBottom: 16 }}>
-              <Table
-                size="small"
-                pagination={false}
-                dataSource={parsedDisplay.conditions.map((c, i) => ({ ...c, key: i }))}
-                columns={[
-                  { title: '字段', dataIndex: 'fieldName', width: 140 },
-                  { title: '运算符', dataIndex: 'operatorLabel', width: 100 },
-                  { title: '阈值', dataIndex: 'threshold', width: 120 },
-                  {
-                    title: '命中动作',
-                    dataIndex: 'actionLabel',
-                    width: 100,
-                    render: (text: string) => (
-                      <Tag color={actionTagColor(text)}>{text}</Tag>
-                    ),
-                  },
-                  { title: '原因', dataIndex: 'reason' },
-                ]}
-              />
-              <div style={{ marginTop: 12, padding: '8px 12px', background: '#fafafa', borderRadius: 6 }}>
-                <Space>
-                  <Text type="secondary">默认动作（无匹配条件时）：</Text>
-                  <Tag color={actionTagColor(parsedDisplay.defaultActionLabel)}>
-                    {parsedDisplay.defaultActionLabel}
-                  </Tag>
-                  <Text type="secondary">{parsedDisplay.defaultReason}</Text>
-                </Space>
-              </div>
-            </Card>
-          );
-        })()}
+        {/* 左右布局：规则逻辑 + Groovy 脚本 */}
+        <Row gutter={16}>
+          {/* 左侧：规则逻辑 */}
+          <Col xs={24} lg={14}>
+            {parsedDisplay && (
+              <Card title="规则逻辑" size="small">
+                {isEmptyDisplayNode(parsedDisplay.conditionTree) ? (
+                  <>
+                    <Alert
+                      type="info"
+                      showIcon
+                      message="无条件限制，所有请求执行以下动作"
+                      style={{ marginBottom: 12 }}
+                    />
+                    <div style={{
+                      padding: '8px 12px',
+                      background: '#fafafa',
+                      borderRadius: 6,
+                    }}>
+                      <Text type="secondary">执行动作：</Text>
+                      <Tag
+                        color={actionTagColor(parsedDisplay.defaultActionLabel)}
+                        style={{ marginLeft: 8 }}
+                      >
+                        {parsedDisplay.defaultActionLabel}
+                      </Tag>
+                      <Text type="secondary"> {parsedDisplay.defaultReason}</Text>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    {/* 条件树 */}
+                    <div style={{ marginBottom: 12 }}>
+                      <Text type="secondary" style={{ marginRight: 8 }}>条件：</Text>
+                      <ConditionTreeDisplay node={parsedDisplay.conditionTree} />
+                    </div>
 
-        <Collapse
-          items={[
-            {
-              key: 'script',
-              label: 'Groovy 脚本（原始代码）',
-              children: (
-                <pre
-                  style={{
-                    background: '#1e1e1e',
-                    color: '#d4d4d4',
-                    padding: 16,
-                    borderRadius: 8,
-                    fontFamily: "'Menlo', 'Monaco', 'Courier New', monospace",
-                    fontSize: 13,
-                    lineHeight: 1.6,
-                    overflow: 'auto',
-                    whiteSpace: 'pre-wrap',
-                    margin: 0,
-                  }}
-                >
-                  {rule.groovyScript}
-                </pre>
-              ),
-            },
-          ]}
-        />
+                    {/* 匹配动作 */}
+                    <div style={{
+                      padding: '8px 12px',
+                      background: '#f6ffed',
+                      borderRadius: 6,
+                      border: '1px solid #b7eb8f',
+                      marginBottom: 8,
+                    }}>
+                      <Text type="secondary">满足条件时：</Text>
+                      <Tag
+                        color={actionTagColor(parsedDisplay.actionLabel)}
+                        style={{ marginLeft: 8 }}
+                      >
+                        {parsedDisplay.actionLabel}
+                      </Tag>
+                      {parsedDisplay.reason && (
+                        <Text type="secondary"> — {parsedDisplay.reason}</Text>
+                      )}
+                    </div>
+
+                    {/* 不匹配默认动作 */}
+                    <div style={{
+                      padding: '8px 12px',
+                      background: '#fafafa',
+                      borderRadius: 6,
+                    }}>
+                      <Text type="secondary">不满足条件时（默认）：</Text>
+                      <Tag
+                        color={actionTagColor(parsedDisplay.defaultActionLabel)}
+                        style={{ marginLeft: 8 }}
+                      >
+                        {parsedDisplay.defaultActionLabel}
+                      </Tag>
+                      <Text type="secondary"> {parsedDisplay.defaultReason}</Text>
+                    </div>
+                  </>
+                )}
+              </Card>
+            )}
+          </Col>
+
+          {/* 右侧：Groovy 脚本 */}
+          <Col xs={24} lg={10}>
+            <Card
+              title={<Text strong>Groovy 脚本</Text>}
+              size="small"
+              style={{ position: 'sticky', top: 16 }}
+            >
+              <pre className="script-preview-code" style={{ margin: 0 }}>
+                {rule.groovyScript}
+              </pre>
+            </Card>
+          </Col>
+        </Row>
       </Card>
     </div>
   );

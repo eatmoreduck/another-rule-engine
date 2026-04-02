@@ -1,6 +1,5 @@
 package com.example.ruleengine.domain;
 
-import com.example.ruleengine.constants.RuleStatus;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -43,11 +42,6 @@ public class Rule {
     @Builder.Default
     private Integer version = 1;
 
-    @Enumerated(EnumType.STRING)
-    @Column(name = "status", nullable = false, length = 50)
-    @Builder.Default
-    private RuleStatus status = RuleStatus.DRAFT;
-
     @Column(name = "created_by", nullable = false, length = 255)
     private String createdBy;
 
@@ -65,6 +59,13 @@ public class Rule {
     @Column(name = "enabled", nullable = false)
     @Builder.Default
     private Boolean enabled = true;
+
+    /**
+     * 软删除标记
+     */
+    @Column(name = "deleted", nullable = false)
+    @Builder.Default
+    private Boolean deleted = false;
 
     /**
      * 乐观锁版本号

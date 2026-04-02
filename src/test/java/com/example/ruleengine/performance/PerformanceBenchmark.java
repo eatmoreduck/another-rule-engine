@@ -1,6 +1,5 @@
 package com.example.ruleengine.performance;
 
-import com.example.ruleengine.constants.RuleStatus;
 import com.example.ruleengine.domain.Rule;
 import com.example.ruleengine.repository.RuleRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -53,7 +52,6 @@ public class PerformanceBenchmark {
                 .ruleDescription("性能测试规则")
                 .groovyScript("def amount = context['amount'] as double; return amount > 1000.0")
                 .version(1)
-                .status(RuleStatus.ACTIVE)
                 .enabled(true)
                 .createdBy("test")
                 .createdAt(LocalDateTime.now())
@@ -183,7 +181,6 @@ public class PerformanceBenchmark {
                     .ruleDescription("不同数据量性能测试")
                     .groovyScript("def amount = context['amount'] as double; return amount > 1000.0")
                     .version(1)
-                    .status(RuleStatus.ACTIVE)
                     .enabled(true)
                     .createdBy("test")
                     .createdAt(LocalDateTime.now())

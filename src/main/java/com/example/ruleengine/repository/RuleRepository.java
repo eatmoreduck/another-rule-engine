@@ -1,6 +1,5 @@
 package com.example.ruleengine.repository;
 
-import com.example.ruleengine.constants.RuleStatus;
 import com.example.ruleengine.domain.Rule;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -32,29 +31,14 @@ public interface RuleRepository extends JpaRepository<Rule, Long> {
     Optional<Rule> findByRuleKeyAndEnabledTrue(String ruleKey);
 
     /**
-     * 根据 ruleKey 查询生效中的规则
-     */
-    Optional<Rule> findByRuleKeyAndStatusAndEnabledTrue(String ruleKey, RuleStatus status);
-
-    /**
      * 检查 ruleKey 是否存在
      */
     boolean existsByRuleKey(String ruleKey);
 
     /**
-     * 根据状态查询规则
-     */
-    List<Rule> findByStatus(RuleStatus status);
-
-    /**
      * 查询所有启用的规则
      */
     List<Rule> findByEnabledTrue();
-
-    /**
-     * 根据状态查询启用的规则
-     */
-    List<Rule> findByStatusAndEnabledTrue(RuleStatus status);
 
     /**
      * 根据 ruleKey 列表批量查询规则
@@ -69,19 +53,9 @@ public interface RuleRepository extends JpaRepository<Rule, Long> {
     Optional<String> findScriptByKey(@Param("ruleKey") String ruleKey);
 
     /**
-     * 根据状态和创建人分页查询
-     */
-    Page<Rule> findByStatusAndCreatedBy(RuleStatus status, String createdBy, Pageable pageable);
-
-    /**
      * 根据创建人分页查询
      */
     Page<Rule> findByCreatedBy(String createdBy, Pageable pageable);
-
-    /**
-     * 根据状态分页查询
-     */
-    Page<Rule> findByStatus(RuleStatus status, Pageable pageable);
 
     /**
      * 根据启用状态分页查询
@@ -98,19 +72,19 @@ public interface RuleRepository extends JpaRepository<Rule, Long> {
      * 综合查询（支持多条件组合）
      */
     @Query("SELECT r FROM Rule r WHERE " +
-           "(:status IS NULL OR r.status = :status) AND " +
            "(:createdBy IS NULL OR r.createdBy = :createdBy) AND " +
            "(:enabled IS NULL OR r.enabled = :enabled) AND " +
            "(:keyword IS NULL OR r.ruleKey LIKE %:keyword% OR r.ruleName LIKE %:keyword%) AND " +
+           "(:deleted IS NULL OR r.deleted = :deleted) AND " +
            "(:createdAtStart IS NULL OR r.createdAt >= :createdAtStart) AND " +
            "(:createdAtEnd IS NULL OR r.createdAt <= :createdAtEnd) AND " +
            "(:updatedAtStart IS NULL OR r.updatedAt >= :updatedAtStart) AND " +
            "(:updatedAtEnd IS NULL OR r.updatedAt <= :updatedAtEnd)")
     Page<Rule> findByConditions(
-            @Param("status") RuleStatus status,
             @Param("createdBy") String createdBy,
             @Param("enabled") Boolean enabled,
             @Param("keyword") String keyword,
+            @Param("deleted") Boolean deleted,
             @Param("createdAtStart") LocalDateTime createdAtStart,
             @Param("createdAtEnd") LocalDateTime createdAtEnd,
             @Param("updatedAtStart") LocalDateTime updatedAtStart,
@@ -133,4 +107,24 @@ public interface RuleRepository extends JpaRepository<Rule, Long> {
      */
     @Query("SELECT r.ruleKey FROM Rule r WHERE r.environmentId = :environmentId")
     List<String> findRuleKeysByEnvironmentId(@Param("environmentId") Long environmentId);
+
+    /**
+     * 查询所有未删除的规则
+     */
+    List<Rule> findByDeletedFalse();
+
+    /**
+     * 分页查询未删除的规则
+     */
+    Page<Rule> findByDeletedFalse(Pageable pageable);
+
+    /**
+     * 根据 ruleKey 查询未删除的规则
+     */
+    Optional<Rule> findByRuleKeyAndDeletedFalse(String ruleKey);
+
+    /**
+     * 检查 ruleKey 对应的未删除规则是否存在
+     */
+    boolean existsByRuleKeyAndDeletedFalse(String ruleKey);
 }

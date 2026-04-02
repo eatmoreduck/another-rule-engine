@@ -1,7 +1,6 @@
 package com.example.ruleengine.performance;
 
 import com.example.ruleengine.cache.RuleCacheService;
-import com.example.ruleengine.constants.RuleStatus;
 import com.example.ruleengine.domain.Rule;
 import com.example.ruleengine.engine.GroovyScriptEngine;
 import com.example.ruleengine.model.DecisionRequest;
@@ -67,7 +66,6 @@ public class RuleExecutionPerformanceTest {
                 .ruleDescription("规则执行性能测试")
                 .groovyScript(createTestScript(i))
                 .version(1)
-                .status(RuleStatus.ACTIVE)
                 .enabled(true)
                 .createdBy("test")
                 .createdAt(LocalDateTime.now())

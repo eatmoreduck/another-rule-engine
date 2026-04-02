@@ -1,7 +1,6 @@
 package com.example.ruleengine.service.async;
 
 import com.example.ruleengine.cache.RuleCacheService;
-import com.example.ruleengine.constants.RuleStatus;
 import com.example.ruleengine.domain.Rule;
 import com.example.ruleengine.engine.GroovyScriptEngine;
 import com.example.ruleengine.metrics.RuleExecutionMetrics;

@@ -1,6 +1,5 @@
 package com.example.ruleengine.service.lifecycle;
 
-import com.example.ruleengine.constants.RuleStatus;
 import com.example.ruleengine.domain.Rule;
 import com.example.ruleengine.model.dto.CreateRuleRequest;
 import com.example.ruleengine.model.dto.RuleQuery;
@@ -65,7 +64,6 @@ class RuleLifecycleServiceTest {
         .ruleDescription("测试规则描述")
         .groovyScript("return true")
         .version(1)
-        .status(RuleStatus.DRAFT)
         .createdBy("test_user")
         .enabled(true)
         .build();
@@ -102,7 +100,7 @@ class RuleLifecycleServiceTest {
     // Then
     assertNotNull(result);
     assertEquals("test_rule", result.getRuleKey());
-    assertEquals(RuleStatus.DRAFT, result.getStatus());
+    assertTrue(result.getEnabled());
     assertEquals(1, result.getVersion());
     verify(ruleRepository, times(1)).save(any(Rule.class));
   }
@@ -164,7 +162,6 @@ class RuleLifecycleServiceTest {
         "new_rule".equals(rule.getRuleKey())
             && "新规则".equals(rule.getRuleName())
             && rule.getVersion() == 1
-            && rule.getStatus() == RuleStatus.DRAFT
             && rule.getEnabled()
             && "creator".equals(rule.getCreatedBy())
     ));
@@ -398,7 +395,7 @@ class RuleLifecycleServiceTest {
   }
 
   @Test
-  @DisplayName("删除规则 - 软删除应设置状态为DELETED且enabled为false")
+  @DisplayName("删除规则 - 软删除应设置deleted为true且enabled为false")
   void testDeleteRule_SoftDeleteSetsCorrectStatus() {
     // Given
     when(ruleRepository.findByRuleKey("test_rule")).thenReturn(Optional.of(testRule));
@@ -410,7 +407,7 @@ class RuleLifecycleServiceTest {
 
     // Then
     verify(ruleRepository, times(1)).save(argThat(rule ->
-        rule.getStatus() == RuleStatus.DELETED
+        rule.getDeleted()
             && !rule.getEnabled()
             && "test_user".equals(rule.getUpdatedBy())
     ));
@@ -434,10 +431,9 @@ class RuleLifecycleServiceTest {
   }
 
   @Test
-  @DisplayName("启用规则 - 应设置状态为ACTIVE且enabled为true")
-  void testEnableRule_SetsActiveStatus() {
+  @DisplayName("启用规则 - 应设置enabled为true")
+  void testEnableRule_SetsEnabledTrue() {
     // Given
-    testRule.setStatus(RuleStatus.DRAFT);
     testRule.setEnabled(false);
     when(ruleRepository.findByRuleKey("test_rule")).thenReturn(Optional.of(testRule));
     when(ruleRepository.save(any(Rule.class))).thenAnswer(invocation -> invocation.getArgument(0));
@@ -447,8 +443,7 @@ class RuleLifecycleServiceTest {
 
     // Then
     verify(ruleRepository, times(1)).save(argThat(rule ->
-        rule.getStatus() == RuleStatus.ACTIVE
-            && rule.getEnabled()
+        rule.getEnabled()
             && "admin".equals(rule.getUpdatedBy())
     ));
   }
@@ -533,7 +528,6 @@ class RuleLifecycleServiceTest {
     assertNotNull(result);
     assertEquals("test_rule", result.getRuleKey());
     assertEquals("测试规则", result.getRuleName());
-    assertEquals(RuleStatus.DRAFT, result.getStatus());
     assertTrue(result.getEnabled());
   }
 
@@ -562,10 +556,10 @@ class RuleLifecycleServiceTest {
     List<Rule> rules = Arrays.asList(testRule);
     Page<Rule> rulePage = new PageImpl<>(rules, pageable, 1);
 
-    when(ruleRepository.findAll(pageable)).thenReturn(rulePage);
+    when(ruleRepository.findByDeletedFalse(pageable)).thenReturn(rulePage);
 
     // When
-    Page<Rule> result = ruleLifecycleService.listRules(pageable);
+    Page<Rule> result = ruleLifecycleService.listRules(pageable, false, null, null);
 
     // Then
     assertNotNull(result);
@@ -580,10 +574,10 @@ class RuleLifecycleServiceTest {
     Pageable pageable = PageRequest.of(0, 20);
     Page<Rule> emptyPage = new PageImpl<>(Collections.emptyList(), pageable, 0);
 
-    when(ruleRepository.findAll(pageable)).thenReturn(emptyPage);
+    when(ruleRepository.findByDeletedFalse(pageable)).thenReturn(emptyPage);
 
     // When
-    Page<Rule> result = ruleLifecycleService.listRules(pageable);
+    Page<Rule> result = ruleLifecycleService.listRules(pageable, false, null, null);
 
     // Then
     assertNotNull(result);
@@ -594,11 +588,11 @@ class RuleLifecycleServiceTest {
   // ========== 查询规则测试 ==========
 
   @Test
-  @DisplayName("查询规则 - 按状态和创建人过滤")
-  void testQueryRules_WithStatusAndCreator() {
+  @DisplayName("查询规则 - 按启用状态和创建人过滤")
+  void testQueryRules_WithEnabledAndCreator() {
     // Given
     RuleQuery query = RuleQuery.builder()
-        .status(RuleStatus.DRAFT)
+        .enabled(true)
         .createdBy("test_user")
         .build();
 
@@ -607,10 +601,10 @@ class RuleLifecycleServiceTest {
     Page<Rule> rulePage = new PageImpl<>(rules, pageable, 1);
 
     when(ruleRepository.findByConditions(
-        eq(RuleStatus.DRAFT),
         eq("test_user"),
+        eq(true),
         eq(null),
-        eq(null),
+        eq(false),
         eq(null),
         eq(null),
         eq(null),
@@ -636,7 +630,7 @@ class RuleLifecycleServiceTest {
     Page<Rule> rulePage = new PageImpl<>(rules, pageable, 1);
 
     when(ruleRepository.findByConditions(
-        eq(null), eq(null), eq(null), eq(null),
+        eq(null), eq(null), eq(null), eq(false),
         eq(null), eq(null), eq(null), eq(null),
         eq(pageable)
     )).thenReturn(rulePage);

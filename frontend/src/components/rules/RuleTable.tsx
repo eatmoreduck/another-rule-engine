@@ -1,9 +1,8 @@
-import { Table, Switch, Popconfirm, Button, Space, Tooltip } from 'antd';
+import { Table, Switch, Popconfirm, Button, Space, Tooltip, Tag } from 'antd';
 import { DeleteOutlined, EyeOutlined, EditOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import type { ColumnsType } from 'antd/es/table';
 import type { Rule } from '../../types/rule';
-import RuleStatusBadge from './RuleStatusBadge';
 import { useRuleStore } from '../../stores/ruleStore';
 import dayjs from 'dayjs';
 
@@ -41,13 +40,6 @@ export default function RuleTable({
       key: 'ruleName',
       width: 200,
       ellipsis: true,
-    },
-    {
-      title: '状态',
-      dataIndex: 'status',
-      key: 'status',
-      width: 100,
-      render: (status: Rule['status']) => <RuleStatusBadge status={status} />,
     },
     {
       title: '版本',

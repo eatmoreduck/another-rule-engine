@@ -1,7 +1,6 @@
 package com.example.ruleengine.service.async;
 
 import com.example.ruleengine.cache.RuleCacheService;
-import com.example.ruleengine.constants.RuleStatus;
 import com.example.ruleengine.domain.Rule;
 import com.example.ruleengine.engine.GroovyScriptEngine;
 import com.example.ruleengine.metrics.RuleExecutionMetrics;
@@ -176,10 +175,10 @@ public class AsyncRuleExecutionService {
                 return CompletableFuture.completedFuture(response);
             }
 
-            if (rule.getStatus() != RuleStatus.ACTIVE) {
+            if (!rule.getEnabled() || rule.getDeleted()) {
                 DecisionResponse response = DecisionResponse.builder()
                     .decision("REJECT")
-                    .reason("规则未激活: " + rule.getStatus().getDescription())
+                    .reason("规则未启用或已删除")
                     .executionTimeMs(System.currentTimeMillis() - startTime)
                     .timeout(false)
                     .build();

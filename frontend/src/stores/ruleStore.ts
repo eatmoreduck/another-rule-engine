@@ -22,10 +22,7 @@ export const useRuleStore = create<RuleStore>((set, get) => ({
     const mergedParams = { ...get().currentParams, ...params };
     set({ loading: true, currentParams: mergedParams });
     try {
-      const hasFilters = mergedParams.status || mergedParams.keyword !== undefined;
-      const data = hasFilters
-        ? await rulesApi.queryRules(mergedParams)
-        : await rulesApi.getRules(mergedParams);
+      const data = await rulesApi.getRules(mergedParams);
       set({ rules: data.content, total: data.totalElements });
     } catch (error) {
       console.error('Failed to fetch rules:', error);

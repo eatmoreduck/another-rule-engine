@@ -1,7 +1,6 @@
 package com.example.ruleengine.service;
 
 import com.example.ruleengine.cache.RuleCacheService;
-import com.example.ruleengine.constants.RuleStatus;
 import com.example.ruleengine.domain.GrayscaleConfig;
 import com.example.ruleengine.domain.Rule;
 import com.example.ruleengine.domain.RuleVersion;
@@ -96,12 +95,12 @@ public class RuleExecutionService {
                     .build();
             }
 
-            if (rule.getStatus() != RuleStatus.ACTIVE) {
+            if (!rule.getEnabled() || rule.getDeleted()) {
                 long executionTime = System.currentTimeMillis() - startTime;
-                logger.warn("规则未激活: ruleKey={}, status={}", ruleKey, rule.getStatus());
+                logger.warn("规则未启用或已删除: ruleKey={}, enabled={}, deleted={}", ruleKey, rule.getEnabled(), rule.getDeleted());
                 return DecisionResponse.builder()
                     .decision("REJECT")
-                    .reason("规则未激活: " + rule.getStatus().getDescription())
+                    .reason("规则未启用或已删除")
                     .executionTimeMs(executionTime)
                     .timeout(false)
                     .build();

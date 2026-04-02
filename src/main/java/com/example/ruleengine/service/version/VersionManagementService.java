@@ -2,7 +2,6 @@ package com.example.ruleengine.service.version;
 
 import com.example.ruleengine.annotation.Auditable;
 import com.example.ruleengine.constants.AuditEvent;
-import com.example.ruleengine.constants.RuleStatus;
 import com.example.ruleengine.domain.Rule;
 import com.example.ruleengine.domain.RuleVersion;
 import com.example.ruleengine.model.dto.CreateVersionRequest;

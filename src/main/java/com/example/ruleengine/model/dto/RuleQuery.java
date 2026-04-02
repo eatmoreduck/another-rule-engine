@@ -1,6 +1,5 @@
 package com.example.ruleengine.model.dto;
 
-import com.example.ruleengine.constants.RuleStatus;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -17,11 +16,6 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 public class RuleQuery {
-
-    /**
-     * 规则状态过滤
-     */
-    private RuleStatus status;
 
     /**
      * 创建人过滤

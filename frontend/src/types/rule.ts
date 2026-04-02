@@ -1,10 +1,3 @@
-export enum RuleStatus {
-  DRAFT = 'DRAFT',
-  ACTIVE = 'ACTIVE',
-  ARCHIVED = 'ARCHIVED',
-  DELETED = 'DELETED',
-}
-
 export interface Rule {
   id: number;
   ruleKey: string;
@@ -12,12 +5,12 @@ export interface Rule {
   ruleDescription: string | null;
   groovyScript: string;
   version: number;
-  status: RuleStatus;
   createdBy: string;
   createdAt: string;
   updatedBy: string | null;
   updatedAt: string | null;
   enabled: boolean;
+  deleted: boolean;
   optLockVersion: number;
 }
 
@@ -44,9 +37,9 @@ export interface UpdateRuleRequest {
 }
 
 export interface RuleQueryParams {
-  status?: RuleStatus;
   keyword?: string;
   enabled?: boolean;
+  showDeleted?: boolean;
   page?: number;
   size?: number;
 }
@@ -55,4 +48,13 @@ export interface ValidateScriptResponse {
   valid: boolean;
   errorMessage?: string;
   errorDetails?: string;
+}
+
+/** 规则引用关系 - 规则被哪些决策流/规则集引用 */
+export interface RuleReference {
+  type: 'decision_flow' | 'rule_set';
+  id: string;
+  name: string;
+  key: string;
+  status?: string;
 }

@@ -2,12 +2,37 @@
  * Groovy DSL 解析器
  * 将后端存储的 groovyScript 反向解析为 FormRuleConfig
  * 用于：1) 编辑页回填表单  2) 详情页人类可读展示
+ * V2: 支持条件树嵌套解析 + 单规则模型
  */
 
-import type { FormRuleConfig, ConditionActionRule, Action, Operator } from '../types/ruleConfig';
+import type {
+  FormRuleConfig,
+  FormRuleConfigV2,
+  ConditionActionRule,
+  ConditionTreeNode,
+  ConditionNode,
+  LogicGroup,
+  Action,
+  Operator,
+  SingleRuleConfig,
+} from '../types/ruleConfig';
+import {
+  createConditionNode,
+  createLogicGroup,
+  createRuleGroup,
+  convertV1ToV2,
+  genNodeId,
+} from '../types/ruleConfig';
+import { createDefaultSingleRule } from '../types/ruleConfig';
+
+// ============ 运算符反向映射 ============
 
 /** 运算符反向映射：按优先级排列（多字符运算符优先匹配） */
-const OPERATOR_PATTERNS: Array<{ pattern: RegExp; op: Operator; extractField: (m: RegExpMatchArray) => { field: string; value: string } }> = [
+const OPERATOR_PATTERNS: Array<{
+  pattern: RegExp;
+  op: Operator;
+  extractField: (m: RegExpMatchArray) => { field: string; value: string };
+}> = [
   {
     pattern: /!\s*features\.(\w+)\?\.\s*contains\((.+?)\)/,
     op: 'NOT_CONTAINS',
@@ -60,12 +85,12 @@ const OPERATOR_PATTERNS: Array<{ pattern: RegExp; op: Operator; extractField: (m
   },
 ];
 
+// ============ 辅助函数 ============
+
 /** 解析值：去除引号，尝试转数字 */
 function parseValue(raw: string): string | number {
   let trimmed = raw.trim();
-  // 去除尾部 { 或 } 残留
   trimmed = trimmed.replace(/[{}]+$/, '').trim();
-  // 去除单引号
   if (trimmed.startsWith("'") && trimmed.endsWith("'")) {
     return trimmed.slice(1, -1).replace(/\\'/g, "'");
   }
@@ -82,7 +107,11 @@ function parseReturnStatement(line: string): { decision: Action; reason: string 
 }
 
 /** 解析条件表达式字符串 */
-function parseConditionExpression(expr: string): { fieldName: string; operator: Operator; threshold: string | number } | null {
+function parseConditionExpression(expr: string): {
+  fieldName: string;
+  operator: Operator;
+  threshold: string | number;
+} | null {
   for (const { pattern, op, extractField } of OPERATOR_PATTERNS) {
     const m = expr.match(pattern);
     if (m) {
@@ -93,31 +122,10 @@ function parseConditionExpression(expr: string): { fieldName: string; operator: 
   return null;
 }
 
+// ============ V1 解析 ============
+
 /**
- * 将 Groovy 脚本解析为 FormRuleConfig
- *
- * 支持两种脚本格式：
- *
- * 格式1（dslGenerator 产出）:
- * ```
- * def evaluate(Map features) {
- *   if (features.amount > 1000) {
- *     return [decision: 'REJECT', reason: '金额超限']
- *   }
- *   return [decision: 'PASS', reason: '默认通过']
- * }
- * ```
- *
- * 格式2（含 else）:
- * ```
- * def evaluate(Map features) {
- *   if (features.amount > 1000) {
- *     return [decision: 'PASS', reason: '金额正常']
- *   } else {
- *     return [decision: 'REJECT', reason: '金额超限']
- *   }
- * }
- * ```
+ * 将 Groovy 脚本解析为 FormRuleConfig (V1 格式)
  */
 export function parseGroovyToConfig(script: string): FormRuleConfig {
   const config: FormRuleConfig = {
@@ -130,7 +138,6 @@ export function parseGroovyToConfig(script: string): FormRuleConfig {
 
   const lines = script.split('\n').map((l) => l.trimEnd());
 
-  // 状态机解析
   let inIfBlock = false;
   let currentCondition: Partial<ConditionActionRule> | null = null;
   let braceDepth = 0;
@@ -138,17 +145,13 @@ export function parseGroovyToConfig(script: string): FormRuleConfig {
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i].trim();
 
-    // 跳过空行、注释、函数定义
     if (!line || line.startsWith('//') || line.startsWith('def evaluate') || line === '{') {
       continue;
     }
-
-    // 外层函数结尾 }
     if (line === '}' && braceDepth === 0) {
       continue;
     }
 
-    // 匹配 if 条件: if (expr) {
     const ifMatch = line.match(/^if\s*\((.+)\)\s*\{$/);
     if (ifMatch) {
       inIfBlock = true;
@@ -164,13 +167,11 @@ export function parseGroovyToConfig(script: string): FormRuleConfig {
       continue;
     }
 
-    // 匹配 return 语句
     if (line.includes('return [decision:')) {
       const ret = parseReturnStatement(line);
       if (!ret) continue;
 
       if (inIfBlock && currentCondition) {
-        // if 块内的 return → 填充条件
         config.rules.push({
           fieldName: currentCondition.fieldName ?? '',
           operator: currentCondition.operator ?? 'GT',
@@ -180,22 +181,18 @@ export function parseGroovyToConfig(script: string): FormRuleConfig {
         });
         currentCondition = null;
       } else {
-        // 独立的 return → 默认动作
         config.defaultAction = ret.decision;
         config.defaultReason = ret.reason;
       }
       continue;
     }
 
-    // } else { → if 块的 else 分支
     if (line === '} else {' || line === '}else{') {
-      // else 分支中的 return 将成为默认动作
       braceDepth = 1;
-      inIfBlock = false; // else 分支里的 return 是默认行为
+      inIfBlock = false;
       continue;
     }
 
-    // 单独的 } → 关闭当前块
     if (line === '}') {
       braceDepth = 0;
       inIfBlock = false;
@@ -206,7 +203,7 @@ export function parseGroovyToConfig(script: string): FormRuleConfig {
   return config;
 }
 
-// ============ 详情页人类可读解析 ============
+// ============ V1 详情页展示 ============
 
 export interface ParsedRuleDisplay {
   conditions: Array<{
@@ -220,7 +217,7 @@ export interface ParsedRuleDisplay {
   defaultReason: string;
 }
 
-/** 将脚本解析为人类可读的展示数据 */
+/** 将脚本解析为人类可读的展示数据 (V1) */
 export function parseGroovyForDisplay(
   script: string,
   operatorLabels: Record<string, string>,
@@ -236,6 +233,335 @@ export function parseGroovyForDisplay(
       actionLabel: actionLabels[rule.action] ?? rule.action,
       reason: rule.reason,
     })),
+    defaultActionLabel: actionLabels[config.defaultAction] ?? config.defaultAction,
+    defaultReason: config.defaultReason,
+  };
+}
+
+// ============ V2 条件树解析 ============
+
+/**
+ * 将 Groovy if 条件表达式递归解析为条件树
+ *
+ * 支持 AND (&&) 和 OR (||) 嵌套，AND 优先级高于 OR
+ */
+function parseConditionTree(expr: string): ConditionTreeNode | null {
+  const trimmed = expr.trim();
+  if (!trimmed) return null;
+
+  // 尝试按 OR 拆分（OR 优先级低）
+  const orParts = splitByOperator(trimmed, '||');
+  if (orParts.length > 1) {
+    const children = orParts
+      .map((p) => parseConditionTree(p))
+      .filter((n): n is ConditionTreeNode => n !== null);
+    if (children.length === 0) return null;
+    if (children.length === 1) return children[0];
+    return createLogicGroup('OR', children);
+  }
+
+  // 尝试按 AND 拆分
+  const andParts = splitByOperator(trimmed, '&&');
+  if (andParts.length > 1) {
+    const children = andParts
+      .map((p) => parseConditionTree(p))
+      .filter((n): n is ConditionTreeNode => n !== null);
+    if (children.length === 0) return null;
+    if (children.length === 1) return children[0];
+    return createLogicGroup('AND', children);
+  }
+
+  // 去除最外层括号后重试
+  if (trimmed.startsWith('(') && trimmed.endsWith(')')) {
+    const inner = trimmed.slice(1, -1);
+    if (inner.length > 0) {
+      return parseConditionTree(inner);
+    }
+  }
+
+  // 原子条件
+  const parsed = parseConditionExpression(trimmed);
+  if (parsed) {
+    return createConditionNode({
+      fieldName: parsed.fieldName,
+      operator: parsed.operator,
+      threshold: parsed.threshold,
+    });
+  }
+
+  return null;
+}
+
+/**
+ * 按指定运算符拆分表达式，尊重括号嵌套
+ */
+function splitByOperator(expr: string, op: string): string[] {
+  const parts: string[] = [];
+  let depth = 0;
+  let current = '';
+  let i = 0;
+
+  while (i < expr.length) {
+    const char = expr[i];
+
+    if (char === '(') {
+      depth++;
+      current += char;
+      i++;
+    } else if (char === ')') {
+      depth--;
+      current += char;
+      i++;
+    } else if (depth === 0 && expr.slice(i).startsWith(op)) {
+      // 只在括号外且运算符在当前位置时拆分
+      parts.push(current.trim());
+      current = '';
+      i += op.length;
+    } else {
+      current += char;
+      i++;
+    }
+  }
+
+  if (current.trim()) {
+    parts.push(current.trim());
+  }
+
+  return parts;
+}
+
+/**
+ * 从 Groovy 脚本中提取所有 if-return 对和默认 return
+ * 返回 { ifReturn: [{conditionExpr, action, reason}], defaultReturn: {action, reason} }
+ */
+function extractIfReturnPairs(script: string): {
+  rules: Array<{ conditionExpr: string; action: Action; reason: string }>;
+  defaultAction: Action;
+  defaultReason: string;
+} {
+  const result = {
+    rules: [] as Array<{ conditionExpr: string; action: Action; reason: string }>,
+    defaultAction: 'PASS' as Action,
+    defaultReason: '默认通过',
+  };
+
+  if (!script || !script.trim()) return result;
+
+  const lines = script.split('\n').map((l) => l.trimEnd());
+  let braceDepth = 0;
+  let currentConditionExpr = '';
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i].trim();
+
+    if (!line || line.startsWith('//') || line.startsWith('def evaluate') || line === '{') {
+      continue;
+    }
+
+    const ifMatch = line.match(/^if\s*\((.+)\)\s*\{$/);
+    if (ifMatch) {
+      currentConditionExpr = ifMatch[1].trim();
+      braceDepth = 1;
+      continue;
+    }
+
+    if (line.includes('return [decision:')) {
+      const ret = parseReturnStatement(line);
+      if (ret) {
+        if (braceDepth > 0 && currentConditionExpr) {
+          result.rules.push({
+            conditionExpr: currentConditionExpr,
+            action: ret.decision,
+            reason: ret.reason,
+          });
+          currentConditionExpr = '';
+        } else {
+          result.defaultAction = ret.decision;
+          result.defaultReason = ret.reason;
+        }
+      }
+      continue;
+    }
+
+    if (line === '} else {' || line === '}else{') {
+      braceDepth = 1;
+      currentConditionExpr = '';
+      continue;
+    }
+
+    if (line === '}') {
+      braceDepth = 0;
+      currentConditionExpr = '';
+      continue;
+    }
+  }
+
+  return result;
+}
+
+/**
+ * V2: 将 Groovy 脚本解析为 FormRuleConfigV2（条件树格式）
+ */
+export function parseGroovyToConfigV2(script: string): FormRuleConfigV2 {
+  const v1 = parseGroovyToConfig(script);
+
+  // 如果只有单条件规则，直接映射
+  const { rules: ifReturnRules, defaultAction, defaultReason } = extractIfReturnPairs(script);
+
+  if (ifReturnRules.length === 0) {
+    return {
+      defaultAction,
+      defaultReason,
+      rules: [],
+    };
+  }
+
+  // 尝试为每条规则解析条件树
+  const ruleGroups = ifReturnRules.map((r) => {
+    const conditionTree = parseConditionTree(r.conditionExpr);
+    return createRuleGroup({
+      condition: conditionTree ?? createConditionNode(),
+      action: r.action,
+      reason: r.reason,
+    });
+  });
+
+  return {
+    defaultAction,
+    defaultReason,
+    rules: ruleGroups,
+  };
+}
+
+// ============ V2 详情页展示 ============
+
+/** 条件树展示节点 */
+export interface ConditionTreeDisplayNode {
+  type: 'condition' | 'group';
+  fieldName?: string;
+  operatorLabel?: string;
+  threshold?: string;
+  logic?: 'AND' | 'OR';
+  children?: ConditionTreeDisplayNode[];
+}
+
+/** 将条件树转换为展示节点 */
+function treeToDisplayNode(
+  node: ConditionTreeNode,
+  operatorLabels: Record<string, string>,
+): ConditionTreeDisplayNode {
+  if (node.type === 'condition') {
+    return {
+      type: 'condition',
+      fieldName: node.fieldName,
+      operatorLabel: operatorLabels[node.operator] ?? node.operator,
+      threshold: String(node.threshold),
+    };
+  }
+  // group
+  return {
+    type: 'group',
+    logic: node.logic,
+    children: node.children.map((child) => treeToDisplayNode(child, operatorLabels)),
+  };
+}
+
+export interface ParsedRuleDisplayV2 {
+  rules: Array<{
+    conditionTree: ConditionTreeDisplayNode;
+    actionLabel: string;
+    reason: string;
+  }>;
+  defaultActionLabel: string;
+  defaultReason: string;
+}
+
+/** V2: 将脚本解析为条件树展示数据 */
+export function parseGroovyForDisplayV2(
+  script: string,
+  operatorLabels: Record<string, string>,
+  actionLabels: Record<string, string>,
+): ParsedRuleDisplayV2 {
+  const config = parseGroovyToConfigV2(script);
+
+  return {
+    rules: config.rules.map((rule) => ({
+      conditionTree: treeToDisplayNode(rule.condition, operatorLabels),
+      actionLabel: actionLabels[rule.action] ?? rule.action,
+      reason: rule.reason,
+    })),
+    defaultActionLabel: actionLabels[config.defaultAction] ?? config.defaultAction,
+    defaultReason: config.defaultReason,
+  };
+}
+
+// ============ 单规则模型 ============
+
+/**
+ * 将 Groovy 脚本解析为单规则配置 (SingleRuleConfig)
+ * 取第一条规则的条件/动作 + 默认动作。如果没有规则则返回默认配置。
+ *
+ * 特殊处理：当条件动作与默认动作相同时（典型 V1 if/else 等值场景），
+ * 视为无条件规则，只保留默认动作。
+ */
+export function parseGroovyToSingleRule(script: string): SingleRuleConfig {
+  if (!script || !script.trim()) {
+    return createDefaultSingleRule();
+  }
+
+  const v2 = parseGroovyToConfigV2(script);
+
+  if (v2.rules.length === 0) {
+    return {
+      ...createDefaultSingleRule(),
+      defaultAction: v2.defaultAction,
+      defaultReason: v2.defaultReason,
+    };
+  }
+
+  const firstRule = v2.rules[0];
+
+  // V1 兼容：如果条件动作与默认动作完全相同，视为无条件规则
+  if (firstRule.action === v2.defaultAction && firstRule.reason === v2.defaultReason) {
+    return {
+      ...createDefaultSingleRule(),
+      defaultAction: v2.defaultAction,
+      defaultReason: v2.defaultReason,
+    };
+  }
+
+  return {
+    condition: firstRule.condition,
+    action: firstRule.action,
+    reason: firstRule.reason,
+    defaultAction: v2.defaultAction,
+    defaultReason: v2.defaultReason,
+  };
+}
+
+/** 单规则展示数据 */
+export interface SingleRuleDisplay {
+  conditionTree: ConditionTreeDisplayNode;
+  actionLabel: string;
+  reason: string;
+  defaultActionLabel: string;
+  defaultReason: string;
+}
+
+/**
+ * 将 Groovy 脚本解析为单规则展示数据
+ */
+export function parseSingleRuleForDisplay(
+  script: string,
+  operatorLabels: Record<string, string>,
+  actionLabels: Record<string, string>,
+): SingleRuleDisplay {
+  const config = parseGroovyToSingleRule(script);
+
+  return {
+    conditionTree: treeToDisplayNode(config.condition, operatorLabels),
+    actionLabel: actionLabels[config.action] ?? config.action,
+    reason: config.reason,
     defaultActionLabel: actionLabels[config.defaultAction] ?? config.defaultAction,
     defaultReason: config.defaultReason,
   };

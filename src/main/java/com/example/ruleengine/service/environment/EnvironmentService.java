@@ -133,7 +133,7 @@ public class EnvironmentService {
                         .ruleDescription(sourceRule.getRuleDescription())
                         .groovyScript(sourceRule.getGroovyScript())
                         .version(sourceRule.getVersion())
-                        .status(sourceRule.getStatus())
+                        .deleted(sourceRule.getDeleted())
                         .createdBy(operator)
                         .enabled(sourceRule.getEnabled())
                         .environmentId(toEnv.getId())

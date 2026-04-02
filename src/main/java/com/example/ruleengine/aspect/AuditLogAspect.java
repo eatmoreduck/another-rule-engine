@@ -8,6 +8,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
+import org.aspectj.lang.reflect.MethodSignature;
 import org.springframework.expression.Expression;
 import org.springframework.expression.ExpressionParser;
 import org.springframework.expression.spel.standard.SpelExpressionParser;
@@ -105,11 +106,19 @@ public class AuditLogAspect {
             StandardEvaluationContext context = new StandardEvaluationContext();
             context.setVariable("args", joinPoint.getArgs());
 
-            // 设置参数名映射（简单实现，实际可以使用 ParameterNameDiscoverer）
-            for (int i = 0; i < joinPoint.getArgs().length; i++) {
-                context.setVariable("arg" + i, joinPoint.getArgs()[i]);
-                context.setVariable("p" + i, joinPoint.getArgs()[i]);
-                // 也支持通过索引访问：#p0, #p1 等
+            Object[] args = joinPoint.getArgs();
+            for (int i = 0; i < args.length; i++) {
+                context.setVariable("arg" + i, args[i]);
+                context.setVariable("p" + i, args[i]);
+            }
+
+            // 通过方法签名获取参数名，绑定到 SpEL 上下文
+            MethodSignature signature = (MethodSignature) joinPoint.getSignature();
+            String[] parameterNames = signature.getParameterNames();
+            if (parameterNames != null) {
+                for (int i = 0; i < parameterNames.length && i < args.length; i++) {
+                    context.setVariable(parameterNames[i], args[i]);
+                }
             }
 
             Expression expression = parser.parseExpression(expressionString);

@@ -1,26 +1,26 @@
 /**
- * RuleEditPage - 表单模式规则编辑页
- * Plan 03-02/03-04: 含 ModeSwitch，脚本预览，保存对接后端
- * 重构: 使用 ConditionForm 组件管理条件规则
+ * RuleEditPage - 单规则编辑页
+ * 左侧：基本信息 + 条件编辑表单
+ * 右侧：Groovy 脚本实时预览
  */
 
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import {
   Card, Form, Input, Button, Breadcrumb, message,
-  Spin, Typography, Collapse,
+  Spin, Typography, Row, Col, Modal,
 } from 'antd';
-import { SaveOutlined, EyeOutlined } from '@ant-design/icons';
+import { SaveOutlined } from '@ant-design/icons';
 import { useNavigate, useParams, useBlocker } from 'react-router-dom';
-import { getRule, createRule, updateRule } from '../api/rules';
+import { getRule, createRule, updateRule, getRuleReferences } from '../api/rules';
 import type { Rule } from '../types/rule';
-import type { FormRuleConfig, Action, ConditionActionRule } from '../types/ruleConfig';
-import { generateGroovyFromForm } from '../utils/dslGenerator';
-import { parseGroovyToConfig } from '../utils/dslParser';
-import ScriptPreview from '../components/rules/ScriptPreview';
+import type { SingleRuleConfig } from '../types/ruleConfig';
+import { generateGroovyFromSingleRule } from '../utils/dslGenerator';
+import { parseGroovyToSingleRule } from '../utils/dslParser';
+import { createDefaultSingleRule } from '../types/ruleConfig';
 import ConditionForm from '../components/rules/form/ConditionForm';
 import '../styles/editor.css';
 
-const { Title } = Typography;
+const { Title, Text } = Typography;
 
 export default function RuleEditPage() {
   const { ruleKey } = useParams<{ ruleKey: string }>();
@@ -31,18 +31,17 @@ export default function RuleEditPage() {
   const [loading, setLoading] = useState(!isNew);
   const [saving, setSaving] = useState(false);
   const [dirty, setDirty] = useState(false);
-  const [previewOpen, setPreviewOpen] = useState(false);
+  const justSavedRef = useRef(false);
   const [existingRule, setExistingRule] = useState<Rule | null>(null);
 
-  // 条件规则列表
-  const [conditions, setConditions] = useState<ConditionActionRule[]>([]);
-  const [defaultAction, setDefaultAction] = useState<Action>('PASS');
-  const [defaultReason, setDefaultReason] = useState('默认通过');
+  // 单规则配置
+  const [ruleConfig, setRuleConfig] = useState<SingleRuleConfig>(createDefaultSingleRule());
 
-  // 加载已有规则
+  // 加载已有规则（含引用提示）
   useEffect(() => {
     if (!isNew && ruleKey) {
       setLoading(true);
+      // 先加载规则数据，确保页面能尽快渲染
       getRule(ruleKey)
         .then((rule) => {
           setExistingRule(rule);
@@ -53,10 +52,26 @@ export default function RuleEditPage() {
           });
           // 解析已有 groovyScript 回填条件表单
           if (rule.groovyScript) {
-            const parsed = parseGroovyToConfig(rule.groovyScript);
-            setConditions(parsed.rules);
-            setDefaultAction(parsed.defaultAction);
-            setDefaultReason(parsed.defaultReason);
+            const parsed = parseGroovyToSingleRule(rule.groovyScript);
+            setRuleConfig(parsed);
+          }
+          // 数据加载完成后，异步检查引用（不阻塞页面渲染）
+          return getRuleReferences(ruleKey);
+        })
+        .then((refs) => {
+          if (refs && refs.length > 0) {
+            const typeLabel = (t: string) => t === 'decision_flow' ? '决策流' : '规则集';
+            const refList = refs.map((r) => `• ${typeLabel(r.type)}：${r.name}（${r.key}）`).join('\n');
+            Modal.info({
+              title: '引用提示',
+              content: (
+                <div>
+                  <p>此规则被以下资源引用，修改可能影响它们的执行结果：</p>
+                  <pre style={{ fontSize: 13, whiteSpace: 'pre-wrap' }}>{refList}</pre>
+                </div>
+              ),
+              okText: '知道了',
+            });
           }
         })
         .catch(() => message.error('加载规则失败'))
@@ -66,33 +81,29 @@ export default function RuleEditPage() {
 
   // 根据当前配置生成 Groovy 脚本
   const generatedScript = useMemo(() => {
-    const config: FormRuleConfig = {
-      defaultAction,
-      defaultReason,
-      rules: conditions,
-    };
-    return generateGroovyFromForm(config);
-  }, [conditions, defaultAction, defaultReason]);
+    return generateGroovyFromSingleRule(ruleConfig);
+  }, [ruleConfig]);
 
-  // 离开页面确认（仅在离开规则编辑相关页面时触发，模式切换不拦截）
+  // 离开页面确认
   useBlocker(
     ({ currentLocation, nextLocation }) => {
+      if (justSavedRef.current) return false;
       if (!dirty) return false;
       if (currentLocation.pathname === nextLocation.pathname) return false;
-      // 模式切换（表单↔流程图）不拦截
+      // 模式切换不拦截
       const isRuleEditSwitch = nextLocation.pathname.startsWith('/rules/')
-        && (nextLocation.pathname.endsWith('/edit') || nextLocation.pathname.endsWith('/flow') || nextLocation.pathname === '/rules/new' || nextLocation.pathname === '/rules/new/flow');
+        && (nextLocation.pathname.endsWith('/edit')
+          || nextLocation.pathname.endsWith('/flow')
+          || nextLocation.pathname === '/rules/new'
+          || nextLocation.pathname === '/rules/new/flow');
       if (isRuleEditSwitch) return false;
       return !window.confirm('有未保存的修改，确认离开？');
     },
   );
 
   // ConditionForm 变更回调
-  const handleConditionChange = useCallback((_config: FormRuleConfig, _script: string) => {
-    // 从 config 中同步状态到本页（保持 conditions/defaultAction/defaultReason 同步）
-    setConditions(_config.rules);
-    setDefaultAction(_config.defaultAction);
-    setDefaultReason(_config.defaultReason);
+  const handleConditionChange = useCallback((newConfig: SingleRuleConfig, _script: string) => {
+    setRuleConfig(newConfig);
     setDirty(true);
   }, []);
 
@@ -109,6 +120,7 @@ export default function RuleEditPage() {
           groovyScript: generatedScript,
         });
         message.success('规则创建成功');
+        justSavedRef.current = true;
         navigate(`/rules/${created.ruleKey}`);
       } else if (ruleKey) {
         await updateRule(ruleKey, {
@@ -117,9 +129,9 @@ export default function RuleEditPage() {
           groovyScript: generatedScript,
         });
         message.success('规则保存成功');
+        justSavedRef.current = true;
         navigate(`/rules/${ruleKey}`);
       }
-      setDirty(false);
     } catch (err) {
       if (err instanceof Error) {
         message.error(`保存失败: ${err.message}`);
@@ -152,79 +164,68 @@ export default function RuleEditPage() {
         ]}
       />
 
-      <Card>
-        <div className="page-header">
-          <Title level={4} style={{ margin: 0 }}>
-            {isNew ? '新建规则（表单模式）' : `编辑规则 - ${existingRule?.ruleName ?? ruleKey}`}
-          </Title>
-          <div className="page-header-actions">
-            <Button
-              icon={<EyeOutlined />}
-              onClick={() => setPreviewOpen(true)}
-            >
-              预览脚本
-            </Button>
-            <Button
-              type="primary"
-              icon={<SaveOutlined />}
-              loading={saving}
-              onClick={handleSave}
-            >
-              保存
-            </Button>
-          </div>
+      {/* 页面标题 + 保存按钮 */}
+      <div className="page-header" style={{ marginBottom: 16 }}>
+        <Title level={4} style={{ margin: 0 }}>
+          {isNew ? '新建规则（表单模式）' : `编辑规则 - ${existingRule?.ruleName ?? ruleKey}`}
+        </Title>
+        <div className="page-header-actions">
+          <Button
+            type="primary"
+            icon={<SaveOutlined />}
+            loading={saving}
+            onClick={handleSave}
+          >
+            保存
+          </Button>
         </div>
+      </div>
 
-        <div className="form-editor-container">
-          <Form form={form} layout="vertical">
-            <Form.Item
-              name="ruleKey"
-              label="规则标识"
-              rules={[{ required: true, message: '请输入规则标识' }]}
-            >
-              <Input placeholder="例如: black-list-check" disabled={!isNew} />
-            </Form.Item>
-            <Form.Item
-              name="ruleName"
-              label="规则名称"
-              rules={[{ required: true, message: '请输入规则名称' }]}
-            >
-              <Input placeholder="例如: 黑名单检查规则" />
-            </Form.Item>
-            <Form.Item name="ruleDescription" label="规则描述">
-              <Input.TextArea rows={2} placeholder="可选，描述规则的业务用途" />
-            </Form.Item>
-          </Form>
+      {/* 左右布局 */}
+      <Row gutter={16}>
+        {/* 左侧：基本信息 + 条件编辑 */}
+        <Col xs={24} lg={14}>
+          <Card>
+            <Form form={form} layout="vertical">
+              <Form.Item
+                name="ruleKey"
+                label="规则标识"
+                rules={[{ required: true, message: '请输入规则标识' }]}
+              >
+                <Input placeholder="例如: black-list-check" disabled={!isNew} />
+              </Form.Item>
+              <Form.Item
+                name="ruleName"
+                label="规则名称"
+                rules={[{ required: true, message: '请输入规则名称' }]}
+              >
+                <Input placeholder="例如: 黑名单检查规则" />
+              </Form.Item>
+              <Form.Item name="ruleDescription" label="规则描述">
+                <Input.TextArea rows={2} placeholder="可选，描述规则的业务用途" />
+              </Form.Item>
+            </Form>
 
-          {/* 使用 ConditionForm 组件 */}
-          <ConditionForm
-            conditions={conditions}
-            defaultAction={defaultAction}
-            defaultReason={defaultReason}
-            onChange={handleConditionChange}
-          />
-        </div>
+            <ConditionForm
+              config={ruleConfig}
+              onChange={handleConditionChange}
+            />
+          </Card>
+        </Col>
 
-        {/* 脚本预览折叠面板 */}
-        <Collapse
-          style={{ marginTop: 16 }}
-          items={[
-            {
-              key: 'preview',
-              label: '生成的 Groovy 脚本',
-              children: (
-                <pre className="script-preview-code">{generatedScript}</pre>
-              ),
-            },
-          ]}
-        />
-      </Card>
-
-      <ScriptPreview
-        open={previewOpen}
-        onClose={() => setPreviewOpen(false)}
-        script={generatedScript}
-      />
+        {/* 右侧：Groovy 脚本实时预览 */}
+        <Col xs={24} lg={10}>
+          <Card
+            title={<Text strong>Groovy 脚本预览</Text>}
+            size="small"
+            style={{ position: 'sticky', top: 16 }}
+          >
+            <pre className="script-preview-code" style={{ margin: 0 }}>
+              {generatedScript}
+            </pre>
+          </Card>
+        </Col>
+      </Row>
     </div>
   );
 }

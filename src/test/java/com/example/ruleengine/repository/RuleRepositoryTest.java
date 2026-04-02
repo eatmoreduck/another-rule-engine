@@ -1,6 +1,5 @@
 package com.example.ruleengine.repository;
 
-import com.example.ruleengine.constants.RuleStatus;
 import com.example.ruleengine.domain.Rule;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -40,7 +39,6 @@ class RuleRepositoryTest {
                 .ruleDescription("这是一个测试规则")
                 .groovyScript("def execute() { return 'Hello World' }")
                 .version(1)
-                .status(RuleStatus.DRAFT)
                 .createdBy("test-user")
                 .enabled(true)
                 .build();
@@ -88,15 +86,6 @@ class RuleRepositoryTest {
     }
 
     @Test
-    @DisplayName("应该根据状态查询规则")
-    void shouldFindByStatus() {
-        List<Rule> rules = ruleRepository.findByStatus(RuleStatus.DRAFT);
-
-        assertThat(rules).hasSize(1);
-        assertThat(rules.get(0).getStatus()).isEqualTo(RuleStatus.DRAFT);
-    }
-
-    @Test
     @DisplayName("应该查询所有启用的规则")
     void shouldFindByEnabledTrue() {
         List<Rule> rules = ruleRepository.findByEnabledTrue();
@@ -106,13 +95,55 @@ class RuleRepositoryTest {
     }
 
     @Test
+    @DisplayName("应该查询所有未删除的规则")
+    void shouldFindByDeletedFalse() {
+        List<Rule> rules = ruleRepository.findByDeletedFalse();
+
+        assertThat(rules).hasSize(1);
+        assertThat(rules.get(0).getDeleted()).isFalse();
+    }
+
+    @Test
+    @DisplayName("应该通过 ruleKey 查询未删除的规则")
+    void shouldFindByRuleKeyAndDeletedFalse() {
+        Optional<Rule> found = ruleRepository.findByRuleKeyAndDeletedFalse("test-rule-1");
+
+        assertThat(found).isPresent();
+        assertThat(found.get().getDeleted()).isFalse();
+    }
+
+    @Test
+    @DisplayName("已删除的规则不应通过 findByRuleKeyAndDeletedFalse 查到")
+    void shouldNotFindDeletedRuleByRuleKeyAndDeletedFalse() {
+        testRule.setDeleted(true);
+        entityManager.merge(testRule);
+        entityManager.flush();
+        entityManager.clear();
+
+        Optional<Rule> found = ruleRepository.findByRuleKeyAndDeletedFalse("test-rule-1");
+        assertThat(found).isEmpty();
+    }
+
+    @Test
+    @DisplayName("应该检查未删除规则 ruleKey 是否存在")
+    void shouldCheckRuleKeyExistsAndNotDeleted() {
+        boolean exists = ruleRepository.existsByRuleKeyAndDeletedFalse("test-rule-1");
+        assertThat(exists).isTrue();
+
+        testRule.setDeleted(true);
+        ruleRepository.save(testRule);
+
+        boolean existsAfterDelete = ruleRepository.existsByRuleKeyAndDeletedFalse("test-rule-1");
+        assertThat(existsAfterDelete).isFalse();
+    }
+
+    @Test
     @DisplayName("应该创建并保存新规则")
     void shouldCreateNewRule() {
         Rule newRule = Rule.builder()
                 .ruleKey("new-rule")
                 .ruleName("新规则")
                 .groovyScript("def execute() { return 'New' }")
-                .status(RuleStatus.DRAFT)
                 .createdBy("test-user")
                 .enabled(true)
                 .build();
@@ -155,7 +186,6 @@ class RuleRepositoryTest {
                 .ruleKey("test-rule-1") // 重复的 ruleKey
                 .ruleName("重复规则")
                 .groovyScript("def execute() { return 'Duplicate' }")
-                .status(RuleStatus.DRAFT)
                 .createdBy("test-user")
                 .enabled(true)
                 .build();
@@ -171,12 +201,23 @@ class RuleRepositoryTest {
     }
 
     @Test
-    @DisplayName("应该根据状态和启用状态查询规则")
-    void shouldFindByStatusAndEnabledTrue() {
-        List<Rule> rules = ruleRepository.findByStatusAndEnabledTrue(RuleStatus.DRAFT);
+    @DisplayName("应该根据启用状态查询规则")
+    void shouldFindByEnabledTrueAndDeletedFalse() {
+        // 添加一个禁用的规则
+        Rule disabledRule = Rule.builder()
+                .ruleKey("disabled-rule")
+                .ruleName("禁用规则")
+                .groovyScript("def execute() { return 'Disabled' }")
+                .createdBy("test-user")
+                .enabled(false)
+                .build();
+        entityManager.persist(disabledRule);
+        entityManager.flush();
+        entityManager.clear();
 
-        assertThat(rules).hasSize(1);
-        assertThat(rules.get(0).getStatus()).isEqualTo(RuleStatus.DRAFT);
-        assertThat(rules.get(0).getEnabled()).isTrue();
+        List<Rule> enabledRules = ruleRepository.findByEnabledTrue();
+
+        assertThat(enabledRules).hasSize(1);
+        assertThat(enabledRules.get(0).getRuleKey()).isEqualTo("test-rule-1");
     }
 }

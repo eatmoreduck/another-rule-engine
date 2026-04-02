@@ -1,6 +1,5 @@
 package com.example.ruleengine.controller;
 
-import com.example.ruleengine.constants.RuleStatus;
 import com.example.ruleengine.domain.Rule;
 import com.example.ruleengine.model.dto.CreateRuleRequest;
 import com.example.ruleengine.model.dto.UpdateRuleRequest;
@@ -87,7 +86,6 @@ class RuleControllerTest {
           .andExpect(jsonPath("$.ruleName").value("订单金额校验"))
           .andExpect(jsonPath("$.ruleDescription").value("校验订单金额是否超过阈值"))
           .andExpect(jsonPath("$.groovyScript").value("return amount < 10000"))
-          .andExpect(jsonPath("$.status").value("DRAFT"))
           .andExpect(jsonPath("$.version").value(1))
           .andExpect(jsonPath("$.enabled").value(true))
           .andExpect(jsonPath("$.createdBy").value("admin"))
@@ -300,7 +298,7 @@ class RuleControllerTest {
   class DeleteRuleTests {
 
     @Test
-    @DisplayName("应成功软删除 DRAFT 状态的规则")
+    @DisplayName("应成功软删除规则")
     void shouldDeleteDraftRule() throws Exception {
       createTestRule("delete_draft_rule", "待删除草稿规则", "return true");
 
@@ -308,9 +306,9 @@ class RuleControllerTest {
               .header("X-Operator", "admin"))
           .andExpect(status().isOk());
 
-      // 验证规则已被软删除（状态变为 DELETED）
+      // 验证规则已被软删除
       Rule deletedRule = ruleRepository.findByRuleKey("delete_draft_rule").orElseThrow();
-      assert deletedRule.getStatus() == RuleStatus.DELETED;
+      assert deletedRule.getDeleted();
       assert !deletedRule.getEnabled();
     }
 
@@ -340,7 +338,6 @@ class RuleControllerTest {
               .header("X-Operator", "admin"))
           .andExpect(status().isOk())
           .andExpect(jsonPath("$.ruleKey").value("enable_test_rule"))
-          .andExpect(jsonPath("$.status").value("ACTIVE"))
           .andExpect(jsonPath("$.enabled").value(true));
     }
 
@@ -522,7 +519,6 @@ class RuleControllerTest {
               .content(objectMapper.writeValueAsString(createRequest)))
           .andExpect(status().isOk())
           .andExpect(jsonPath("$.ruleKey").value(ruleKey))
-          .andExpect(jsonPath("$.status").value("DRAFT"))
           .andExpect(jsonPath("$.version").value(1));
 
       // 2. 查询规则
@@ -547,10 +543,9 @@ class RuleControllerTest {
       mockMvc.perform(post("/api/v1/rules/" + ruleKey + "/enable")
               .header("X-Operator", "lifecycle_tester"))
           .andExpect(status().isOk())
-          .andExpect(jsonPath("$.status").value("ACTIVE"))
           .andExpect(jsonPath("$.enabled").value(true));
 
-      // 5. 禁用规则（先禁用，才能安全删除，因为 ACTIVE+enabled 的规则不能删除）
+      // 5. 禁用规则（先禁用，才能安全删除）
       mockMvc.perform(post("/api/v1/rules/" + ruleKey + "/disable")
               .header("X-Operator", "lifecycle_tester"))
           .andExpect(status().isOk())
@@ -563,7 +558,7 @@ class RuleControllerTest {
 
       // 7. 验证规则已被软删除
       Rule deletedRule = ruleRepository.findByRuleKey(ruleKey).orElseThrow();
-      assert deletedRule.getStatus() == RuleStatus.DELETED;
+      assert deletedRule.getDeleted();
       assert !deletedRule.getEnabled();
     }
   }
@@ -578,7 +573,6 @@ class RuleControllerTest {
         .ruleKey(ruleKey)
         .ruleName(ruleName)
         .groovyScript(groovyScript)
-        .status(RuleStatus.DRAFT)
         .createdBy("test_user")
         .enabled(true)
         .build();

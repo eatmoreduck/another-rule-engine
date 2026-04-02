@@ -1,6 +1,5 @@
 package com.example.ruleengine.cache;
 
-import com.example.ruleengine.constants.RuleStatus;
 import com.example.ruleengine.domain.Rule;
 import com.example.ruleengine.repository.RuleRepository;
 import jakarta.annotation.PostConstruct;
@@ -45,7 +44,8 @@ public class CacheWarmer {
      * 预热所有生效中的规则
      */
     private void warmUpCache() {
-        List<Rule> activeRules = ruleRepository.findByStatusAndEnabledTrue(RuleStatus.ACTIVE);
+        List<Rule> activeRules = ruleRepository.findByEnabledTrue().stream()
+                .filter(r -> !r.getDeleted()).toList();
         log.info("预加载 {} 条生效中的规则到缓存", activeRules.size());
 
         int successCount = 0;

@@ -137,7 +137,7 @@ public class RuleImportExportService {
                         .ruleDescription(ruleData.getRuleDescription())
                         .groovyScript(ruleData.getGroovyScript())
                         .version(ruleData.getVersion())
-                        .status(ruleData.getStatus())
+                        .deleted(false)
                         .createdBy(operator)
                         .enabled(ruleData.getEnabled())
                         .environmentId(ruleData.getEnvironmentId())

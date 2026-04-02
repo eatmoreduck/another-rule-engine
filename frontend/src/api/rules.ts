@@ -6,6 +6,7 @@ import type {
   UpdateRuleRequest,
   RuleQueryParams,
   ValidateScriptResponse,
+  RuleReference,
 } from '../types/rule';
 
 export async function getRules(params?: RuleQueryParams): Promise<PageResponse<Rule>> {
@@ -13,6 +14,9 @@ export async function getRules(params?: RuleQueryParams): Promise<PageResponse<R
     params: {
       page: params?.page ?? 0,
       size: params?.size ?? 20,
+      keyword: params?.keyword,
+      enabled: params?.enabled,
+      showDeleted: params?.showDeleted,
     },
   });
   return response.data;
@@ -20,9 +24,9 @@ export async function getRules(params?: RuleQueryParams): Promise<PageResponse<R
 
 export async function queryRules(params?: RuleQueryParams): Promise<PageResponse<Rule>> {
   const response = await apiClient.post<PageResponse<Rule>>('/api/v1/rules/query', {
-    status: params?.status,
     keyword: params?.keyword,
     enabled: params?.enabled,
+    showDeleted: params?.showDeleted,
   }, {
     params: {
       page: params?.page ?? 0,
@@ -68,8 +72,14 @@ export async function validateScript(groovyScript: string): Promise<ValidateScri
   return response.data;
 }
 
-/** 获取规则列表供规则集节点选择器使用（轻量查询） */
+/** 获取规则列表供规则集节点选择器使用（只返回已启用的规则） */
 export async function getRulesForSelect(): Promise<Array<{ ruleKey: string; ruleName: string }>> {
-  const response = await getRules({ page: 0, size: 200 });
+  const response = await getRules({ enabled: true, page: 0, size: 200 });
   return response.content.map(r => ({ ruleKey: r.ruleKey, ruleName: r.ruleName }));
+}
+
+/** 查询规则被哪些决策流/规则集引用 */
+export async function getRuleReferences(ruleKey: string): Promise<RuleReference[]> {
+  const response = await apiClient.get<RuleReference[]>(`/api/v1/rules/${ruleKey}/references`);
+  return response.data;
 }

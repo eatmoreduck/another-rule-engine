@@ -1,6 +1,5 @@
 package com.example.ruleengine.cache;
 
-import com.example.ruleengine.constants.RuleStatus;
 import com.example.ruleengine.domain.Rule;
 import com.example.ruleengine.repository.RuleRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -47,7 +46,6 @@ class RuleCacheServiceTest {
                 .ruleName("缓存测试规则")
                 .groovyScript("def test() { return 'cached' }")
                 .version(1)
-                .status(RuleStatus.ACTIVE)
                 .createdBy("test-user")
                 .enabled(true)
                 .build();
@@ -76,7 +74,6 @@ class RuleCacheServiceTest {
                 .ruleName("缓存清除测试")
                 .groovyScript("def test() { return 'evict' }")
                 .version(1)
-                .status(RuleStatus.ACTIVE)
                 .createdBy("test-user")
                 .enabled(true)
                 .build();
@@ -101,7 +98,6 @@ class RuleCacheServiceTest {
                 .ruleName("并发测试")
                 .groovyScript("def test() { return 'concurrent' }")
                 .version(1)
-                .status(RuleStatus.ACTIVE)
                 .createdBy("test-user")
                 .enabled(true)
                 .build();

@@ -2,7 +2,6 @@ package com.example.ruleengine.service;
 
 import com.example.ruleengine.cache.DecisionFlowCacheService;
 import com.example.ruleengine.cache.RuleCacheService;
-import com.example.ruleengine.constants.RuleStatus;
 import com.example.ruleengine.domain.DecisionFlow;
 import com.example.ruleengine.domain.Rule;
 import com.example.ruleengine.engine.GroovyScriptEngine;
@@ -167,7 +166,7 @@ public class DecisionFlowExecutionService {
     private boolean executeRule(String ruleKey, Map<String, Object> features) {
         try {
             Rule rule = ruleCacheService.getEnabledRule(ruleKey);
-            if (rule == null || rule.getStatus() != RuleStatus.ACTIVE) {
+            if (rule == null || !rule.getEnabled() || rule.getDeleted()) {
                 return false;
             }
             Object result = scriptEngine.executeScript(ruleKey, rule.getGroovyScript(), features);

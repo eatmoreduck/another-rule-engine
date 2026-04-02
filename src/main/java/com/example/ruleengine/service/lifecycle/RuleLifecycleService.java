@@ -2,7 +2,6 @@ package com.example.ruleengine.service.lifecycle;
 
 import com.example.ruleengine.annotation.Auditable;
 import com.example.ruleengine.constants.AuditEvent;
-import com.example.ruleengine.constants.RuleStatus;
 import com.example.ruleengine.domain.Rule;
 import com.example.ruleengine.model.dto.CreateRuleRequest;
 import com.example.ruleengine.model.dto.RuleQuery;
@@ -55,7 +54,6 @@ public class RuleLifecycleService {
                 .ruleDescription(request.getRuleDescription())
                 .groovyScript(request.getGroovyScript())
                 .version(1)
-                .status(RuleStatus.DRAFT)
                 .createdBy(operator)
                 .enabled(true)
                 .build();
@@ -142,7 +140,7 @@ public class RuleLifecycleService {
         }
 
         // 3. 软删除
-        rule.setStatus(RuleStatus.DELETED);
+        rule.setDeleted(true);
         rule.setEnabled(false);
         rule.setUpdatedBy(operator);
         ruleRepository.save(rule);
@@ -157,7 +155,6 @@ public class RuleLifecycleService {
     public Rule enableRule(String ruleKey, String operator) {
         Rule rule = ruleRepository.findByRuleKey(ruleKey)
                 .orElseThrow(() -> new IllegalArgumentException("规则不存在: " + ruleKey));
-        rule.setStatus(RuleStatus.ACTIVE);
         rule.setEnabled(true);
         rule.setUpdatedBy(operator);
         return ruleRepository.save(rule);
@@ -186,9 +183,28 @@ public class RuleLifecycleService {
 
     /**
      * 列出所有规则（分页）
+     * @param pageable 分页参数
+     * @param showDeleted 是否包含已删除规则，默认 false（仅返回未删除）
+     * @param keyword 关键词搜索（ruleKey/ruleName 模糊匹配），可为 null
+     * @param enabled 按启用状态过滤，可为 null（不过滤）
      */
-    public Page<Rule> listRules(Pageable pageable) {
-        return ruleRepository.findAll(pageable);
+    public Page<Rule> listRules(Pageable pageable, boolean showDeleted, String keyword, Boolean enabled) {
+        boolean hasFilter = keyword != null || enabled != null;
+        if (hasFilter) {
+            Boolean deleted = showDeleted ? null : false;
+            return ruleRepository.findByConditions(
+                    null,
+                    enabled,
+                    keyword,
+                    deleted,
+                    null, null, null, null,
+                    pageable
+            );
+        }
+        if (showDeleted) {
+            return ruleRepository.findAll(pageable);
+        }
+        return ruleRepository.findByDeletedFalse(pageable);
     }
 
     /**
@@ -197,10 +213,10 @@ public class RuleLifecycleService {
     public Page<Rule> queryRules(RuleQuery query, Pageable pageable) {
         log.info("查询规则: query={}", query);
         return ruleRepository.findByConditions(
-                query.getStatus(),
                 query.getCreatedBy(),
                 query.getEnabled(),
                 query.getKeyword(),
+                false,
                 query.getCreatedAtStart(),
                 query.getCreatedAtEnd(),
                 query.getUpdatedAtStart(),

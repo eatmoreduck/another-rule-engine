@@ -1,6 +1,5 @@
 package com.example.ruleengine.service.template;
 
-import com.example.ruleengine.constants.RuleStatus;
 import com.example.ruleengine.domain.CustomTemplate;
 import com.example.ruleengine.domain.Rule;
 import com.example.ruleengine.domain.RuleTemplate;
@@ -83,7 +82,6 @@ public class RuleTemplateService {
                 .ruleDescription(request.getRuleDescription() != null ? request.getRuleDescription() : template.getDescription())
                 .groovyScript(groovyScript)
                 .version(1)
-                .status(RuleStatus.DRAFT)
                 .createdBy(operator)
                 .enabled(true)
                 .build();
@@ -155,7 +153,6 @@ public class RuleTemplateService {
                 .ruleDescription(request.getRuleDescription() != null ? request.getRuleDescription() : template.getDescription())
                 .groovyScript(groovyScript)
                 .version(1)
-                .status(RuleStatus.DRAFT)
                 .createdBy(operator)
                 .enabled(true)
                 .build();
