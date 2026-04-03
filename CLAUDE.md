@@ -42,6 +42,24 @@ another-rule-engine/
 3. **AI 辅助 (ai/)**: 集成 AI 能力，根据自然语言描述生成规则
 4. **API 层 (controller/)**: 暴露 REST 接口供前端调用
 
+## 关键配置文件路径
+
+| 配置 | 路径 | 说明 |
+|------|------|------|
+| **后端应用配置** | `src/main/resources/application.yml` | PostgreSQL 连接、JPA、Flyway、缓存、Actuator 等所有运行时配置 |
+| **数据库迁移脚本** | `src/main/resources/db/migration/` | Flyway 管理的 SQL 迁移脚本 |
+| **前端项目** | `frontend/` | React + TypeScript + Vite，端口 3000 |
+| **前端配置** | `frontend/vite.config.ts` | Vite 构建配置，含 API 代理 |
+
+> **重要**: 修改任何数据库连接、JPA、缓存等配置时，直接编辑 `src/main/resources/application.yml`，不要猜测或创建新的配置文件。
+
+### 启动命令
+
+| 服务 | 命令 | 端口 |
+|------|------|------|
+| 后端 | `./gradlew bootRun` | 8080 |
+| 前端 | `cd frontend && npx vite --port 3000` | 3000 |
+
 ## 构建与运行
 
 ```bash

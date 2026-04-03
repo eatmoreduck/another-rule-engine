@@ -45,5 +45,5 @@ frontend/.env.local
 
 # Local docs
 docs/
-.planning
+.planning/
 .playwright-mcp

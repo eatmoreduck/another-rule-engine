@@ -192,12 +192,11 @@ public class RuleLifecycleService {
         boolean hasFilter = keyword != null || enabled != null;
         if (hasFilter) {
             Boolean deleted = showDeleted ? null : false;
-            return ruleRepository.findByConditions(
+            return ruleRepository.findByConditionsWithoutDates(
                     null,
                     enabled,
                     keyword,
                     deleted,
-                    null, null, null, null,
                     pageable
             );
         }
@@ -212,15 +211,26 @@ public class RuleLifecycleService {
      */
     public Page<Rule> queryRules(RuleQuery query, Pageable pageable) {
         log.info("查询规则: query={}", query);
-        return ruleRepository.findByConditions(
+        boolean hasDateFilter = query.getCreatedAtStart() != null || query.getCreatedAtEnd() != null
+                || query.getUpdatedAtStart() != null || query.getUpdatedAtEnd() != null;
+        if (hasDateFilter) {
+            return ruleRepository.findByConditions(
+                    query.getCreatedBy(),
+                    query.getEnabled(),
+                    query.getKeyword(),
+                    false,
+                    query.getCreatedAtStart(),
+                    query.getCreatedAtEnd(),
+                    query.getUpdatedAtStart(),
+                    query.getUpdatedAtEnd(),
+                    pageable
+            );
+        }
+        return ruleRepository.findByConditionsWithoutDates(
                 query.getCreatedBy(),
                 query.getEnabled(),
                 query.getKeyword(),
                 false,
-                query.getCreatedAtStart(),
-                query.getCreatedAtEnd(),
-                query.getUpdatedAtStart(),
-                query.getUpdatedAtEnd(),
                 pageable
         );
     }

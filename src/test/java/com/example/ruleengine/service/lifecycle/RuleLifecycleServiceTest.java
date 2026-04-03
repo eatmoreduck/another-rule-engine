@@ -600,15 +600,11 @@ class RuleLifecycleServiceTest {
     List<Rule> rules = Arrays.asList(testRule);
     Page<Rule> rulePage = new PageImpl<>(rules, pageable, 1);
 
-    when(ruleRepository.findByConditions(
+    when(ruleRepository.findByConditionsWithoutDates(
         eq("test_user"),
         eq(true),
         eq(null),
         eq(false),
-        eq(null),
-        eq(null),
-        eq(null),
-        eq(null),
         eq(pageable)
     )).thenReturn(rulePage);
 
@@ -629,9 +625,8 @@ class RuleLifecycleServiceTest {
     List<Rule> rules = Arrays.asList(testRule);
     Page<Rule> rulePage = new PageImpl<>(rules, pageable, 1);
 
-    when(ruleRepository.findByConditions(
+    when(ruleRepository.findByConditionsWithoutDates(
         eq(null), eq(null), eq(null), eq(false),
-        eq(null), eq(null), eq(null), eq(null),
         eq(pageable)
     )).thenReturn(rulePage);
 

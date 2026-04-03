@@ -49,29 +49,29 @@ COMMENT ON COLUMN custom_templates.groovy_template IS 'Groovy模板脚本';
 COMMENT ON COLUMN custom_templates.parameters IS '模板参数定义(JSONB)';
 COMMENT ON COLUMN custom_templates.created_by IS '创建人';
 
--- 预置反欺诈规则模板
+-- 预置反欺诈规则模板（使用 Groovy 字符串拼接代替 ${} 避免 Flyway 占位符冲突）
 INSERT INTO rule_templates (name, category, description, groovy_template, parameters, is_system, created_by) VALUES
 ('金额阈值检查', '交易风控', '检查交易金额是否超过阈值',
- 'def evaluate(context) {\n  def amount = context.amount as BigDecimal\n  def threshold = {{threshold}} as BigDecimal\n  if (amount > threshold) {\n    return [hit: true, action: "REJECT", reason: "交易金额${amount}超过阈值${threshold}"]\n  }\n  return [hit: false, action: "PASS"]\n}',
+ 'def evaluate(context) {\n  def amount = context.amount as BigDecimal\n  def threshold = {{threshold}} as BigDecimal\n  if (amount > threshold) {\n    return [hit: true, action: "REJECT", reason: "交易金额" + amount + "超过阈值" + threshold]\n  }\n  return [hit: false, action: "PASS"]\n}',
  '[{"name":"threshold","type":"BigDecimal","description":"金额阈值","required":true,"defaultValue":"10000"}]',
  true, 'system'),
 
 ('IP频率限制', '访问控制', '限制同一IP在时间窗口内的请求频率',
- 'def evaluate(context) {\n  def ip = context.ip\n  def count = context.ipRequestCount as int\n  def limit = {{limit}} as int\n  def windowMinutes = {{windowMinutes}} as int\n  if (count > limit) {\n    return [hit: true, action: "REJECT", reason: "IP ${ip}在${windowMinutes}分钟内请求${count}次，超过限制${limit}"]\n  }\n  return [hit: false, action: "PASS"]\n}',
+ 'def evaluate(context) {\n  def ip = context.ip\n  def count = context.ipRequestCount as int\n  def limit = {{limit}} as int\n  def windowMinutes = {{windowMinutes}} as int\n  if (count > limit) {\n    return [hit: true, action: "REJECT", reason: "IP " + ip + "在" + windowMinutes + "分钟内请求" + count + "次，超过限制" + limit]\n  }\n  return [hit: false, action: "PASS"]\n}',
  '[{"name":"limit","type":"int","description":"请求次数上限","required":true,"defaultValue":"100"},{"name":"windowMinutes","type":"int","description":"时间窗口(分钟)","required":true,"defaultValue":"5"}]',
  true, 'system'),
 
 ('设备指纹异常检测', '反欺诈', '检测设备指纹是否存在异常',
- 'def evaluate(context) {\n  def deviceId = context.deviceId\n  def deviceCount = context.deviceBindCount as int\n  def maxDevices = {{maxDevices}} as int\n  if (deviceCount > maxDevices) {\n    return [hit: true, action: "REVIEW", reason: "设备${deviceId}关联${deviceCount}个账号，超过阈值${maxDevices}"]\n  }\n  return [hit: false, action: "PASS"]\n}',
+ 'def evaluate(context) {\n  def deviceId = context.deviceId\n  def deviceCount = context.deviceBindCount as int\n  def maxDevices = {{maxDevices}} as int\n  if (deviceCount > maxDevices) {\n    return [hit: true, action: "REVIEW", reason: "设备" + deviceId + "关联" + deviceCount + "个账号，超过阈值" + maxDevices]\n  }\n  return [hit: false, action: "PASS"]\n}',
  '[{"name":"maxDevices","type":"int","description":"最大关联设备数","required":true,"defaultValue":"3"}]',
  true, 'system'),
 
 ('黑名单检查', '名单管理', '检查用户/卡号/IP是否在黑名单中',
- 'def evaluate(context) {\n  def userId = context.userId\n  def blacklist = context.blacklist as Set\n  if (blacklist.contains(userId)) {\n    return [hit: true, action: "REJECT", reason: "用户${userId}在黑名单中"]\n  }\n  return [hit: false, action: "PASS"]\n}',
+ 'def evaluate(context) {\n  def userId = context.userId\n  def blacklist = context.blacklist as Set\n  if (blacklist.contains(userId)) {\n    return [hit: true, action: "REJECT", reason: "用户" + userId + "在黑名单中"]\n  }\n  return [hit: false, action: "PASS"]\n}',
  '[]',
  true, 'system'),
 
 ('时间窗口交易统计', '统计分析', '统计用户在时间窗口内的交易次数和总金额',
- 'def evaluate(context) {\n  def totalAmount = context.windowTotalAmount as BigDecimal\n  def totalCount = context.windowTotalCount as int\n  def amountLimit = {{amountLimit}} as BigDecimal\n  def countLimit = {{countLimit}} as int\n  if (totalAmount > amountLimit || totalCount > countLimit) {\n    return [hit: true, action: "REVIEW", reason: "窗口内交易总额${totalAmount}或次数${totalCount}超限"]\n  }\n  return [hit: false, action: "PASS"]\n}',
+ 'def evaluate(context) {\n  def totalAmount = context.windowTotalAmount as BigDecimal\n  def totalCount = context.windowTotalCount as int\n  def amountLimit = {{amountLimit}} as BigDecimal\n  def countLimit = {{countLimit}} as int\n  if (totalAmount > amountLimit || totalCount > countLimit) {\n    return [hit: true, action: "REVIEW", reason: "窗口内交易总额" + totalAmount + "或次数" + totalCount + "超限"]\n  }\n  return [hit: false, action: "PASS"]\n}',
  '[{"name":"amountLimit","type":"BigDecimal","description":"金额上限","required":true,"defaultValue":"50000"},{"name":"countLimit","type":"int","description":"次数上限","required":true,"defaultValue":"20"}]',
  true, 'system');

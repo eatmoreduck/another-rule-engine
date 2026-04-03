@@ -65,7 +65,7 @@ public interface RuleRepository extends JpaRepository<Rule, Long> {
     /**
      * 关键词搜索（rule_key 或 rule_name 包含关键词）
      */
-    @Query("SELECT r FROM Rule r WHERE r.ruleKey LIKE %:keyword% OR r.ruleName LIKE %:keyword%")
+    @Query("SELECT r FROM Rule r WHERE r.ruleKey LIKE CONCAT('%', :keyword, '%') OR r.ruleName LIKE CONCAT('%', :keyword, '%')")
     Page<Rule> findByKeyword(@Param("keyword") String keyword, Pageable pageable);
 
     /**
@@ -74,7 +74,7 @@ public interface RuleRepository extends JpaRepository<Rule, Long> {
     @Query("SELECT r FROM Rule r WHERE " +
            "(:createdBy IS NULL OR r.createdBy = :createdBy) AND " +
            "(:enabled IS NULL OR r.enabled = :enabled) AND " +
-           "(:keyword IS NULL OR r.ruleKey LIKE %:keyword% OR r.ruleName LIKE %:keyword%) AND " +
+           "(:keyword IS NULL OR r.ruleKey LIKE CONCAT('%', :keyword, '%') OR r.ruleName LIKE CONCAT('%', :keyword, '%')) AND " +
            "(:deleted IS NULL OR r.deleted = :deleted) AND " +
            "(:createdAtStart IS NULL OR r.createdAt >= :createdAtStart) AND " +
            "(:createdAtEnd IS NULL OR r.createdAt <= :createdAtEnd) AND " +
@@ -89,6 +89,19 @@ public interface RuleRepository extends JpaRepository<Rule, Long> {
             @Param("createdAtEnd") LocalDateTime createdAtEnd,
             @Param("updatedAtStart") LocalDateTime updatedAtStart,
             @Param("updatedAtEnd") LocalDateTime updatedAtEnd,
+            Pageable pageable
+    );
+
+    @Query("SELECT r FROM Rule r WHERE " +
+           "(:createdBy IS NULL OR r.createdBy = :createdBy) AND " +
+           "(:enabled IS NULL OR r.enabled = :enabled) AND " +
+           "(:keyword IS NULL OR r.ruleKey LIKE CONCAT('%', :keyword, '%') OR r.ruleName LIKE CONCAT('%', :keyword, '%')) AND " +
+           "(:deleted IS NULL OR r.deleted = :deleted)")
+    Page<Rule> findByConditionsWithoutDates(
+            @Param("createdBy") String createdBy,
+            @Param("enabled") Boolean enabled,
+            @Param("keyword") String keyword,
+            @Param("deleted") Boolean deleted,
             Pageable pageable
     );
 
