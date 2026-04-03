@@ -9,7 +9,7 @@ import {
   Card, Form, Input, Button, Breadcrumb, message,
   Spin, Typography, Row, Col, Modal,
 } from 'antd';
-import { SaveOutlined } from '@ant-design/icons';
+import { SaveOutlined, ThunderboltOutlined } from '@ant-design/icons';
 import { useNavigate, useParams, useBlocker } from 'react-router-dom';
 import { getRule, createRule, updateRule, getRuleReferences } from '../api/rules';
 import type { Rule } from '../types/rule';
@@ -18,6 +18,7 @@ import { generateGroovyFromSingleRule } from '../utils/dslGenerator';
 import { parseGroovyToSingleRule } from '../utils/dslParser';
 import { createDefaultSingleRule } from '../types/ruleConfig';
 import ConditionForm from '../components/rules/form/ConditionForm';
+import RuleTestModal from '../components/rules/RuleTestModal';
 import '../styles/editor.css';
 
 const { Title, Text } = Typography;
@@ -31,6 +32,7 @@ export default function RuleEditPage() {
   const [loading, setLoading] = useState(!isNew);
   const [saving, setSaving] = useState(false);
   const [dirty, setDirty] = useState(false);
+  const [testModalOpen, setTestModalOpen] = useState(false);
   const justSavedRef = useRef(false);
   const [existingRule, setExistingRule] = useState<Rule | null>(null);
 
@@ -171,6 +173,13 @@ export default function RuleEditPage() {
         </Title>
         <div className="page-header-actions">
           <Button
+            icon={<ThunderboltOutlined />}
+            onClick={() => setTestModalOpen(true)}
+            disabled={isNew}
+          >
+            测试
+          </Button>
+          <Button
             type="primary"
             icon={<SaveOutlined />}
             loading={saving}
@@ -226,6 +235,14 @@ export default function RuleEditPage() {
           </Card>
         </Col>
       </Row>
+      {!isNew && ruleKey && existingRule && (
+        <RuleTestModal
+          open={testModalOpen}
+          onClose={() => setTestModalOpen(false)}
+          ruleKey={ruleKey}
+          groovyScript={generatedScript}
+        />
+      )}
     </div>
   );
 }

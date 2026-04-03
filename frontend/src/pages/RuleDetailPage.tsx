@@ -10,7 +10,7 @@ import {
 } from 'antd';
 import {
   EditOutlined, DeleteOutlined, ArrowLeftOutlined,
-  CheckCircleOutlined, StopOutlined,
+  CheckCircleOutlined, StopOutlined, ThunderboltOutlined,
 } from '@ant-design/icons';
 import { useParams, useNavigate } from 'react-router-dom';
 import { getRule, deleteRule, enableRule, disableRule } from '../api/rules';
@@ -18,6 +18,7 @@ import type { Rule } from '../types/rule';
 import { parseSingleRuleForDisplay } from '../utils/dslParser';
 import type { ConditionTreeDisplayNode } from '../utils/dslParser';
 import { OPERATOR_LABELS, ACTION_LABELS } from '../types/ruleConfig';
+import RuleTestModal from '../components/rules/RuleTestModal';
 
 /** 判断展示节点是否为空条件 */
 function isEmptyDisplayNode(node: ConditionTreeDisplayNode): boolean {
@@ -71,6 +72,7 @@ export default function RuleDetailPage() {
   const navigate = useNavigate();
   const [rule, setRule] = useState<Rule | null>(null);
   const [loading, setLoading] = useState(true);
+  const [testModalOpen, setTestModalOpen] = useState(false);
 
   const loadRule = useCallback(async () => {
     if (!ruleKey) return;
@@ -171,6 +173,12 @@ export default function RuleDetailPage() {
             </Typography.Title>
           </Space>
           <Space>
+            <Button
+              icon={<ThunderboltOutlined />}
+              onClick={() => setTestModalOpen(true)}
+            >
+              测试
+            </Button>
             <Button
               icon={<EditOutlined />}
               onClick={() => navigate(`/rules/${rule.ruleKey}/edit`)}
@@ -313,6 +321,12 @@ export default function RuleDetailPage() {
           </Col>
         </Row>
       </Card>
+      <RuleTestModal
+        open={testModalOpen}
+        onClose={() => setTestModalOpen(false)}
+        ruleKey={rule.ruleKey}
+        groovyScript={rule.groovyScript}
+      />
     </div>
   );
 }
