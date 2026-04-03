@@ -6,7 +6,7 @@ import '@xyflow/react/dist/style.css';
 import { useNavigate, useParams, useBlocker } from 'react-router-dom';
 import { getDecisionFlow, createDecisionFlow, updateDecisionFlow } from '../api/decisionFlows';
 import type { DecisionFlow } from '../types/decisionFlow';
-import type { FlowNode, FlowEdge, ConditionNodeData, ActionNodeData, EndNodeData, RuleSetNodeData } from '../types/flowConfig';
+import type { FlowNode, FlowEdge, ConditionNodeData, ActionNodeData, EndNodeData, RuleSetNodeData, BlacklistNodeData, WhitelistNodeData, MergeNodeData } from '../types/flowConfig';
 import { createInitialNodes, createInitialEdges } from '../types/flowConfig';
 import FlowCanvas from '../components/flow/FlowCanvas';
 import NodePalette from '../components/flow/NodePalette';
@@ -69,7 +69,7 @@ function FlowEditorInner() {
     setDirty(true);
   }, [onEdgesChange]);
 
-  const handleNodeDataUpdate = useCallback((nodeId: string, updates: Partial<ConditionNodeData | ActionNodeData | EndNodeData | RuleSetNodeData>) => {
+  const handleNodeDataUpdate = useCallback((nodeId: string, updates: Partial<ConditionNodeData | ActionNodeData | EndNodeData | RuleSetNodeData | BlacklistNodeData | WhitelistNodeData | MergeNodeData>) => {
     setNodes((nds) =>
       nds.map((n) => {
         if (n.id === nodeId) {
@@ -109,6 +109,7 @@ function FlowEditorInner() {
           flowDescription,
           flowGraph,
         });
+        setDirty(false);
         message.success('决策流创建成功');
         navigate(`/decision-flows/${created.flowKey}`);
       } else if (flowKey) {
@@ -117,10 +118,9 @@ function FlowEditorInner() {
           flowDescription,
           flowGraph,
         });
+        setDirty(false);
         message.success('决策流保存成功');
-        navigate(`/decision-flows/${flowKey}`);
       }
-      setDirty(false);
     } catch (err) {
       if (err instanceof Error) {
         message.error(`保存失败: ${err.message}`);

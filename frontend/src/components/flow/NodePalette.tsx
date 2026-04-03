@@ -4,7 +4,7 @@
  */
 
 import { useCallback, type DragEvent } from 'react';
-import { QuestionCircleOutlined, ThunderboltOutlined, ApartmentOutlined } from '@ant-design/icons';
+import { QuestionCircleOutlined, ThunderboltOutlined, ApartmentOutlined, StopOutlined, SafetyCertificateOutlined, MergeCellsOutlined } from '@ant-design/icons';
 
 const NODE_TYPES = [
   {
@@ -24,6 +24,24 @@ const NODE_TYPES = [
     label: '规则集节点',
     description: '引用已有规则',
     icon: <ApartmentOutlined style={{ color: '#722ed1', fontSize: 20 }} />,
+  },
+  {
+    type: 'blacklist',
+    label: '黑名单',
+    description: '检查是否在黑名单中',
+    icon: <StopOutlined style={{ color: '#ff4d4f', fontSize: 20 }} />,
+  },
+  {
+    type: 'whitelist',
+    label: '白名单',
+    description: '检查是否在白名单中',
+    icon: <SafetyCertificateOutlined style={{ color: '#52c41a', fontSize: 20 }} />,
+  },
+  {
+    type: 'merge',
+    label: '合并分支',
+    description: '合并多个分支',
+    icon: <MergeCellsOutlined style={{ color: '#8c8c8c', fontSize: 20 }} />,
   },
 ];
 

@@ -7,12 +7,13 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import {
   Card, Form, Input, Button, Breadcrumb, message,
-  Spin, Typography, Row, Col, Modal,
+  Spin, Typography, Row, Col, Tag, Alert, Modal,
 } from 'antd';
-import { SaveOutlined, ThunderboltOutlined } from '@ant-design/icons';
+import { SaveOutlined, ThunderboltOutlined, LinkOutlined } from '@ant-design/icons';
 import { useNavigate, useParams, useBlocker } from 'react-router-dom';
 import { getRule, createRule, updateRule, getRuleReferences } from '../api/rules';
 import type { Rule } from '../types/rule';
+import type { RuleReference } from '../types/rule';
 import type { SingleRuleConfig } from '../types/ruleConfig';
 import { generateGroovyFromSingleRule } from '../utils/dslGenerator';
 import { parseGroovyToSingleRule } from '../utils/dslParser';
@@ -34,7 +35,9 @@ export default function RuleEditPage() {
   const [dirty, setDirty] = useState(false);
   const [testModalOpen, setTestModalOpen] = useState(false);
   const justSavedRef = useRef(false);
+  const modalShownRef = useRef(false);
   const [existingRule, setExistingRule] = useState<Rule | null>(null);
+  const [references, setReferences] = useState<RuleReference[]>([]);
 
   // 单规则配置
   const [ruleConfig, setRuleConfig] = useState<SingleRuleConfig>(createDefaultSingleRule());
@@ -62,18 +65,32 @@ export default function RuleEditPage() {
         })
         .then((refs) => {
           if (refs && refs.length > 0) {
-            const typeLabel = (t: string) => t === 'decision_flow' ? '决策流' : '规则集';
-            const refList = refs.map((r) => `• ${typeLabel(r.type)}：${r.name}（${r.key}）`).join('\n');
-            Modal.info({
-              title: '引用提示',
-              content: (
-                <div>
-                  <p>此规则被以下资源引用，修改可能影响它们的执行结果：</p>
-                  <pre style={{ fontSize: 13, whiteSpace: 'pre-wrap' }}>{refList}</pre>
-                </div>
-              ),
-              okText: '知道了',
-            });
+            setReferences(refs);
+            // ref guard 防止 React Strict Mode 双弹
+            if (!modalShownRef.current) {
+              modalShownRef.current = true;
+              Modal.warning({
+                title: '引用提示',
+                width: 520,
+                content: (
+                  <div>
+                    <p style={{ marginBottom: 12 }}>此规则被以下资源引用，修改可能影响它们的执行结果：</p>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                      {refs.map((r: RuleReference, idx: number) => {
+                        const typeLabel = r.type === 'decision_flow' ? '决策流' : '规则集';
+                        const color = r.type === 'decision_flow' ? 'blue' : 'purple';
+                        return (
+                          <Tag key={idx} color={color} style={{ margin: 0 }}>
+                            {typeLabel}：{r.name}（{r.key}）
+                          </Tag>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ),
+                okText: '知道了，继续编辑',
+              });
+            }
           }
         })
         .catch(() => message.error('加载规则失败'))

@@ -134,6 +134,18 @@
   border-color: #722ed1;
   background: #f9f0ff;
 }
+.custom-node-blacklist {
+  border-color: #ff4d4f;
+  background: #fff2f0;
+}
+.custom-node-whitelist {
+  border-color: #52c41a;
+  background: #f6ffed;
+}
+.custom-node-merge {
+  border-color: #8c8c8c;
+  background: #fafafa;
+}
 
 .custom-node-title {
   font-weight: 600;

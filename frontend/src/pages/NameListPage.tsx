@@ -3,6 +3,7 @@ import { Card, Table, Button, Space, Select, Input, Modal, Form, Breadcrumb, Tag
 import { PlusOutlined, DeleteOutlined } from '@ant-design/icons';
 import { getNameListEntries, createNameListEntry, deleteNameListEntry } from '../api/nameList';
 import type { NameListEntry } from '../api/nameList';
+import { getDecisionFlows } from '../api/decisionFlows';
 import { KEY_TYPE_LABELS } from '../types/flowConfig';
 import { formatDateTime } from '../utils/format';
 
@@ -24,6 +25,19 @@ export default function NameListPage() {
   const [confirmLoading, setConfirmLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [form] = Form.useForm();
+
+  // 决策流 Key 列表（用于下拉选择）
+  const [flowKeyOptions, setFlowKeyOptions] = useState<{ value: string; label: string }[]>([]);
+
+  useEffect(() => {
+    getDecisionFlows({ page: 0, size: 200 })
+      .then((res) => {
+        const opts = res.content.map((f) => ({ value: f.flowKey, label: `${f.flowName} (${f.flowKey})` }));
+        opts.unshift({ value: 'GLOBAL', label: 'GLOBAL（全局共享）' });
+        setFlowKeyOptions(opts);
+      })
+      .catch(() => {});
+  }, []);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -153,12 +167,15 @@ export default function NameListPage() {
         )}
 
         <Space style={{ marginBottom: 16 }} wrap>
-          <Input
-            placeholder="名单 Key (listKey)"
+          <Select
+            placeholder="名单 Key"
             allowClear
-            style={{ width: 160 }}
+            showSearch
+            style={{ width: 200 }}
             value={filterListKey}
-            onChange={(e) => { setFilterListKey(e.target.value || undefined); setPage(1); }}
+            onChange={(val) => { setFilterListKey(val); setPage(1); }}
+            options={flowKeyOptions}
+            filterOption={(input, option) => (option?.label as string)?.toLowerCase().includes(input.toLowerCase()) ?? false}
           />
           <Select
             placeholder="名单类型"
@@ -211,7 +228,13 @@ export default function NameListPage() {
               />
             </Form.Item>
             <Form.Item name="listKey" label="名单 Key">
-              <Input placeholder="决策流 Key（留空则全局生效）" />
+              <Select
+                placeholder="选择决策流（留空则全局生效）"
+                allowClear
+                showSearch
+                options={flowKeyOptions}
+                filterOption={(input, option) => (option?.label as string)?.toLowerCase().includes(input.toLowerCase()) ?? false}
+              />
             </Form.Item>
             <Form.Item name="keyType" label="键类型" rules={[{ required: true, message: '请选择键类型' }]}>
               <Select

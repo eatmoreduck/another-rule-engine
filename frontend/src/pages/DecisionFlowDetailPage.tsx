@@ -13,6 +13,9 @@ import EndNodeComponent from '../components/flow/nodes/EndNode';
 import ConditionNodeComponent from '../components/flow/nodes/ConditionNode';
 import ActionNodeComponent from '../components/flow/nodes/ActionNode';
 import RuleSetNodeComponent from '../components/flow/nodes/RuleSetNode';
+import BlacklistNodeComponent from '../components/flow/nodes/BlacklistNode';
+import WhitelistNodeComponent from '../components/flow/nodes/WhitelistNode';
+import MergeNodeComponent from '../components/flow/nodes/MergeNode';
 import DecisionFlowTestModal from '../components/flow/DecisionFlowTestModal';
 
 const { Text } = Typography;
@@ -23,6 +26,9 @@ const nodeTypes: NodeTypes = {
   condition: ConditionNodeComponent,
   action: ActionNodeComponent,
   ruleset: RuleSetNodeComponent,
+  blacklist: BlacklistNodeComponent,
+  whitelist: WhitelistNodeComponent,
+  merge: MergeNodeComponent,
 };
 
 function DetailInner() {
@@ -49,8 +55,14 @@ function DetailInner() {
       setFlow(data);
       try {
         const graph = JSON.parse(data.flowGraph);
-        if (graph.nodes) setFlowNodes(graph.nodes as FlowNode[]);
-        if (graph.edges) setFlowEdges(graph.edges as FlowEdge[]);
+        if (graph.nodes) {
+          setFlowNodes(graph.nodes as FlowNode[]);
+          // 延迟设置 edges，确保自定义节点的 Handle DOM 已渲染并测量完毕
+          // 否则带 sourceHandle 的边找不到 Handle bounds 会丢失
+          requestAnimationFrame(() => {
+            if (graph.edges) setFlowEdges(graph.edges as FlowEdge[]);
+          });
+        }
       } catch { /* ignore parse error */ }
     } catch {
       setErrorMsg('加载决策流详情失败');
@@ -146,13 +158,14 @@ function DetailInner() {
             edges={flowEdges}
             nodeTypes={nodeTypes}
             fitView
+            fitViewOptions={{ minZoom: 0.3, maxZoom: 0.8 }}
             nodesDraggable={false}
             nodesConnectable={false}
             edgesReconnectable={false}
             elementsSelectable={false}
             deleteKeyCode={null}
-            minZoom={0.3}
-            maxZoom={1.5}
+            minZoom={0.2}
+            maxZoom={2}
           >
             <Controls showInteractive={false} />
             <Background variant={BackgroundVariant.Dots} gap={16} size={1} />

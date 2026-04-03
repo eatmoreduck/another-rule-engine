@@ -1,5 +1,5 @@
 import { Layout, Menu, Typography, App } from 'antd';
-import { SafetyOutlined, SettingOutlined, ExperimentOutlined, BarChartOutlined, DashboardOutlined, CloudServerOutlined, ImportOutlined, ApartmentOutlined } from '@ant-design/icons';
+import { SafetyOutlined, SettingOutlined, ExperimentOutlined, BarChartOutlined, DashboardOutlined, CloudServerOutlined, ImportOutlined, ApartmentOutlined, UnorderedListOutlined } from '@ant-design/icons';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 
 const { Header, Content } = Layout;
@@ -15,6 +15,11 @@ const menuItems = [
     key: '/decision-flows',
     icon: <ApartmentOutlined />,
     label: '决策流',
+  },
+  {
+    key: '/name-list',
+    icon: <UnorderedListOutlined />,
+    label: '名单管理',
   },
   {
     key: '/grayscale',

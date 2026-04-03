@@ -24,6 +24,9 @@ import EndNodeComponent from './nodes/EndNode';
 import ConditionNodeComponent from './nodes/ConditionNode';
 import ActionNodeComponent from './nodes/ActionNode';
 import RuleSetNodeComponent from './nodes/RuleSetNode';
+import BlacklistNodeComponent from './nodes/BlacklistNode';
+import WhitelistNodeComponent from './nodes/WhitelistNode';
+import MergeNodeComponent from './nodes/MergeNode';
 
 const nodeTypes: NodeTypes = {
   start: StartNodeComponent,
@@ -31,6 +34,9 @@ const nodeTypes: NodeTypes = {
   condition: ConditionNodeComponent,
   action: ActionNodeComponent,
   ruleset: RuleSetNodeComponent,
+  blacklist: BlacklistNodeComponent,
+  whitelist: WhitelistNodeComponent,
+  merge: MergeNodeComponent,
 };
 
 function getDefaultConditionData() {
@@ -56,6 +62,29 @@ function getDefaultRuleSetData() {
     label: '规则集',
     nodeType: 'ruleset' as const,
     ruleKeys: [] as string[],
+  };
+}
+
+function getDefaultBlacklistData() {
+  return {
+    label: '黑名单',
+    nodeType: 'blacklist' as const,
+    keyType: '',
+  };
+}
+
+function getDefaultWhitelistData() {
+  return {
+    label: '白名单',
+    nodeType: 'whitelist' as const,
+    keyType: '',
+  };
+}
+
+function getDefaultMergeData() {
+  return {
+    label: '合并分支',
+    nodeType: 'merge' as const,
   };
 }
 
@@ -112,6 +141,27 @@ export default function FlowCanvas({
           type: 'ruleset',
           position,
           data: getDefaultRuleSetData(),
+        };
+      } else if (type === 'blacklist') {
+        newNode = {
+          id: genId(),
+          type: 'blacklist',
+          position,
+          data: getDefaultBlacklistData(),
+        };
+      } else if (type === 'whitelist') {
+        newNode = {
+          id: genId(),
+          type: 'whitelist',
+          position,
+          data: getDefaultWhitelistData(),
+        };
+      } else if (type === 'merge') {
+        newNode = {
+          id: genId(),
+          type: 'merge',
+          position,
+          data: getDefaultMergeData(),
         };
       } else {
         return;
