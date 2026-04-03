@@ -18,26 +18,6 @@ export async function executeTest(
   return response.data;
 }
 
-/** 批量测试规则 */
-export async function executeBatchTest(
-  ruleKey: string,
-  testDataList: Record<string, unknown>[],
-): Promise<TestResult[]> {
-  const response = await apiClient.post<TestResult[]>(
-    `/api/v1/test/rules/${ruleKey}/batch`,
-    testDataList,
-  );
-  return response.data;
-}
-
-/** 获取测试历史 */
-export async function getTestHistory(ruleKey: string): Promise<TestResult[]> {
-  const response = await apiClient.get<TestResult[]>(
-    `/api/v1/test/rules/${ruleKey}/history`,
-  );
-  return response.data;
-}
-
 /** 全量冲突检测 */
 export async function detectAllConflicts(): Promise<ConflictResult[]> {
   const response = await apiClient.post<ConflictResult[]>(

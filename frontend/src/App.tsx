@@ -8,9 +8,7 @@ import DecisionFlowDetailPage from './pages/DecisionFlowDetailPage';
 import DecisionFlowEditorPage from './pages/DecisionFlowEditorPage';
 import MonitoringPage from './pages/MonitoringPage';
 import GrayscalePage from './pages/GrayscalePage';
-import TestPage from './pages/TestPage';
 import AnalyticsPage from './pages/AnalyticsPage';
-import DecisionTablePage from './pages/DecisionTablePage';
 import EnvironmentPage from './pages/EnvironmentPage';
 import ImportExportPage from './pages/ImportExportPage';
 import TemplatePage from './pages/TemplatePage';
@@ -30,11 +28,9 @@ const router = createBrowserRouter([
       { path: '/decision-flows/:flowKey/edit', element: <DecisionFlowEditorPage /> },
       { path: '/monitoring', element: <MonitoringPage /> },
       { path: '/grayscale', element: <GrayscalePage /> },
-      { path: '/decision-table', element: <DecisionTablePage /> },
       { path: '/environments', element: <EnvironmentPage /> },
       { path: '/import-export', element: <ImportExportPage /> },
       { path: '/templates', element: <TemplatePage /> },
-      { path: '/test', element: <TestPage /> },
       { path: '/analytics', element: <AnalyticsPage /> },
       { path: '*', element: <Navigate to="/rules" replace /> },
     ],
