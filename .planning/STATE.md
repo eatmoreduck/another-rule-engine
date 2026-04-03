@@ -121,6 +121,7 @@ progress:
 | # | Description | Date | Commit | Directory |
 |---|-------------|------|--------|-----------|
 | 260403-guw | 规则详情/编辑页添加测试功能 | 2026-04-03 | c1c17d01 | [260403-guw-rule-test-feature](./quick/260403-guw-rule-test-feature/) |
+| 260403-vg8 | scopeKey 重命名为 listKey + 名单选择功能 | 2026-04-03 | 17bbf70e | [260403-vg8-scopekey-listkey](./quick/260403-vg8-scopekey-listkey/) |
 
 ### Known Risks
 
@@ -142,4 +143,4 @@ v1.0 里程碑已完成，可选方向:
 
 ---
 **State initialized:** 2025-03-26
-**Last updated:** 2026-04-03 - Completed quick task 260403-guw: 规则详情/编辑页添加测试功能
+**Last updated:** 2026-04-03 - Completed quick task 260403-vg8: scopeKey 重命名为 listKey + 名单选择功能
