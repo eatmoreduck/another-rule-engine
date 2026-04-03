@@ -31,6 +31,7 @@ public class DecisionFlowExecutionService {
     private final RuleCacheService ruleCacheService;
     private final GroovyScriptEngine scriptEngine;
     private final ObjectMapper objectMapper;
+    private final NameListService nameListService;
 
     /**
      * 执行决策流
@@ -59,7 +60,7 @@ public class DecisionFlowExecutionService {
                     .findFirst()
                     .orElseThrow(() -> new IllegalStateException("决策流没有开始节点"));
 
-            DecisionResponse response = traverseNode(startNode, graph, features);
+            DecisionResponse response = traverseNode(flowKey, startNode, graph, features);
             response.setExecutionTimeMs(System.currentTimeMillis() - startTime);
             return response;
 
@@ -77,17 +78,17 @@ public class DecisionFlowExecutionService {
     /**
      * 递归遍历流程节点
      */
-    private DecisionResponse traverseNode(FlowNodeDef node, FlowGraph graph, Map<String, Object> features) {
+    private DecisionResponse traverseNode(String flowKey, FlowNodeDef node, FlowGraph graph, Map<String, Object> features) {
         switch (node.getType()) {
             case "start": {
                 FlowNodeDef next = getNextNode(node.getId(), graph, null);
-                return next != null ? traverseNode(next, graph, features) : defaultResponse("无后续节点");
+                return next != null ? traverseNode(flowKey, next, graph, features) : defaultResponse("无后续节点");
             }
             case "condition": {
-                return evaluateCondition(node, graph, features);
+                return evaluateCondition(flowKey, node, graph, features);
             }
             case "ruleset": {
-                return evaluateRuleSet(node, graph, features);
+                return evaluateRuleSet(flowKey, node, graph, features);
             }
             case "action": {
                 Map<String, Object> data = node.getData();
@@ -111,15 +112,85 @@ public class DecisionFlowExecutionService {
                         .timeout(false)
                         .build();
             }
+            case "blacklist": {
+                return evaluateBlacklist(flowKey, node, graph, features);
+            }
+            case "whitelist": {
+                return evaluateWhitelist(flowKey, node, graph, features);
+            }
+            case "merge": {
+                FlowNodeDef next = getNextNode(node.getId(), graph, null);
+                return next != null ? traverseNode(flowKey, next, graph, features) : defaultResponse("合并节点无后续节点");
+            }
             default:
                 return defaultResponse("未知节点类型: " + node.getType());
         }
     }
 
     /**
+     * 评估黑名单节点
+     */
+    private DecisionResponse evaluateBlacklist(String flowKey, FlowNodeDef node, FlowGraph graph, Map<String, Object> features) {
+        Map<String, Object> data = node.getData();
+        String keyType = data.get("keyType") != null ? data.get("keyType").toString() : "";
+        Object featureValue = features.get(keyType);
+
+        if (featureValue == null || featureValue.toString().isEmpty()) {
+            // 无特征值，直接通过
+            FlowNodeDef next = getNextNode(node.getId(), graph, null);
+            return next != null ? traverseNode(flowKey, next, graph, features) : defaultResponse("黑名单节点无后续节点");
+        }
+
+        String keyValue = featureValue.toString();
+        boolean found = nameListService.existsInList(flowKey, "BLACK", keyType, keyValue);
+
+        if (found) {
+            return DecisionResponse.builder()
+                    .decision("REJECT")
+                    .reason("命中黑名单: " + keyType + "=" + keyValue)
+                    .build();
+        }
+
+        // 未命中，通过
+        FlowNodeDef next = getNextNode(node.getId(), graph, null);
+        return next != null ? traverseNode(flowKey, next, graph, features) : defaultResponse("黑名单节点无后续节点");
+    }
+
+    /**
+     * 评估白名单节点
+     */
+    private DecisionResponse evaluateWhitelist(String flowKey, FlowNodeDef node, FlowGraph graph, Map<String, Object> features) {
+        Map<String, Object> data = node.getData();
+        String keyType = data.get("keyType") != null ? data.get("keyType").toString() : "";
+        Object featureValue = features.get(keyType);
+
+        if (featureValue == null || featureValue.toString().isEmpty()) {
+            return DecisionResponse.builder()
+                    .decision("REJECT")
+                    .reason("白名单校验失败: 缺少特征值 " + keyType)
+                    .build();
+        }
+
+        String keyValue = featureValue.toString();
+        boolean found = nameListService.existsInList(flowKey, "WHITE", keyType, keyValue);
+
+        if (found) {
+            // 在白名单中，通过
+            FlowNodeDef next = getNextNode(node.getId(), graph, null);
+            return next != null ? traverseNode(flowKey, next, graph, features) : defaultResponse("白名单节点无后续节点");
+        }
+
+        // 不在白名单中，拒绝
+        return DecisionResponse.builder()
+                .decision("REJECT")
+                .reason("未在白名单中: " + keyType + "=" + keyValue)
+                .build();
+    }
+
+    /**
      * 评估条件节点
      */
-    private DecisionResponse evaluateCondition(FlowNodeDef node, FlowGraph graph, Map<String, Object> features) {
+    private DecisionResponse evaluateCondition(String flowKey, FlowNodeDef node, FlowGraph graph, Map<String, Object> features) {
         Map<String, Object> data = node.getData();
         String fieldName = data.get("fieldName") != null ? data.get("fieldName").toString() : "";
         String operator = data.get("operator") != null ? data.get("operator").toString() : "EQ";
@@ -129,7 +200,7 @@ public class DecisionFlowExecutionService {
         boolean conditionMet = evaluateOperator(fieldValue, operator, threshold);
 
         FlowNodeDef next = getNextNode(node.getId(), graph, conditionMet);
-        return next != null ? traverseNode(next, graph, features) : defaultResponse("条件分支无后续节点");
+        return next != null ? traverseNode(flowKey, next, graph, features) : defaultResponse("条件分支无后续节点");
     }
 
     /**
@@ -138,7 +209,7 @@ public class DecisionFlowExecutionService {
      * 无拒绝时走"通过"分支继续流程
      */
     @SuppressWarnings("unchecked")
-    private DecisionResponse evaluateRuleSet(FlowNodeDef node, FlowGraph graph, Map<String, Object> features) {
+    private DecisionResponse evaluateRuleSet(String flowKey, FlowNodeDef node, FlowGraph graph, Map<String, Object> features) {
         Map<String, Object> data = node.getData();
 
         List<String> ruleKeys = data.get("ruleKeys") instanceof List
@@ -148,7 +219,7 @@ public class DecisionFlowExecutionService {
         if (ruleKeys.isEmpty()) {
             // 无引用规则，走通过分支
             FlowNodeDef next = getNextNode(node.getId(), graph, null);
-            return next != null ? traverseNode(next, graph, features) : defaultResponse("规则集无引用规则");
+            return next != null ? traverseNode(flowKey, next, graph, features) : defaultResponse("规则集无引用规则");
         }
 
         // 拒绝优先模式：逐个执行，任一 REJECT 立即短路返回
@@ -165,7 +236,7 @@ public class DecisionFlowExecutionService {
 
         // 全部规则无拒绝，走通过分支继续流程
         FlowNodeDef next = getNextNode(node.getId(), graph, null);
-        return next != null ? traverseNode(next, graph, features) : defaultResponse("规则集通过分支无后续节点");
+        return next != null ? traverseNode(flowKey, next, graph, features) : defaultResponse("规则集通过分支无后续节点");
     }
 
     /** 规则执行结果（含决策信息） */

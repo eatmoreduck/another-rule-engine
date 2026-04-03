@@ -60,6 +60,28 @@ export interface RuleSetNodeData {
   ruleKeys: string[];
 }
 
+export interface BlacklistNodeData {
+  [key: string]: unknown;
+  label: string;
+  nodeType: 'blacklist';
+  keyType: string; // 'ID_NO' | 'DEVICE_ID' | 'IP' | 'PHONE_NO' | 'MAC_ADDR'
+  listKey?: string;
+}
+
+export interface WhitelistNodeData {
+  [key: string]: unknown;
+  label: string;
+  nodeType: 'whitelist';
+  keyType: string;
+  listKey?: string;
+}
+
+export interface MergeNodeData {
+  [key: string]: unknown;
+  label: string;
+  nodeType: 'merge';
+}
+
 // --- 节点类型联合 ---
 
 export type ConditionNode = Node<ConditionNodeData, 'condition'>;
@@ -67,8 +89,11 @@ export type ActionNode = Node<ActionNodeData, 'action'>;
 export type StartNode = Node<StartNodeData, 'start'>;
 export type EndNode = Node<EndNodeData, 'end'>;
 export type RuleSetNode = Node<RuleSetNodeData, 'ruleset'>;
+export type BlacklistNode = Node<BlacklistNodeData, 'blacklist'>;
+export type WhitelistNode = Node<WhitelistNodeData, 'whitelist'>;
+export type MergeNode = Node<MergeNodeData, 'merge'>;
 
-export type FlowNode = ConditionNode | ActionNode | StartNode | EndNode | RuleSetNode;
+export type FlowNode = ConditionNode | ActionNode | StartNode | EndNode | RuleSetNode | BlacklistNode | WhitelistNode | MergeNode;
 
 /** 条件分支边的数据 */
 export interface ConditionEdgeData {
@@ -103,6 +128,15 @@ export function createInitialNodes(): FlowNode[] {
     },
   ];
 }
+
+/** 名单键类型标签映射 */
+export const KEY_TYPE_LABELS: Record<string, string> = {
+  ID_NO: '身份证号',
+  DEVICE_ID: '设备ID',
+  IP: 'IP地址',
+  PHONE_NO: '手机号',
+  MAC_ADDR: 'MAC地址',
+};
 
 /** 流程图初始连线 */
 export function createInitialEdges(): FlowEdge[] {
