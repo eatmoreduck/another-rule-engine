@@ -4,7 +4,7 @@
  */
 
 import { useState, useEffect, useMemo } from 'react';
-import { Modal, Input, Button, Alert, Descriptions, Tag, Spin, message } from 'antd';
+import { Modal, Input, Button, Alert, Descriptions, Tag, Spin } from 'antd';
 import { ThunderboltOutlined } from '@ant-design/icons';
 import { extractFieldNamesFromScript } from '../../utils/dslParser';
 import { executeTest } from '../../api/analytics';
@@ -21,6 +21,8 @@ export default function RuleTestModal({ open, onClose, ruleKey, groovyScript }: 
   const [testInput, setTestInput] = useState('');
   const [running, setRunning] = useState(false);
   const [result, setResult] = useState<TestResult | null>(null);
+  const [jsonError, setJsonError] = useState('');
+  const [execError, setExecError] = useState('');
 
   // 当 Modal 打开时，自动从脚本提取所有字段名生成默认 JSON
   const defaultJson = useMemo(() => {
@@ -40,15 +42,19 @@ export default function RuleTestModal({ open, onClose, ruleKey, groovyScript }: 
     if (open) {
       setTestInput(JSON.stringify(defaultJson, null, 2));
       setResult(null);
+      setJsonError('');
+      setExecError('');
     }
   }, [open, defaultJson]);
 
   const handleRun = async () => {
+    setJsonError('');
+    setExecError('');
     let parsed: Record<string, unknown>;
     try {
       parsed = JSON.parse(testInput);
     } catch {
-      message.error('JSON 格式错误，请检查输入');
+      setJsonError('JSON 格式错误，请检查输入');
       return;
     }
 
@@ -58,7 +64,7 @@ export default function RuleTestModal({ open, onClose, ruleKey, groovyScript }: 
       const res = await executeTest(ruleKey, parsed);
       setResult(res);
     } catch (err) {
-      message.error(`测试执行失败: ${err instanceof Error ? err.message : '未知错误'}`);
+      setExecError(`测试执行失败: ${err instanceof Error ? err.message : '未知错误'}`);
     } finally {
       setRunning(false);
     }
@@ -96,10 +102,17 @@ export default function RuleTestModal({ open, onClose, ruleKey, groovyScript }: 
         <Input.TextArea
           rows={8}
           value={testInput}
-          onChange={(e) => setTestInput(e.target.value)}
+          onChange={(e) => { setTestInput(e.target.value); setJsonError(''); }}
           style={{ fontFamily: 'monospace' }}
         />
       </div>
+
+      {jsonError && (
+        <Alert type="error" message={jsonError} showIcon closable onClose={() => setJsonError('')} style={{ marginBottom: 12 }} />
+      )}
+      {execError && (
+        <Alert type="error" message={execError} showIcon closable onClose={() => setExecError('')} style={{ marginBottom: 12 }} />
+      )}
 
       {result && (
         <div style={{ marginTop: 16 }}>

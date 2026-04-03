@@ -8,7 +8,6 @@ import {
   Tag,
   Space,
   Breadcrumb,
-  message,
   Descriptions,
   Divider,
   Alert,
@@ -30,9 +29,14 @@ export default function TestPage() {
   const [batchResults, setBatchResults] = useState<TestResult[]>([]);
   const [historyResults, setHistoryResults] = useState<TestResult[]>([]);
   const [historyRuleKey, setHistoryRuleKey] = useState('');
+  const [jsonError, setJsonError] = useState('');
+  const [batchJsonError, setBatchJsonError] = useState('');
+  const [batchSuccess, setBatchSuccess] = useState('');
+  const [historyError, setHistoryError] = useState('');
 
   /** 执行单次测试 */
   const handleExecuteTest = async () => {
+    setJsonError('');
     try {
       const values = await form.validateFields();
       setLoading(true);
@@ -42,20 +46,15 @@ export default function TestPage() {
       try {
         testData = JSON.parse(values.testData);
       } catch {
-        message.error('测试数据格式错误，请输入有效 JSON');
+        setJsonError('测试数据格式错误，请输入有效 JSON');
+        setLoading(false);
         return;
       }
 
       const result = await executeTest(values.ruleKey, testData);
       setTestResult(result);
-
-      if (result.success) {
-        message.success('测试执行成功');
-      } else {
-        message.warning('测试执行失败');
-      }
     } catch {
-      message.error('请填写必填字段');
+      // 表单校验失败
     } finally {
       setLoading(false);
     }
@@ -63,6 +62,8 @@ export default function TestPage() {
 
   /** 执行批量测试 */
   const handleBatchTest = async () => {
+    setBatchJsonError('');
+    setBatchSuccess('');
     try {
       const values = await batchForm.validateFields();
       setLoading(true);
@@ -72,11 +73,13 @@ export default function TestPage() {
       try {
         testDataList = JSON.parse(values.batchData);
         if (!Array.isArray(testDataList)) {
-          message.error('批量测试数据必须是 JSON 数组');
+          setBatchJsonError('批量测试数据必须是 JSON 数组');
+          setLoading(false);
           return;
         }
       } catch {
-        message.error('批量测试数据格式错误，请输入有效 JSON 数组');
+        setBatchJsonError('批量测试数据格式错误，请输入有效 JSON 数组');
+        setLoading(false);
         return;
       }
 
@@ -84,9 +87,9 @@ export default function TestPage() {
       setBatchResults(results);
 
       const successCount = results.filter((r) => r.success).length;
-      message.success(`批量测试完成: ${successCount}/${results.length} 成功`);
+      setBatchSuccess(`批量测试完成: ${successCount}/${results.length} 成功`);
     } catch {
-      message.error('请填写必填字段');
+      // 表单校验失败
     } finally {
       setLoading(false);
     }
@@ -94,19 +97,17 @@ export default function TestPage() {
 
   /** 获取测试历史 */
   const handleGetHistory = async () => {
+    setHistoryError('');
     if (!historyRuleKey.trim()) {
-      message.warning('请输入规则 Key');
+      setHistoryError('请输入规则 Key');
       return;
     }
     setLoading(true);
     try {
       const results = await getTestHistory(historyRuleKey);
       setHistoryResults(results);
-      if (results.length === 0) {
-        message.info('暂无测试历史记录');
-      }
     } catch {
-      message.error('获取测试历史失败');
+      setHistoryError('获取测试历史失败');
     } finally {
       setLoading(false);
     }
@@ -212,6 +213,9 @@ export default function TestPage() {
               执行测试
             </Button>
           </Form.Item>
+          {jsonError && (
+            <Alert type="error" message={jsonError} showIcon closable onClose={() => setJsonError('')} style={{ marginBottom: 16 }} />
+          )}
         </Form>
 
         {/* 测试结果 */}
@@ -307,6 +311,13 @@ export default function TestPage() {
           </Form.Item>
         </Form>
 
+        {batchJsonError && (
+          <Alert type="error" message={batchJsonError} showIcon closable onClose={() => setBatchJsonError('')} style={{ marginBottom: 16 }} />
+        )}
+        {batchSuccess && (
+          <Alert type="success" message={batchSuccess} showIcon closable onClose={() => setBatchSuccess('')} style={{ marginBottom: 16 }} />
+        )}
+
         {/* 批量测试结果 */}
         {batchResults.length > 0 && (
           <>
@@ -346,6 +357,9 @@ export default function TestPage() {
             查询历史
           </Button>
         </Space>
+        {historyError && (
+          <Alert type="error" message={historyError} showIcon closable onClose={() => setHistoryError('')} style={{ marginBottom: 16 }} />
+        )}
 
         {historyResults.length > 0 && (
           <Table

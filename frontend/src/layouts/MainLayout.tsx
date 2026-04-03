@@ -1,4 +1,4 @@
-import { Layout, Menu, Typography } from 'antd';
+import { Layout, Menu, Typography, App } from 'antd';
 import { SafetyOutlined, SettingOutlined, ExperimentOutlined, BugOutlined, BarChartOutlined, DashboardOutlined, TableOutlined, CloudServerOutlined, ImportOutlined, FileTextOutlined, ApartmentOutlined } from '@ant-design/icons';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 
@@ -73,6 +73,7 @@ export default function MainLayout() {
   };
 
   return (
+    <App>
     <Layout style={{ minHeight: '100vh' }}>
       <Header
         style={{
@@ -105,5 +106,6 @@ export default function MainLayout() {
         <Outlet />
       </Content>
     </Layout>
+    </App>
   );
 }

@@ -52,7 +52,7 @@ spring:
   # 缓存配置（D-13: Caffeine）
   cache:
     type: caffeine
-    cache-names: rules, compiled-scripts
+    cache-names: rules, compiled-scripts, decision-flows
     caffeine:
       spec: maximumSize=5000,expireAfterWrite=10m
 

@@ -46,6 +46,9 @@ public class CacheConfiguration {
         // 编译后的脚本缓存（L1）
         caches.add(buildCache("compiled-scripts", 1000, 5, TimeUnit.MINUTES));
 
+        // 决策流缓存
+        caches.add(buildCache("decision-flows", 5000, 10, TimeUnit.MINUTES));
+
         cacheManager.setCaches(caches);
         return cacheManager;
     }

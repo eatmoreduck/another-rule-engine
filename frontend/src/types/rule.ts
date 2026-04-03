@@ -14,6 +14,14 @@ export interface Rule {
   optLockVersion: number;
 }
 
+export interface RuleSelectOption {
+  ruleKey: string;
+  ruleName: string;
+  enabled: boolean;
+  deleted: boolean;
+  unavailable?: boolean;
+}
+
 export interface PageResponse<T> {
   content: T[];
   totalElements: number;

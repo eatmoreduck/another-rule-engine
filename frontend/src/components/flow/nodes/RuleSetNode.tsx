@@ -1,6 +1,6 @@
 /**
  * RuleSetNode - 规则集节点组件
- * 容器节点，引用已有规则（AND/OR），双击可编辑引用规则列表
+ * 拒绝优先模式：任一引用规则返回 REJECT 则立即拒绝，否则走"通过"分支
  */
 
 import { memo } from 'react';
@@ -13,7 +13,6 @@ type RuleSetNodeProps = NodeProps<Node<RuleSetNodeData, 'ruleset'>>;
 
 function RuleSetNodeComponent({ data, isConnectable }: RuleSetNodeProps) {
   const ruleKeys = data.ruleKeys ?? [];
-  const logic = data.logic ?? 'AND';
 
   return (
     <div className="custom-node custom-node-ruleset">
@@ -27,10 +26,10 @@ function RuleSetNodeComponent({ data, isConnectable }: RuleSetNodeProps) {
       <div className="custom-node-title">
         {data.label}
         <Tag
-          color={logic === 'AND' ? 'blue' : 'orange'}
+          color="red"
           style={{ marginLeft: 6, fontSize: 10 }}
         >
-          {logic}
+          拒绝优先
         </Tag>
       </div>
 
@@ -47,46 +46,25 @@ function RuleSetNodeComponent({ data, isConnectable }: RuleSetNodeProps) {
         </div>
       )}
 
-      {/* True 分支输出 */}
+      {/* 通过分支输出（无拒绝时继续） */}
       <Handle
         type="source"
         position={Position.Right}
-        id="true"
-        style={{ top: '30%', background: '#52c41a', width: 10, height: 10 }}
+        id="pass"
+        style={{ top: '50%', background: '#52c41a', width: 10, height: 10 }}
         isConnectable={isConnectable}
       />
       <span
         style={{
           position: 'absolute',
           right: -28,
-          top: '22%',
+          top: '42%',
           fontSize: 10,
           color: '#52c41a',
           fontWeight: 600,
         }}
       >
-        是
-      </span>
-
-      {/* False 分支输出 */}
-      <Handle
-        type="source"
-        position={Position.Right}
-        id="false"
-        style={{ top: '70%', background: '#ff4d4f', width: 10, height: 10 }}
-        isConnectable={isConnectable}
-      />
-      <span
-        style={{
-          position: 'absolute',
-          right: -28,
-          top: '62%',
-          fontSize: 10,
-          color: '#ff4d4f',
-          fontWeight: 600,
-        }}
-      >
-        否
+        通过
       </span>
     </div>
   );

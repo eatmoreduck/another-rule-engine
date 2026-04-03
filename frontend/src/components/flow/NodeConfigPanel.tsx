@@ -4,7 +4,7 @@
  */
 
 import { useCallback, useState, useEffect } from 'react';
-import { Select, Input, Divider, Typography, Tag } from 'antd';
+import { Select, Input, Divider, Typography, Tag, message } from 'antd';
 import type {
   FlowNode,
   ConditionNodeData,
@@ -14,6 +14,7 @@ import type {
 } from '../../types/flowConfig';
 import { OPERATOR_LABELS, ACTION_LABELS, type Operator, type Action } from '../../types/ruleConfig';
 import { getRulesForSelect } from '../../api/rules';
+import type { RuleSelectOption } from '../../types/rule';
 
 const { Text } = Typography;
 
@@ -182,16 +183,47 @@ function RuleSetConfig({
   data: RuleSetNodeData;
   onUpdate: (updates: Partial<RuleSetNodeData>) => void;
 }) {
-  const [rules, setRules] = useState<Array<{ ruleKey: string; ruleName: string }>>([]);
+  const [rules, setRules] = useState<RuleSelectOption[]>([]);
   const [loadingRules, setLoadingRules] = useState(false);
 
   useEffect(() => {
+    let active = true;
     setLoadingRules(true);
     getRulesForSelect()
-      .then(setRules)
-      .catch(() => {})
-      .finally(() => setLoadingRules(false));
+      .then((loadedRules) => {
+        if (active) {
+          setRules(loadedRules);
+        }
+      })
+      .catch((error) => {
+        console.error('Failed to load rules for ruleset node:', error);
+        if (active) {
+          message.error('加载引用规则失败，请稍后重试');
+        }
+      })
+      .finally(() => {
+        if (active) {
+          setLoadingRules(false);
+        }
+      });
+
+    return () => {
+      active = false;
+    };
   }, []);
+
+  const ruleOptions = [
+    ...rules,
+    ...(data.ruleKeys ?? [])
+      .filter((ruleKey) => !rules.some((rule) => rule.ruleKey === ruleKey))
+      .map((ruleKey) => ({
+        ruleKey,
+        ruleName: '已引用规则',
+        enabled: false,
+        deleted: false,
+        unavailable: true,
+      })),
+  ];
 
   return (
     <>
@@ -201,15 +233,13 @@ function RuleSetConfig({
           size="small" style={{ marginTop: 4 }} />
       </div>
       <Divider style={{ margin: '8px 0' }} />
-      <div style={{ marginBottom: 12 }}>
-        <Text type="secondary" style={{ fontSize: 12 }}>逻辑关系</Text>
-        <Select value={data.logic} onChange={(v) => onUpdate({ logic: v as 'AND' | 'OR' })}
-          size="small" style={{ width: '100%', marginTop: 4 }}
-          options={[
-            { value: 'AND', label: '全部满足 (AND)' },
-            { value: 'OR', label: '任一满足 (OR)' },
-          ]}
-        />
+      <div style={{ marginBottom: 12, padding: '8px 10px', background: '#fff2f0', borderRadius: 4, border: '1px solid #ffccc7' }}>
+        <Text type="secondary" style={{ fontSize: 12 }}>
+          执行模式：<Text type="danger" strong>拒绝优先</Text>
+        </Text>
+        <div style={{ fontSize: 11, color: '#999', marginTop: 4 }}>
+          任一引用规则返回拒绝，立即中断并返回拒绝决策
+        </div>
       </div>
       <Divider style={{ margin: '8px 0' }} />
       <div style={{ marginBottom: 12 }}>
@@ -222,7 +252,11 @@ function RuleSetConfig({
           size="small"
           style={{ width: '100%', marginTop: 4 }}
           placeholder="选择要引用的规则"
-          options={rules.map(r => ({ value: r.ruleKey, label: `${r.ruleName} (${r.ruleKey})` }))}
+          notFoundContent={loadingRules ? '加载中...' : '暂无可引用规则'}
+          options={ruleOptions.map((rule) => ({
+            value: rule.ruleKey,
+            label: `${rule.ruleName} (${rule.ruleKey})${rule.unavailable ? '（当前不可用）' : rule.enabled ? '' : '（已禁用）'}`,
+          }))}
           optionFilterProp="label"
           showSearch
         />

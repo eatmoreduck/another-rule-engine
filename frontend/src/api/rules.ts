@@ -7,6 +7,7 @@ import type {
   RuleQueryParams,
   ValidateScriptResponse,
   RuleReference,
+  RuleSelectOption,
 } from '../types/rule';
 
 export async function getRules(params?: RuleQueryParams): Promise<PageResponse<Rule>> {
@@ -72,10 +73,30 @@ export async function validateScript(groovyScript: string): Promise<ValidateScri
   return response.data;
 }
 
-/** 获取规则列表供规则集节点选择器使用（只返回已启用的规则） */
-export async function getRulesForSelect(): Promise<Array<{ ruleKey: string; ruleName: string }>> {
-  const response = await getRules({ enabled: true, page: 0, size: 200 });
-  return response.content.map(r => ({ ruleKey: r.ruleKey, ruleName: r.ruleName }));
+/** 获取规则列表供规则集节点选择器使用（编辑态可见全部未删除规则，执行态由后端判定是否可用） */
+export async function getRulesForSelect(): Promise<RuleSelectOption[]> {
+  const pageSize = 200;
+  const firstPage = await getRules({ page: 0, size: pageSize, showDeleted: false });
+  const pages = [firstPage];
+
+  for (let page = 1; page < firstPage.totalPages; page += 1) {
+    pages.push(await getRules({ page, size: pageSize, showDeleted: false }));
+  }
+
+  return pages
+    .flatMap((page) => page.content)
+    .map((rule) => ({
+      ruleKey: rule.ruleKey,
+      ruleName: rule.ruleName,
+      enabled: rule.enabled,
+      deleted: rule.deleted,
+    }))
+    .sort((left, right) => {
+      if (left.enabled !== right.enabled) {
+        return left.enabled ? -1 : 1;
+      }
+      return left.ruleName.localeCompare(right.ruleName, 'zh-CN');
+    });
 }
 
 /** 查询规则被哪些决策流/规则集引用 */

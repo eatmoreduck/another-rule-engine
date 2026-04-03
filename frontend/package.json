@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@ant-design/icons": "^5.5.0",
+    "@ant-design/v5-patch-for-react-19": "^1.0.3",
     "@xyflow/react": "^12.10.2",
     "antd": "^5.22.0",
     "axios": "^1.7.0",

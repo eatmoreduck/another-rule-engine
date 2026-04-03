@@ -56,8 +56,6 @@ export interface RuleSetNodeData {
   [key: string]: unknown;
   label: string;
   nodeType: 'ruleset';
-  /** 条件之间的逻辑关系 */
-  logic: 'AND' | 'OR';
   /** 引用的规则 Key 列表 */
   ruleKeys: string[];
 }

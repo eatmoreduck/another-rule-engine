@@ -59,3 +59,15 @@ export async function disableDecisionFlow(flowKey: string): Promise<DecisionFlow
   const response = await apiClient.post<DecisionFlow>(`/api/v1/decision-flows/${flowKey}/disable`);
   return response.data;
 }
+
+export interface FlowTestResult {
+  decision: string;
+  reason: string;
+  executionTimeMs: number;
+}
+
+/** 执行决策流测试 */
+export async function executeFlowTest(flowKey: string, features: Record<string, unknown>): Promise<FlowTestResult> {
+  const response = await apiClient.post<FlowTestResult>(`/api/v1/decision-flows/${flowKey}/execute`, features);
+  return response.data;
+}

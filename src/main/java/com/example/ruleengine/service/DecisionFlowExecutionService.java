@@ -133,31 +133,71 @@ public class DecisionFlowExecutionService {
     }
 
     /**
-     * 评估规则集节点
+     * 评估规则集节点（拒绝优先模式）
+     * 遍历引用规则，任一返回 REJECT 则立即返回拒绝决策（一票否决）
+     * 无拒绝时走"通过"分支继续流程
      */
     @SuppressWarnings("unchecked")
     private DecisionResponse evaluateRuleSet(FlowNodeDef node, FlowGraph graph, Map<String, Object> features) {
         Map<String, Object> data = node.getData();
-        String logic = data.get("logic") != null ? data.get("logic").toString() : "AND";
 
         List<String> ruleKeys = data.get("ruleKeys") instanceof List
                 ? ((List<?>) data.get("ruleKeys")).stream().map(Object::toString).collect(Collectors.toList())
                 : List.of();
 
         if (ruleKeys.isEmpty()) {
-            FlowNodeDef next = getNextNode(node.getId(), graph, false);
+            // 无引用规则，走通过分支
+            FlowNodeDef next = getNextNode(node.getId(), graph, null);
             return next != null ? traverseNode(next, graph, features) : defaultResponse("规则集无引用规则");
         }
 
-        boolean allPass;
-        if ("AND".equals(logic)) {
-            allPass = ruleKeys.stream().allMatch(key -> executeRule(key, features));
-        } else {
-            allPass = ruleKeys.stream().anyMatch(key -> executeRule(key, features));
+        // 拒绝优先模式：逐个执行，任一 REJECT 立即短路返回
+        for (String ruleKey : ruleKeys) {
+            RuleExecResult execResult = executeRuleWithDecision(ruleKey, features);
+            if (execResult.rejected) {
+                log.info("规则集拒绝优先触发: node={}, ruleKey={}, reason={}", node.getId(), ruleKey, execResult.reason);
+                return DecisionResponse.builder()
+                        .decision("REJECT")
+                        .reason(execResult.reason != null ? execResult.reason : "规则集命中拒绝规则: " + ruleKey)
+                        .build();
+            }
         }
 
-        FlowNodeDef next = getNextNode(node.getId(), graph, allPass);
-        return next != null ? traverseNode(next, graph, features) : defaultResponse("规则集分支无后续节点");
+        // 全部规则无拒绝，走通过分支继续流程
+        FlowNodeDef next = getNextNode(node.getId(), graph, null);
+        return next != null ? traverseNode(next, graph, features) : defaultResponse("规则集通过分支无后续节点");
+    }
+
+    /** 规则执行结果（含决策信息） */
+    private record RuleExecResult(boolean rejected, String reason) {}
+
+    /**
+     * 执行单个规则并返回详细决策结果
+     */
+    private RuleExecResult executeRuleWithDecision(String ruleKey, Map<String, Object> features) {
+        try {
+            Rule rule = ruleCacheService.getEnabledRule(ruleKey);
+            if (rule == null || !rule.getEnabled() || rule.getDeleted()) {
+                return new RuleExecResult(false, null);
+            }
+            Object result = scriptEngine.executeScript(ruleKey, rule.getGroovyScript(), features);
+            if (result instanceof Map) {
+                Object decision = ((Map<?, ?>) result).get("decision");
+                Object reason = ((Map<?, ?>) result).get("reason");
+                if (decision != null && "REJECT".equals(decision.toString())) {
+                    return new RuleExecResult(true, reason != null ? reason.toString() : null);
+                }
+                return new RuleExecResult(false, reason != null ? reason.toString() : null);
+            }
+            if (result instanceof Boolean) {
+                return new RuleExecResult(!(Boolean) result, null);
+            }
+            String str = String.valueOf(result);
+            return new RuleExecResult("REJECT".equals(str), null);
+        } catch (Exception e) {
+            log.warn("规则集引用规则执行失败: ruleKey={}", ruleKey, e);
+            return new RuleExecResult(false, null);
+        }
     }
 
     /**
@@ -220,10 +260,15 @@ public class DecisionFlowExecutionService {
         for (FlowEdgeDef edge : graph.getEdges()) {
             if (edge.getSource().equals(sourceId)) {
                 if (conditionMet == null) {
-                    return findNode(edge.getTarget(), graph);
+                    // null = 无条件分支，优先匹配 "pass" handle，否则走第一条出边
+                    String handle = edge.getSourceHandle();
+                    if ("pass".equals(handle) || handle == null) {
+                        return findNode(edge.getTarget(), graph);
+                    }
+                    continue;
                 }
                 String handle = edge.getSourceHandle();
-                if (conditionMet && "true".equals(handle)) {
+                if (conditionMet && ("true".equals(handle) || "pass".equals(handle))) {
                     return findNode(edge.getTarget(), graph);
                 }
                 if (!conditionMet && "false".equals(handle)) {

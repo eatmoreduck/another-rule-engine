@@ -55,7 +55,6 @@ function getDefaultRuleSetData() {
   return {
     label: '规则集',
     nodeType: 'ruleset' as const,
-    logic: 'AND' as const,
     ruleKeys: [] as string[],
   };
 }

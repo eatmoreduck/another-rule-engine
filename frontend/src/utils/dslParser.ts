@@ -577,6 +577,148 @@ export function extractFieldNamesFromScript(script: string): string[] {
   return Array.from(names);
 }
 
+/**
+ * 从决策流 flowGraph JSON 中提取所有特征字段名（去重）
+ * 策略：正则扫描整个 flowGraph JSON 中的 features.xxx，同时收集条件节点的 fieldName
+ */
+export function extractFieldNamesFromFlowGraph(flowGraphJson: string): string[] {
+  const names = new Set<string>();
+  if (!flowGraphJson) return [];
+
+  // 1. 正则扫描 features.xxx（覆盖所有节点类型中可能的引用）
+  const regex = /features\.(\w+)/g;
+  let match: RegExpExecArray | null;
+  while ((match = regex.exec(flowGraphJson)) !== null) {
+    names.add(match[1]);
+  }
+
+  // 2. 解析 JSON，收集条件节点的 fieldName（更精确）
+  try {
+    const graph = JSON.parse(flowGraphJson);
+    const nodes: Array<{ data?: Record<string, unknown> }> = graph?.nodes ?? [];
+    for (const node of nodes) {
+      if (node.data?.nodeType === 'condition' && node.data.fieldName) {
+        names.add(String(node.data.fieldName));
+      }
+    }
+  } catch {
+    // JSON 解析失败，仅靠正则结果
+  }
+
+  return Array.from(names);
+}
+
+// ============ 字段类型推断 ============
+
+export type FieldInferredType = 'number' | 'string';
+
+export interface FieldTypeInfo {
+  name: string;
+  inferredType: FieldInferredType;
+}
+
+/**
+ * 从 Groovy 脚本推断字段类型
+ * 策略：分析比较运算符右侧的值类型
+ *   features.amount > 1000       → number
+ *   features.name == 'test'      → string
+ *   features.items?.contains('a') → string
+ */
+export function extractFieldTypesFromScript(script: string): FieldTypeInfo[] {
+  const typeMap = new Map<string, FieldInferredType>();
+  if (!script) return [];
+
+  // 数值比较: features.xxx > />= /< /<= /!= /== 数字
+  const numCmp = /features\.(\w+)\s*(?:>=|<=|>|<|!=|==)\s*(\d+(?:\.\d+)?)/g;
+  let m: RegExpExecArray | null;
+  while ((m = numCmp.exec(script)) !== null) {
+    typeMap.set(m[1], 'number');
+  }
+
+  // 字符串比较: features.xxx == 'string' 或 != 'string'
+  const strCmp = /features\.(\w+)\s*(?:==|!=)\s*'[^']*'/g;
+  while ((m = strCmp.exec(script)) !== null) {
+    typeMap.set(m[1], 'string');
+  }
+
+  // contains 操作: features.xxx?.contains(...) → string
+  const containsOp = /features\.(\w+)\??\.\s*contains\(/g;
+  while ((m = containsOp.exec(script)) !== null) {
+    typeMap.set(m[1], 'string');
+  }
+
+  // IN 操作: [a, b, c].contains(features.xxx)
+  const inOp = /\[(.+?)\]\.contains\(features\.(\w+)\)/g;
+  while ((m = inOp.exec(script)) !== null) {
+    const firstElem = m[1].split(',')[0].trim();
+    typeMap.set(m[2], /^-?\d+(?:\.\d+)?$/.test(firstElem) ? 'number' : 'string');
+  }
+
+  // NOT_IN 和 NOT_CONTAINS: !features.xxx?.contains(...) 或 ![...].contains(features.xxx)
+  const notContains = /!\s*features\.(\w+)\??\.\s*contains\(/g;
+  while ((m = notContains.exec(script)) !== null) {
+    typeMap.set(m[1], 'string');
+  }
+  const notIn = /!\s*\[(.+?)\]\.contains\(features\.(\w+)\)/g;
+  while ((m = notIn.exec(script)) !== null) {
+    const firstElem = m[1].split(',')[0].trim();
+    typeMap.set(m[2], /^-?\d+(?:\.\d+)?$/.test(firstElem) ? 'number' : 'string');
+  }
+
+  // 兜底：未推断出类型的字段默认 number
+  const allFields = /features\.(\w+)/g;
+  while ((m = allFields.exec(script)) !== null) {
+    if (!typeMap.has(m[1])) {
+      typeMap.set(m[1], 'number');
+    }
+  }
+
+  return Array.from(typeMap.entries()).map(([name, inferredType]) => ({ name, inferredType }));
+}
+
+/**
+ * 从决策流 flowGraph JSON 推断字段类型
+ * 通过条件节点的 threshold 值类型推断
+ */
+export function extractFieldTypesFromFlowGraph(flowGraphJson: string): FieldTypeInfo[] {
+  const typeMap = new Map<string, FieldInferredType>();
+  if (!flowGraphJson) return [];
+
+  try {
+    const graph = JSON.parse(flowGraphJson);
+    const nodes: Array<{ data?: Record<string, unknown> }> = graph?.nodes ?? [];
+    for (const node of nodes) {
+      if (node.data?.nodeType === 'condition' && node.data.fieldName) {
+        const fieldName = String(node.data.fieldName);
+        const threshold = node.data.threshold;
+        if (typeof threshold === 'number') {
+          typeMap.set(fieldName, 'number');
+        } else if (typeof threshold === 'string') {
+          // 字符串阈值，但需要排除数字字符串的情况
+          const trimmed = (threshold as string).replace(/[{}]+$/, '').trim();
+          const unquoted = trimmed.replace(/^'(.*)'$/, '$1');
+          typeMap.set(fieldName, isNaN(Number(unquoted)) ? 'string' : 'number');
+        } else {
+          typeMap.set(fieldName, 'number');
+        }
+      }
+    }
+  } catch {
+    // JSON 解析失败
+  }
+
+  // 兜底：扫描 features.xxx
+  const allFields = /features\.(\w+)/g;
+  let m: RegExpExecArray | null;
+  while ((m = allFields.exec(flowGraphJson)) !== null) {
+    if (!typeMap.has(m[1])) {
+      typeMap.set(m[1], 'number');
+    }
+  }
+
+  return Array.from(typeMap.entries()).map(([name, inferredType]) => ({ name, inferredType }));
+}
+
 /** 单规则展示数据 */
 export interface SingleRuleDisplay {
   conditionTree: ConditionTreeDisplayNode;

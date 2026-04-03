@@ -1,26 +1,59 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Card, Descriptions, Button, Space, Breadcrumb, Popconfirm, message, Collapse, Switch, Typography, Spin, Tag } from 'antd';
-import { EditOutlined, DeleteOutlined, ArrowLeftOutlined, CheckCircleOutlined, StopOutlined } from '@ant-design/icons';
+import { Card, Descriptions, Button, Space, Breadcrumb, Popconfirm, Switch, Typography, Spin, Tag, Alert } from 'antd';
+import { EditOutlined, DeleteOutlined, ArrowLeftOutlined, CheckCircleOutlined, StopOutlined, ThunderboltOutlined } from '@ant-design/icons';
 import { useParams, useNavigate } from 'react-router-dom';
+import { ReactFlowProvider, ReactFlow, Controls, Background, BackgroundVariant, type NodeTypes } from '@xyflow/react';
+import '@xyflow/react/dist/style.css';
 import { getDecisionFlow, deleteDecisionFlow, enableDecisionFlow, disableDecisionFlow } from '../api/decisionFlows';
 import type { DecisionFlow } from '../types/decisionFlow';
+import type { FlowNode, FlowEdge } from '../types/flowConfig';
+import { createInitialNodes, createInitialEdges } from '../types/flowConfig';
+import StartNodeComponent from '../components/flow/nodes/StartNode';
+import EndNodeComponent from '../components/flow/nodes/EndNode';
+import ConditionNodeComponent from '../components/flow/nodes/ConditionNode';
+import ActionNodeComponent from '../components/flow/nodes/ActionNode';
+import RuleSetNodeComponent from '../components/flow/nodes/RuleSetNode';
+import DecisionFlowTestModal from '../components/flow/DecisionFlowTestModal';
 
 const { Text } = Typography;
 
-export default function DecisionFlowDetailPage() {
+const nodeTypes: NodeTypes = {
+  start: StartNodeComponent,
+  end: EndNodeComponent,
+  condition: ConditionNodeComponent,
+  action: ActionNodeComponent,
+  ruleset: RuleSetNodeComponent,
+};
+
+function DetailInner() {
   const { flowKey } = useParams<{ flowKey: string }>();
   const navigate = useNavigate();
   const [flow, setFlow] = useState<DecisionFlow | null>(null);
   const [loading, setLoading] = useState(true);
+  const [errorMsg, setErrorMsg] = useState('');
+  const [testModalOpen, setTestModalOpen] = useState(false);
+
+  const [nodes] = useState<FlowNode[]>(createInitialNodes());
+  const [edges] = useState<FlowEdge[]>(createInitialEdges());
+
+  // 用于保存解析后的节点/边供 ReactFlow 使用
+  const [flowNodes, setFlowNodes] = useState<FlowNode[]>(nodes);
+  const [flowEdges, setFlowEdges] = useState<FlowEdge[]>(edges);
 
   const loadFlow = useCallback(async () => {
     if (!flowKey) return;
     setLoading(true);
+    setErrorMsg('');
     try {
       const data = await getDecisionFlow(flowKey);
       setFlow(data);
+      try {
+        const graph = JSON.parse(data.flowGraph);
+        if (graph.nodes) setFlowNodes(graph.nodes as FlowNode[]);
+        if (graph.edges) setFlowEdges(graph.edges as FlowEdge[]);
+      } catch { /* ignore parse error */ }
     } catch {
-      message.error('加载决策流详情失败');
+      setErrorMsg('加载决策流详情失败');
     } finally {
       setLoading(false);
     }
@@ -33,9 +66,8 @@ export default function DecisionFlowDetailPage() {
     try {
       const updated = flow.enabled ? await disableDecisionFlow(flow.flowKey) : await enableDecisionFlow(flow.flowKey);
       setFlow(updated);
-      message.success(flow.enabled ? '已禁用' : '已启用');
     } catch {
-      message.error('操作失败');
+      setErrorMsg('操作失败');
     }
   }, [flow]);
 
@@ -43,10 +75,9 @@ export default function DecisionFlowDetailPage() {
     if (!flow) return;
     try {
       await deleteDecisionFlow(flow.flowKey);
-      message.success('删除成功');
       navigate('/decision-flows');
     } catch {
-      message.error('删除失败');
+      setErrorMsg('删除失败');
     }
   }, [flow, navigate]);
 
@@ -75,44 +106,74 @@ export default function DecisionFlowDetailPage() {
         ]}
       />
       <Card>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
           <Space>
             <Button icon={<ArrowLeftOutlined />} onClick={() => navigate('/decision-flows')}>返回</Button>
             <Typography.Title level={4} style={{ margin: 0 }}>{flow.flowName}</Typography.Title>
           </Space>
           <Space>
+            <Button icon={<ThunderboltOutlined />} onClick={() => setTestModalOpen(true)}>测试</Button>
             <Button icon={<EditOutlined />} onClick={() => navigate(`/decision-flows/${flow.flowKey}/edit`)}>编辑</Button>
             <Popconfirm title="确认删除此决策流？" onConfirm={handleDelete} okText="确认删除" cancelText="取消">
               <Button danger icon={<DeleteOutlined />}>删除</Button>
             </Popconfirm>
           </Space>
         </div>
-        <Descriptions bordered column={2} style={{ marginBottom: 24 }}>
+
+        {errorMsg && (
+          <Alert type="error" message={errorMsg} showIcon closable onClose={() => setErrorMsg('')} style={{ marginBottom: 12 }} />
+        )}
+
+        <Descriptions bordered size="small" column={4} style={{ marginBottom: 12 }}
+          labelStyle={{ width: 80, minWidth: 80, whiteSpace: 'nowrap' }}
+          contentStyle={{ minWidth: 120 }}
+        >
           <Descriptions.Item label="Flow Key">{flow.flowKey}</Descriptions.Item>
           <Descriptions.Item label="状态">
             <Tag color={statusColorMap[flow.status] ?? 'default'}>{statusLabelMap[flow.status] ?? flow.status}</Tag>
           </Descriptions.Item>
           <Descriptions.Item label="版本">{flow.version}</Descriptions.Item>
-          <Descriptions.Item label="启用状态">
-            <Switch checked={flow.enabled} onChange={handleToggleEnabled}
+          <Descriptions.Item label="启用">
+            <Switch checked={flow.enabled} onChange={handleToggleEnabled} size="small"
               checkedChildren={<CheckCircleOutlined />} unCheckedChildren={<StopOutlined />} />
           </Descriptions.Item>
-          <Descriptions.Item label="创建人">{flow.createdBy}</Descriptions.Item>
-          <Descriptions.Item label="创建时间">{flow.createdAt ? new Date(flow.createdAt).toLocaleString('zh-CN') : '-'}</Descriptions.Item>
-          <Descriptions.Item label="描述" span={2}>{flow.flowDescription ?? '-'}</Descriptions.Item>
         </Descriptions>
-        <Collapse items={[{
-          key: 'graph',
-          label: '流程图数据 (JSON)',
-          children: (
-            <pre style={{ background: '#1e1e1e', color: '#d4d4d4', padding: 16, borderRadius: 8,
-              fontFamily: "'Menlo','Monaco','Courier New',monospace", fontSize: 12, lineHeight: 1.5,
-              overflow: 'auto', whiteSpace: 'pre-wrap', margin: 0 }}>
-              {(() => { try { return JSON.stringify(JSON.parse(flow.flowGraph), null, 2); } catch { return flow.flowGraph; } })()}
-            </pre>
-          ),
-        }]} />
+
+        {/* 流程图画布（只读） */}
+        <div style={{ height: 'calc(100vh - 320px)', minHeight: 400, border: '1px solid #e8e8e8', borderRadius: 8, overflow: 'hidden' }}>
+          <ReactFlow
+            nodes={flowNodes}
+            edges={flowEdges}
+            nodeTypes={nodeTypes}
+            fitView
+            nodesDraggable={false}
+            nodesConnectable={false}
+            edgesReconnectable={false}
+            elementsSelectable={false}
+            deleteKeyCode={null}
+            minZoom={0.3}
+            maxZoom={1.5}
+          >
+            <Controls showInteractive={false} />
+            <Background variant={BackgroundVariant.Dots} gap={16} size={1} />
+          </ReactFlow>
+        </div>
       </Card>
+
+      <DecisionFlowTestModal
+        open={testModalOpen}
+        onClose={() => setTestModalOpen(false)}
+        flowKey={flow.flowKey}
+        flowGraph={flow.flowGraph ?? ''}
+      />
     </div>
+  );
+}
+
+export default function DecisionFlowDetailPage() {
+  return (
+    <ReactFlowProvider>
+      <DetailInner />
+    </ReactFlowProvider>
   );
 }
