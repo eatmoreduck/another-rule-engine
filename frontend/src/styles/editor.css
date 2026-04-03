@@ -56,16 +56,14 @@
 
 /* --- 节点面板 --- */
 .node-palette {
-  position: absolute;
-  top: 12px;
-  left: 12px;
-  z-index: 10;
+  flex-shrink: 0;
   background: #fff;
   border: 1px solid #e8e8e8;
   border-radius: 8px;
   padding: 12px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
   width: 180px;
+  overflow-y: auto;
 }
 
 .node-palette-title {

@@ -132,6 +132,9 @@ export default function FlowCanvas({
       onNodeDoubleClick={onNodeDoubleClick as never}
       nodeTypes={nodeTypes}
       fitView
+      fitViewOptions={{ minZoom: 0.3, maxZoom: 0.8 }}
+      minZoom={0.2}
+      maxZoom={2}
       snapToGrid
       snapGrid={[15, 15] as [number, number]}
       deleteKeyCode={['Backspace', 'Delete']}

@@ -170,9 +170,9 @@ function FlowEditorInner() {
           </Space>
         </div>
 
-        <div style={{ display: 'flex', height: 'calc(100vh - 340px)', minHeight: 450 }}>
+        <div style={{ display: 'flex', height: 'calc(100vh - 340px)', minHeight: 450, gap: 12 }}>
           <NodePalette />
-          <div style={{ flex: 1, position: 'relative' }}>
+          <div style={{ flex: 1, position: 'relative', border: '1px solid #e8e8e8', borderRadius: 8, overflow: 'hidden' }}>
             <FlowCanvas nodes={nodes} edges={edges} onNodesChange={handleNodesChange}
               onEdgesChange={handleEdgesChange} onConnect={onConnect} onNodeDoubleClick={handleNodeDoubleClick} />
           </div>
