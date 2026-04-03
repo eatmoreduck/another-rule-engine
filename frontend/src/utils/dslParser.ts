@@ -539,6 +539,26 @@ export function parseGroovyToSingleRule(script: string): SingleRuleConfig {
   };
 }
 
+/**
+ * 从 ConditionTreeNode 递归提取所有字段名（去重）
+ */
+export function extractFieldNames(node: ConditionTreeNode): string[] {
+  const names = new Set<string>();
+
+  function walk(n: ConditionTreeNode) {
+    if (n.type === 'condition') {
+      if (n.fieldName && n.fieldName.trim()) {
+        names.add(n.fieldName.trim());
+      }
+    } else if (n.type === 'group') {
+      n.children.forEach(walk);
+    }
+  }
+
+  walk(node);
+  return Array.from(names);
+}
+
 /** 单规则展示数据 */
 export interface SingleRuleDisplay {
   conditionTree: ConditionTreeDisplayNode;
