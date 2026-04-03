@@ -116,6 +116,12 @@ progress:
 
 无
 
+### Quick Tasks Completed
+
+| # | Description | Date | Commit | Directory |
+|---|-------------|------|--------|-----------|
+| 260403-guw | 规则详情/编辑页添加测试功能 | 2026-04-03 | c1c17d01 | [260403-guw-rule-test-feature](./quick/260403-guw-rule-test-feature/) |
+
 ### Known Risks
 
 1. 50ms 性能目标 — 需要压测验证
@@ -136,4 +142,4 @@ v1.0 里程碑已完成，可选方向:
 
 ---
 **State initialized:** 2025-03-26
-**Last updated:** 2026-03-30 (v1.0 milestone complete, all 7 phases done)
+**Last updated:** 2026-04-03 - Completed quick task 260403-guw: 规则详情/编辑页添加测试功能
