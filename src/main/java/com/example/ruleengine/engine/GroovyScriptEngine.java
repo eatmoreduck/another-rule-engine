@@ -90,6 +90,7 @@ public class GroovyScriptEngine {
 
     /**
      * 执行已编译的脚本类
+     * 支持：1) 顶层脚本直接返回 2) def evaluate(Map) 方法模式
      */
     private Object executeScriptClass(Class<?> scriptClass, Map<String, Object> context) {
         try {
@@ -100,8 +101,22 @@ public class GroovyScriptEngine {
             Binding binding = new Binding(context);
             scriptInstance.setBinding(binding);
 
-            // 执行脚本
-            return scriptInstance.run();
+            // 执行脚本顶层代码
+            Object result = scriptInstance.run();
+
+            // 如果 run() 返回 null，尝试调用 evaluate(context) 方法
+            // 支持 def evaluate(Map features) { ... } 模式的脚本
+            if (result == null) {
+                try {
+                    java.lang.reflect.Method evaluateMethod = scriptClass.getMethod("evaluate", Map.class);
+                    result = evaluateMethod.invoke(scriptInstance, context);
+                    logger.debug("Invoked evaluate() method on script");
+                } catch (NoSuchMethodException e) {
+                    // 没有 evaluate 方法，保持 null
+                }
+            }
+
+            return result;
 
         } catch (Exception e) {
             logger.error("Failed to run script instance", e);

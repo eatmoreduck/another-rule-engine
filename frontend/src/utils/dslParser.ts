@@ -559,6 +559,24 @@ export function extractFieldNames(node: ConditionTreeNode): string[] {
   return Array.from(names);
 }
 
+/**
+ * 从完整的 Groovy 脚本中提取所有 features.xxx 字段名（去重）
+ * 扫描所有 if 分支和表达式，不局限于单条规则的条件树
+ */
+export function extractFieldNamesFromScript(script: string): string[] {
+  const names = new Set<string>();
+  if (!script) return [];
+
+  // 匹配 features.xxx 模式的字段引用
+  const regex = /features\.(\w+)/g;
+  let match: RegExpExecArray | null;
+  while ((match = regex.exec(script)) !== null) {
+    names.add(match[1]);
+  }
+
+  return Array.from(names);
+}
+
 /** 单规则展示数据 */
 export interface SingleRuleDisplay {
   conditionTree: ConditionTreeDisplayNode;

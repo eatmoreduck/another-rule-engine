@@ -6,7 +6,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { Modal, Input, Button, Alert, Descriptions, Tag, Spin, message } from 'antd';
 import { ThunderboltOutlined } from '@ant-design/icons';
-import { parseGroovyToSingleRule, extractFieldNames } from '../../utils/dslParser';
+import { extractFieldNamesFromScript } from '../../utils/dslParser';
 import { executeTest } from '../../api/analytics';
 import type { TestResult } from '../../types/analytics';
 
@@ -22,11 +22,10 @@ export default function RuleTestModal({ open, onClose, ruleKey, groovyScript }: 
   const [running, setRunning] = useState(false);
   const [result, setResult] = useState<TestResult | null>(null);
 
-  // 当 Modal 打开时，自动从脚本提取字段名生成默认 JSON
+  // 当 Modal 打开时，自动从脚本提取所有字段名生成默认 JSON
   const defaultJson = useMemo(() => {
     try {
-      const config = parseGroovyToSingleRule(groovyScript);
-      const fieldNames = extractFieldNames(config.condition);
+      const fieldNames = extractFieldNamesFromScript(groovyScript);
       const obj: Record<string, number> = {};
       fieldNames.forEach((name) => {
         obj[name] = -1;
