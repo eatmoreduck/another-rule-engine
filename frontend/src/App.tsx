@@ -11,7 +11,6 @@ import GrayscalePage from './pages/GrayscalePage';
 import AnalyticsPage from './pages/AnalyticsPage';
 import EnvironmentPage from './pages/EnvironmentPage';
 import ImportExportPage from './pages/ImportExportPage';
-import TemplatePage from './pages/TemplatePage';
 
 const router = createBrowserRouter([
   {
@@ -30,7 +29,6 @@ const router = createBrowserRouter([
       { path: '/grayscale', element: <GrayscalePage /> },
       { path: '/environments', element: <EnvironmentPage /> },
       { path: '/import-export', element: <ImportExportPage /> },
-      { path: '/templates', element: <TemplatePage /> },
       { path: '/analytics', element: <AnalyticsPage /> },
       { path: '*', element: <Navigate to="/rules" replace /> },
     ],

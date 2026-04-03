@@ -1,5 +1,5 @@
 import { Layout, Menu, Typography, App } from 'antd';
-import { SafetyOutlined, SettingOutlined, ExperimentOutlined, BarChartOutlined, DashboardOutlined, CloudServerOutlined, ImportOutlined, FileTextOutlined, ApartmentOutlined } from '@ant-design/icons';
+import { SafetyOutlined, SettingOutlined, ExperimentOutlined, BarChartOutlined, DashboardOutlined, CloudServerOutlined, ImportOutlined, ApartmentOutlined } from '@ant-design/icons';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 
 const { Header, Content } = Layout;
@@ -30,11 +30,6 @@ const menuItems = [
     key: '/import-export',
     icon: <ImportOutlined />,
     label: '导入导出',
-  },
-  {
-    key: '/templates',
-    icon: <FileTextOutlined />,
-    label: '模板库',
   },
   {
     key: '/monitoring',
