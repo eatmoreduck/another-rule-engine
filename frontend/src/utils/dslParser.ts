@@ -702,6 +702,13 @@ export function extractFieldTypesFromFlowGraph(flowGraphJson: string): FieldType
           typeMap.set(fieldName, 'number');
         }
       }
+      // 黑名单/白名单节点：keyType 就是 features 中的字段名，类型为 string
+      if ((node.data?.nodeType === 'blacklist' || node.data?.nodeType === 'whitelist') && node.data.keyType) {
+        const kt = String(node.data.keyType);
+        if (!typeMap.has(kt)) {
+          typeMap.set(kt, 'string');
+        }
+      }
     }
   } catch {
     // JSON 解析失败

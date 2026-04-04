@@ -14,6 +14,9 @@ export default memo(function WhitelistNode({ data }: NodeProps<Node<WhitelistNod
       <div className="custom-node-detail">
         {KEY_TYPE_LABELS[data.keyType] ?? data.keyType ?? '未配置'}
       </div>
+      <div style={{ fontSize: 11, color: '#999', marginTop: 2 }}>
+        名单: {data.listKey || 'GLOBAL'}
+      </div>
       <Handle type="source" position={Position.Right} id="pass"
         style={{ top: '50%', background: '#52c41a', width: 10, height: 10 }} />
       <span style={{ position: 'absolute', right: -28, top: '42%', fontSize: 10, color: '#52c41a', fontWeight: 600 }}>

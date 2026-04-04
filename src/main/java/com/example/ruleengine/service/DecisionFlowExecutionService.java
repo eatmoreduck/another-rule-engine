@@ -133,16 +133,20 @@ public class DecisionFlowExecutionService {
     private DecisionResponse evaluateBlacklist(String flowKey, FlowNodeDef node, FlowGraph graph, Map<String, Object> features) {
         Map<String, Object> data = node.getData();
         String keyType = data.get("keyType") != null ? data.get("keyType").toString() : "";
+        // 支持节点配置 listKey： 精确匹配； 否则回退到 GLOBAL
+        String listKey = data.get("listKey") != null ? data.get("listKey").toString() : "";
         Object featureValue = features.get(keyType);
 
         if (featureValue == null || featureValue.toString().isEmpty()) {
-            // 无特征值，直接通过
             FlowNodeDef next = getNextNode(node.getId(), graph, null);
             return next != null ? traverseNode(flowKey, next, graph, features) : defaultResponse("黑名单节点无后续节点");
         }
 
         String keyValue = featureValue.toString();
-        boolean found = nameListService.existsInList(flowKey, "BLACK", keyType, keyValue);
+        boolean found = nameListService.existsInList(listKey, "BLACK", keyType, keyValue);
+        if (!found && !"GLOBAL".equals(listKey)) {
+            found = nameListService.existsInList("GLOBAL", "BLACK", keyType, keyValue);
+        }
 
         if (found) {
             return DecisionResponse.builder()
@@ -162,6 +166,7 @@ public class DecisionFlowExecutionService {
     private DecisionResponse evaluateWhitelist(String flowKey, FlowNodeDef node, FlowGraph graph, Map<String, Object> features) {
         Map<String, Object> data = node.getData();
         String keyType = data.get("keyType") != null ? data.get("keyType").toString() : "";
+        String listKey = data.get("listKey") != null ? data.get("listKey").toString() : "";
         Object featureValue = features.get(keyType);
 
         if (featureValue == null || featureValue.toString().isEmpty()) {
@@ -172,7 +177,10 @@ public class DecisionFlowExecutionService {
         }
 
         String keyValue = featureValue.toString();
-        boolean found = nameListService.existsInList(flowKey, "WHITE", keyType, keyValue);
+        boolean found = nameListService.existsInList(listKey, "WHITE", keyType, keyValue);
+        if (!found && !"GLOBAL".equals(listKey)) {
+            found = nameListService.existsInList("GLOBAL", "WHITE", keyType, keyValue);
+        }
 
         if (found) {
             // 在白名单中，通过
