@@ -2,6 +2,7 @@ package com.example.ruleengine.service.version;
 
 import com.example.ruleengine.annotation.Auditable;
 import com.example.ruleengine.constants.AuditEvent;
+import com.example.ruleengine.constants.VersionStatus;
 import com.example.ruleengine.domain.Rule;
 import com.example.ruleengine.domain.RuleVersion;
 import com.example.ruleengine.model.dto.CreateVersionRequest;
@@ -164,6 +165,97 @@ public class VersionManagementService {
                 .changedBy(operator)
                 .isRollback(true)
                 .rollbackFromVersion(currentVersion)
+                .build();
+    }
+
+    /**
+     * 创建规则草稿版本
+     * 新版本状态为 DRAFT，不影响当前生效版本
+     *
+     * @param ruleKey  规则Key
+     * @param request  版本创建请求
+     * @param operator 操作人
+     * @return 草稿版本响应
+     */
+    @Transactional
+    @Auditable(event = AuditEvent.VERSION_CREATE, entityType = "RULE", entityIdExpression = "#ruleKey")
+    public VersionResponse createDraft(String ruleKey, CreateVersionRequest request, String operator) {
+        Rule rule = ruleRepository.findByRuleKey(ruleKey)
+                .orElseThrow(() -> new IllegalArgumentException("规则不存在: " + ruleKey));
+
+        Integer currentVersion = rule.getVersion();
+        Integer newVersion = currentVersion + 1;
+
+        // 创建草稿版本（不更新主表）
+        RuleVersion draftVersion = RuleVersion.builder()
+                .ruleId(rule.getId())
+                .ruleKey(rule.getRuleKey())
+                .version(newVersion)
+                .groovyScript(request.getGroovyScript())
+                .changeReason(request.getChangeReason())
+                .changedBy(operator)
+                .isRollback(false)
+                .status(VersionStatus.DRAFT)
+                .build();
+        draftVersion = ruleVersionRepository.save(draftVersion);
+
+        log.info("创建规则草稿版本: ruleKey={}, version={}, operator={}", ruleKey, newVersion, operator);
+
+        return VersionResponse.fromEntity(draftVersion);
+    }
+
+    /**
+     * 发布规则版本
+     * 将指定版本设为 ACTIVE，旧 ACTIVE 版本设为 ARCHIVED，更新主表
+     *
+     * @param ruleKey 规则Key
+     * @param version 要发布的版本号
+     * @param operator 操作人
+     * @return 发布后的版本响应
+     */
+    @Transactional
+    @Auditable(event = AuditEvent.VERSION_CREATE, entityType = "RULE", entityIdExpression = "#ruleKey")
+    public VersionResponse publishVersion(String ruleKey, Integer version, String operator) {
+        Rule rule = ruleRepository.findByRuleKey(ruleKey)
+                .orElseThrow(() -> new IllegalArgumentException("规则不存在: " + ruleKey));
+
+        // 查找要发布的版本
+        RuleVersion targetVersion = ruleVersionRepository.findByRuleKeyAndVersion(ruleKey, version)
+                .orElseThrow(() -> new IllegalArgumentException("版本不存在: ruleKey=" + ruleKey + ", version=" + version));
+
+        // 只有 DRAFT 或 CANARY 状态的版本才能发布
+        if (targetVersion.getStatus() != VersionStatus.DRAFT
+                && targetVersion.getStatus() != VersionStatus.CANARY) {
+            throw new IllegalArgumentException("只有草稿或灰度中的版本才能发布，当前状态: " + targetVersion.getStatus());
+        }
+
+        // 将当前 ACTIVE 版本设为 ARCHIVED
+        ruleVersionRepository.findByRuleKeyAndStatus(ruleKey, VersionStatus.ACTIVE)
+                .forEach(activeVersion -> {
+                    activeVersion.setStatus(VersionStatus.ARCHIVED);
+                    ruleVersionRepository.save(activeVersion);
+                });
+
+        // 将目标版本设为 ACTIVE
+        targetVersion.setStatus(VersionStatus.ACTIVE);
+        ruleVersionRepository.save(targetVersion);
+
+        // 更新主表
+        rule.setGroovyScript(targetVersion.getGroovyScript());
+        rule.setVersion(targetVersion.getVersion());
+        rule.setActiveVersion(targetVersion.getVersion());
+        rule.setUpdatedBy(operator);
+        Rule updatedRule = ruleRepository.save(rule);
+
+        log.info("发布规则版本: ruleKey={}, version={}, operator={}", ruleKey, version, operator);
+
+        return VersionResponse.builder()
+                .ruleId(updatedRule.getId())
+                .ruleKey(updatedRule.getRuleKey())
+                .version(updatedRule.getVersion())
+                .groovyScript(updatedRule.getGroovyScript())
+                .changedBy(operator)
+                .status(VersionStatus.ACTIVE)
                 .build();
     }
 

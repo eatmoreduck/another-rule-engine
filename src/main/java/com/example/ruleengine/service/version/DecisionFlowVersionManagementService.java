@@ -1,5 +1,6 @@
 package com.example.ruleengine.service.version;
 
+import com.example.ruleengine.constants.VersionStatus;
 import com.example.ruleengine.domain.DecisionFlow;
 import com.example.ruleengine.domain.DecisionFlowVersion;
 import com.example.ruleengine.repository.DecisionFlowRepository;
@@ -77,5 +78,84 @@ public class DecisionFlowVersionManagementService {
 
         log.info("决策流版本回滚: flowKey={}, targetVersion={}, newVersion={}", flowKey, targetVersion, newVersion);
         return rollbackVersion;
+    }
+
+    /**
+     * 创建决策流草稿版本
+     * 新版本状态为 DRAFT，不影响当前生效版本
+     *
+     * @param flowKey      决策流Key
+     * @param flowGraph    决策流图JSON
+     * @param changeReason 变更原因
+     * @param operator     操作人
+     * @return 草稿版本
+     */
+    @Transactional
+    public DecisionFlowVersion createDraft(String flowKey, String flowGraph, String changeReason, String operator) {
+        DecisionFlow flow = flowRepository.findByFlowKey(flowKey)
+                .orElseThrow(() -> new IllegalArgumentException("决策流不存在: " + flowKey));
+
+        int newVersion = flow.getVersion() + 1;
+
+        DecisionFlowVersion draftVersion = DecisionFlowVersion.builder()
+                .flowId(flow.getId())
+                .flowKey(flowKey)
+                .version(newVersion)
+                .flowGraph(flowGraph)
+                .changeReason(changeReason)
+                .changedBy(operator)
+                .isRollback(false)
+                .status(VersionStatus.DRAFT)
+                .build();
+
+        draftVersion = versionRepository.save(draftVersion);
+
+        log.info("创建决策流草稿版本: flowKey={}, version={}, operator={}", flowKey, newVersion, operator);
+        return draftVersion;
+    }
+
+    /**
+     * 发布决策流版本
+     * 将指定版本设为 ACTIVE，旧 ACTIVE 版本设为 ARCHIVED，更新主表
+     *
+     * @param flowKey 决策流Key
+     * @param version 要发布的版本号
+     * @param operator 操作人
+     * @return 发布后的版本
+     */
+    @Transactional
+    public DecisionFlowVersion publishVersion(String flowKey, Integer version, String operator) {
+        DecisionFlow flow = flowRepository.findByFlowKey(flowKey)
+                .orElseThrow(() -> new IllegalArgumentException("决策流不存在: " + flowKey));
+
+        DecisionFlowVersion targetVersion = versionRepository.findByFlowKeyAndVersion(flowKey, version)
+                .orElseThrow(() -> new IllegalArgumentException("版本不存在: " + version));
+
+        // 只有 DRAFT 或 CANARY 状态的版本才能发布
+        if (targetVersion.getStatus() != VersionStatus.DRAFT
+                && targetVersion.getStatus() != VersionStatus.CANARY) {
+            throw new IllegalArgumentException("只有草稿或灰度中的版本才能发布，当前状态: " + targetVersion.getStatus());
+        }
+
+        // 将当前 ACTIVE 版本设为 ARCHIVED
+        versionRepository.findByFlowKeyAndStatus(flowKey, VersionStatus.ACTIVE)
+                .forEach(activeVersion -> {
+                    activeVersion.setStatus(VersionStatus.ARCHIVED);
+                    versionRepository.save(activeVersion);
+                });
+
+        // 将目标版本设为 ACTIVE
+        targetVersion.setStatus(VersionStatus.ACTIVE);
+        versionRepository.save(targetVersion);
+
+        // 更新主表
+        flow.setFlowGraph(targetVersion.getFlowGraph());
+        flow.setVersion(targetVersion.getVersion());
+        flow.setActiveVersion(targetVersion.getVersion());
+        flow.setUpdatedBy(operator);
+        flowRepository.save(flow);
+
+        log.info("发布决策流版本: flowKey={}, version={}, operator={}", flowKey, version, operator);
+        return targetVersion;
     }
 }
