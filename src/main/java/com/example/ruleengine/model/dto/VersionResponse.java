@@ -1,5 +1,6 @@
 package com.example.ruleengine.model.dto;
 
+import com.example.ruleengine.constants.VersionStatus;
 import com.example.ruleengine.domain.RuleVersion;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -27,6 +28,7 @@ public class VersionResponse {
     private LocalDateTime changedAt;
     private Boolean isRollback;
     private Integer rollbackFromVersion;
+    private VersionStatus status;
 
     /**
      * 从实体转换为响应对象
@@ -43,6 +45,7 @@ public class VersionResponse {
                 .changedAt(entity.getChangedAt())
                 .isRollback(entity.getIsRollback())
                 .rollbackFromVersion(entity.getRollbackFromVersion())
+                .status(entity.getStatus())
                 .build();
     }
 }

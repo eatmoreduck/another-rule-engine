@@ -73,6 +73,12 @@ public class DecisionFlow {
     private Long optLockVersion;
 
     /**
+     * 当前生效的版本号
+     */
+    @Column(name = "active_version")
+    private Integer activeVersion;
+
+    /**
      * 所属环境ID
      */
     @Column(name = "environment_id")

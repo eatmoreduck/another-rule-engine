@@ -1,5 +1,6 @@
 package com.example.ruleengine.repository;
 
+import com.example.ruleengine.constants.VersionStatus;
 import com.example.ruleengine.domain.RuleVersion;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -52,4 +53,14 @@ public interface RuleVersionRepository extends JpaRepository<RuleVersion, Long> 
      */
     @Query("SELECT rv FROM RuleVersion rv WHERE rv.ruleId = :ruleId AND rv.isRollback = true")
     List<RuleVersion> findRollbackVersionsByRuleId(@Param("ruleId") Long ruleId);
+
+    /**
+     * 根据规则Key和版本状态查询版本列表
+     */
+    List<RuleVersion> findByRuleKeyAndStatus(String ruleKey, VersionStatus status);
+
+    /**
+     * 根据规则Key和版本状态查询最新版本（按版本号降序取第一条）
+     */
+    Optional<RuleVersion> findTopByRuleKeyAndStatusOrderByVersionDesc(String ruleKey, VersionStatus status);
 }

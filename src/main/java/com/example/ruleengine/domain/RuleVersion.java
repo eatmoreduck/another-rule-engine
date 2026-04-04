@@ -1,5 +1,6 @@
 package com.example.ruleengine.domain;
 
+import com.example.ruleengine.constants.VersionStatus;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -50,6 +51,11 @@ public class RuleVersion {
     @Column(name = "is_rollback")
     @Builder.Default
     private Boolean isRollback = false;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "status", length = 20)
+    @Builder.Default
+    private VersionStatus status = VersionStatus.ACTIVE;
 
     @Column(name = "rollback_from_version")
     private Integer rollbackFromVersion;

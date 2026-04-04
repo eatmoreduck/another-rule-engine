@@ -29,6 +29,13 @@ public class GrayscaleConfig {
     @Column(name = "rule_key", nullable = false, length = 255)
     private String ruleKey;
 
+    @Column(name = "target_type", length = 20)
+    @Builder.Default
+    private String targetType = "RULE";
+
+    @Column(name = "target_key", length = 255)
+    private String targetKey;
+
     @Column(name = "current_version", nullable = false)
     private Integer currentVersion;
 

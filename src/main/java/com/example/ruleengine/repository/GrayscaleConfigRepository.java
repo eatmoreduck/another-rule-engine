@@ -43,4 +43,9 @@ public interface GrayscaleConfigRepository extends JpaRepository<GrayscaleConfig
      * 根据规则Key和状态查询灰度配置（按创建时间降序）
      */
     List<GrayscaleConfig> findByRuleKeyAndStatusOrderByCreatedAtDesc(String ruleKey, GrayscaleStatus status);
+
+    /**
+     * 根据目标类型、目标Key和状态查询灰度配置
+     */
+    Optional<GrayscaleConfig> findByTargetTypeAndTargetKeyAndStatus(String targetType, String targetKey, GrayscaleStatus status);
 }
