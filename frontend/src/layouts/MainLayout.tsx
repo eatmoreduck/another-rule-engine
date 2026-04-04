@@ -1,6 +1,7 @@
-import { Layout, Menu, Typography, App } from 'antd';
-import { SafetyOutlined, SettingOutlined, ExperimentOutlined, BarChartOutlined, DashboardOutlined, CloudServerOutlined, ImportOutlined, ApartmentOutlined, UnorderedListOutlined } from '@ant-design/icons';
+import { Layout, Menu, Typography, App, Dropdown, Avatar, Space } from 'antd';
+import { SafetyOutlined, SettingOutlined, ExperimentOutlined, BarChartOutlined, DashboardOutlined, CloudServerOutlined, ImportOutlined, ApartmentOutlined, UnorderedListOutlined, UserOutlined, LogoutOutlined } from '@ant-design/icons';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
+import { useAuthStore } from '../stores/authStore';
 
 const { Header, Content } = Layout;
 const { Text } = Typography;
@@ -57,10 +58,33 @@ const menuItems = [
 export default function MainLayout() {
   const navigate = useNavigate();
   const location = useLocation();
+  const user = useAuthStore((s) => s.user);
+  const logout = useAuthStore((s) => s.logout);
+  const { modal } = App.useApp();
 
   const handleMenuClick = ({ key }: { key: string }) => {
     navigate(key);
   };
+
+  const handleLogout = async () => {
+    modal.confirm({
+      title: '确认登出',
+      content: '确定要退出登录吗？',
+      onOk: async () => {
+        await logout();
+        navigate('/login', { replace: true });
+      },
+    });
+  };
+
+  const userMenuItems = [
+    {
+      key: 'logout',
+      icon: <LogoutOutlined />,
+      label: '退出登录',
+      onClick: handleLogout,
+    },
+  ];
 
   return (
     <App>
@@ -91,6 +115,12 @@ export default function MainLayout() {
           onClick={handleMenuClick}
           style={{ flex: 1, border: 'none' }}
         />
+        <Dropdown menu={{ items: userMenuItems }} placement="bottomRight">
+          <Space style={{ cursor: 'pointer', marginLeft: 16 }}>
+            <Avatar size="small" icon={<UserOutlined />} />
+            <Text>{user?.nickname || user?.username || '用户'}</Text>
+          </Space>
+        </Dropdown>
       </Header>
       <Content style={{ padding: '24px', background: '#f5f5f5' }}>
         <Outlet />

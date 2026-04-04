@@ -1,5 +1,7 @@
 import { createBrowserRouter, Navigate } from 'react-router-dom';
 import MainLayout from './layouts/MainLayout';
+import AuthGuard from './components/AuthGuard';
+import LoginPage from './pages/LoginPage';
 import RuleListPage from './pages/RuleListPage';
 import RuleDetailPage from './pages/RuleDetailPage';
 import RuleEditPage from './pages/RuleEditPage';
@@ -15,7 +17,15 @@ import NameListPage from './pages/NameListPage';
 
 const router = createBrowserRouter([
   {
-    element: <MainLayout />,
+    path: '/login',
+    element: <LoginPage />,
+  },
+  {
+    element: (
+      <AuthGuard>
+        <MainLayout />
+      </AuthGuard>
+    ),
     children: [
       { index: true, element: <Navigate to="/rules" replace /> },
       { path: '/rules', element: <RuleListPage /> },
