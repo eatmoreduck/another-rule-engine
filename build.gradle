@@ -49,6 +49,12 @@ dependencies {
     implementation 'io.github.resilience4j:resilience4j-timelimiter:2.1.0'
     implementation 'io.github.resilience4j:resilience4j-circuitbreaker:2.1.0'
 
+    // Sa-Token 权限认证
+    implementation 'cn.dev33:sa-token-spring-boot3-starter:1.39.0'
+
+    // BCrypt 密码加密（spring-security-crypto）
+    implementation 'org.springframework.security:spring-security-crypto:6.3.0'
+
     // 监控
     implementation 'io.micrometer:micrometer-registry-prometheus:1.12.0'
 

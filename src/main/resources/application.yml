@@ -123,6 +123,16 @@ resilience4j:
       ruleExecution:
         timeout-duration: 50ms
 
+# Sa-Token 配置
+sa-token:
+  token-name: Authorization
+  timeout: 86400
+  active-timeout: -1
+  is-concurrent: true
+  is-share: true
+  token-style: uuid
+  is-log: false
+
 # 日志配置
 logging:
   level:
