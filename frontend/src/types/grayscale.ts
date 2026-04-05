@@ -49,25 +49,36 @@ export interface GrayscaleConfig {
   dualRunEnabled?: boolean;
 }
 
-/** 灰度发布记录 */
+/** 灰度发布记录（对应后端 GrayscaleConfigResponse） */
 export interface GrayscaleRecord {
   id: number;
   ruleKey: string;
   /** 目标类型 */
-  targetType: GrayscaleTargetType;
+  targetType: string;
   /** 目标 Key */
   targetKey: string;
-  grayscaleVersion: number;
   currentVersion: number;
-  percentage: number;
-  /** 策略类型 */
-  strategyType: GrayscaleStrategyType;
+  grayscaleVersion: number;
+  /** 灰度百分比（对应后端 grayscalePercentage） */
+  grayscalePercentage: number;
+  /** 状态 */
   status: GrayscaleStatusEnum;
-  description: string | null;
+  /** 状态描述 */
+  statusDescription: string | null;
+  /** 策略类型 */
+  strategyType: string;
+  /** 特征匹配规则 JSON */
+  featureRules: string | null;
+  /** 白名单用户ID（逗号分隔） */
+  whitelistIds: string | null;
+  /** 是否启用双跑 */
+  dualRunEnabled: boolean | null;
+  /** 启动时间 */
+  startedAt: string | null;
+  /** 完成时间 */
+  completedAt: string | null;
   createdBy: string;
   createdAt: string;
-  updatedBy: string | null;
-  updatedAt: string | null;
 }
 
 /** 灰度对比报告 - 版本指标 */
@@ -86,22 +97,18 @@ export interface VersionMetrics {
   minDuration: number;
 }
 
-/** 灰度对比报告 */
+/** 灰度对比报告（对应后端 GrayscaleReportResponse） */
 export interface GrayscaleReport {
-  grayscaleId: number;
+  configId: number;
   ruleKey: string;
-  ruleName: string;
   currentVersion: number;
   grayscaleVersion: number;
-  percentage: number;
-  status: GrayscaleStatusEnum;
-  startTime: string | null;
-  duration: string | null;
-  currentMetrics: VersionMetrics;
-  grayscaleMetrics: VersionMetrics;
+  grayscalePercentage: number;
+  currentVersionMetrics: VersionMetrics;
+  grayscaleVersionMetrics: VersionMetrics;
 }
 
-/** 灰度执行日志 */
+/** 灰度执行日志（对应后端 CanaryExecutionLog） */
 export interface CanaryExecutionLog {
   id: number;
   traceId: string;
@@ -114,6 +121,14 @@ export interface CanaryExecutionLog {
   executionTimeMs: number | null;
   errorMessage: string | null;
   createdAt: string;
+}
+
+/** 灰度执行日志查询参数 */
+export interface CanaryLogQueryParams {
+  targetType?: string;
+  targetKey?: string;
+  startTime?: string;
+  endTime?: string;
 }
 
 /** 灰度列表查询参数 */
