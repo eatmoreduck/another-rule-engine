@@ -30,21 +30,24 @@ public class GrayscaleController {
      * 查询灰度配置列表（分页）
      * GET /api/v1/grayscale
      *
-     * @param status  状态过滤（可选）
-     * @param ruleKey 规则Key过滤（可选）
-     * @param page    页码（从0开始）
-     * @param size    每页大小
+     * @param status     状态过滤（可选）
+     * @param ruleKey    规则Key过滤（可选）
+     * @param targetType 目标类型过滤（可选，RULE/DECISION_FLOW）
+     * @param page       页码（从0开始）
+     * @param size       每页大小
      * @return 分页灰度配置列表
      */
     @GetMapping
     public ResponseEntity<Map<String, Object>> listGrayscales(
             @RequestParam(required = false) String status,
             @RequestParam(required = false) String ruleKey,
+            @RequestParam(required = false) String targetType,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size) {
-        log.info("查询灰度列表: status={}, ruleKey={}, page={}, size={}", status, ruleKey, page, size);
+        log.info("查询灰度列表: status={}, ruleKey={}, targetType={}, page={}, size={}",
+                status, ruleKey, targetType, page, size);
 
-        List<GrayscaleConfigResponse> allConfigs = grayscaleService.listGrayscaleConfigs(status, ruleKey);
+        List<GrayscaleConfigResponse> allConfigs = grayscaleService.listGrayscaleConfigs(status, ruleKey, targetType);
 
         // 分页处理
         int totalElements = allConfigs.size();
@@ -65,15 +68,17 @@ public class GrayscaleController {
     }
 
     /**
-     * 创建灰度配置
+     * 创建灰度配置（支持规则和决策流）
      * POST /api/v1/grayscale
      */
     @PostMapping
     public ResponseEntity<GrayscaleConfigResponse> createGrayscale(
             @Valid @RequestBody CreateGrayscaleRequest request,
             @RequestHeader(value = "X-Operator", defaultValue = "system") String operator) {
-        log.info("创建灰度配置: ruleKey={}, grayscaleVersion={}, operator={}",
-                request.getRuleKey(), request.getGrayscaleVersion(), operator);
+        String targetType = request.getTargetType() != null ? request.getTargetType() : "RULE";
+        String targetKey = request.getTargetKey() != null ? request.getTargetKey() : request.getRuleKey();
+        log.info("创建灰度配置: targetType={}, targetKey={}, grayscaleVersion={}, operator={}",
+                targetType, targetKey, request.getGrayscaleVersion(), operator);
         GrayscaleConfigResponse response =
                 grayscaleService.createGrayscaleConfig(request, operator);
         return ResponseEntity.ok(response);

@@ -99,7 +99,7 @@ WHERE r.role_code = 'VIEWER'
 --    BCrypt hash generated with strength 10
 -- ============================================================
 INSERT INTO sys_user (username, password, nickname, status) VALUES
-    ('admin', '$2a$10$N.zmdr9k7uOCQb376NoUnuTJ8iAt6Z5EHsM8lE9lBOsl7iKTVKIUi', '系统管理员', 'ACTIVE');
+    ('admin', '$2a$10$wDw0RTUlW7HP5cxUzXMQBuStit3yQJvxjB3IzOrEFvXIQkqNLXMtK', '系统管理员', 'ACTIVE');
 
 -- 管理员用户关联超级管理员角色
 INSERT INTO sys_user_role (user_id, role_id)

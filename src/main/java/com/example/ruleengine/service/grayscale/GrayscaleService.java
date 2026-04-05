@@ -1,6 +1,8 @@
 package com.example.ruleengine.service.grayscale;
 
 import com.example.ruleengine.constants.GrayscaleStatus;
+import com.example.ruleengine.domain.DecisionFlow;
+import com.example.ruleengine.domain.DecisionFlowVersion;
 import com.example.ruleengine.domain.GrayscaleConfig;
 import com.example.ruleengine.domain.GrayscaleMetric;
 import com.example.ruleengine.domain.Rule;
@@ -9,6 +11,8 @@ import com.example.ruleengine.model.dto.CreateGrayscaleRequest;
 import com.example.ruleengine.model.dto.GrayscaleConfigResponse;
 import com.example.ruleengine.model.dto.GrayscaleReportResponse;
 import com.example.ruleengine.model.dto.GrayscaleReportResponse.VersionMetrics;
+import com.example.ruleengine.repository.DecisionFlowRepository;
+import com.example.ruleengine.repository.DecisionFlowVersionRepository;
 import com.example.ruleengine.repository.GrayscaleConfigRepository;
 import com.example.ruleengine.repository.GrayscaleMetricRepository;
 import com.example.ruleengine.repository.RuleRepository;
@@ -38,54 +42,109 @@ public class GrayscaleService {
     private final GrayscaleMetricRepository grayscaleMetricRepository;
     private final RuleRepository ruleRepository;
     private final RuleVersionRepository ruleVersionRepository;
+    private final DecisionFlowRepository decisionFlowRepository;
+    private final DecisionFlowVersionRepository decisionFlowVersionRepository;
     private final CanaryStrategyMatcher canaryStrategyMatcher;
 
     /**
-     * 创建灰度配置
+     * 创建灰度配置（支持规则和决策流）
      */
     @Transactional
     public GrayscaleConfigResponse createGrayscaleConfig(
             CreateGrayscaleRequest request, String operator) {
-        log.info("创建灰度配置: ruleKey={}, grayscaleVersion={}, percentage={}, operator={}",
-                request.getRuleKey(), request.getGrayscaleVersion(),
-                request.getGrayscalePercentage(), operator);
+        // 解析目标类型和目标 Key
+        String targetType = request.getTargetType() != null ? request.getTargetType() : "RULE";
+        String targetKey = resolveTargetKey(request);
 
-        // 1. 验证规则存在
-        Rule rule = ruleRepository.findByRuleKey(request.getRuleKey())
-                .orElseThrow(() -> new IllegalArgumentException(
-                        "规则不存在: " + request.getRuleKey()));
-
-        // 2. 验证没有运行中的灰度配置
-        if (grayscaleConfigRepository.existsByRuleKeyAndStatus(
-                request.getRuleKey(), GrayscaleStatus.RUNNING)) {
-            throw new IllegalStateException(
-                    "规则已有运行中的灰度配置: " + request.getRuleKey());
+        if (targetKey == null || targetKey.isBlank()) {
+            throw new IllegalArgumentException("目标 Key 不能为空（ruleKey 或 targetKey）");
         }
 
-        // 3. 验证灰度版本存在
-        ruleVersionRepository.findByRuleKeyAndVersion(
-                request.getRuleKey(), request.getGrayscaleVersion())
-                .orElseThrow(() -> new IllegalArgumentException(
-                        "灰度版本不存在: " + request.getRuleKey()
-                                + " version=" + request.getGrayscaleVersion()));
+        log.info("创建灰度配置: targetType={}, targetKey={}, grayscaleVersion={}, percentage={}, strategy={}, operator={}",
+                targetType, targetKey, request.getGrayscaleVersion(),
+                request.getGrayscalePercentage(), request.getStrategyType(), operator);
 
-        // 4. 创建灰度配置
+        int currentVersion;
+
+        if ("DECISION_FLOW".equals(targetType)) {
+            // 决策流灰度
+            DecisionFlow flow = decisionFlowRepository.findByFlowKey(targetKey)
+                    .orElseThrow(() -> new IllegalArgumentException(
+                            "决策流不存在: " + targetKey));
+
+            // 验证没有运行中的灰度配置
+            if (grayscaleConfigRepository.findByTargetTypeAndTargetKeyAndStatus(
+                    "DECISION_FLOW", targetKey, GrayscaleStatus.RUNNING).isPresent()) {
+                throw new IllegalStateException(
+                        "决策流已有运行中的灰度配置: " + targetKey);
+            }
+
+            // 验证灰度版本存在
+            decisionFlowVersionRepository.findByFlowKeyAndVersion(
+                    targetKey, request.getGrayscaleVersion())
+                    .orElseThrow(() -> new IllegalArgumentException(
+                            "决策流灰度版本不存在: " + targetKey
+                                    + " version=" + request.getGrayscaleVersion()));
+
+            currentVersion = flow.getVersion();
+        } else {
+            // 规则灰度（向后兼容）
+            Rule rule = ruleRepository.findByRuleKey(targetKey)
+                    .orElseThrow(() -> new IllegalArgumentException(
+                            "规则不存在: " + targetKey));
+
+            // 验证没有运行中的灰度配置
+            if (grayscaleConfigRepository.existsByRuleKeyAndStatus(
+                    targetKey, GrayscaleStatus.RUNNING)) {
+                throw new IllegalStateException(
+                        "规则已有运行中的灰度配置: " + targetKey);
+            }
+
+            // 验证灰度版本存在
+            ruleVersionRepository.findByRuleKeyAndVersion(
+                    targetKey, request.getGrayscaleVersion())
+                    .orElseThrow(() -> new IllegalArgumentException(
+                            "灰度版本不存在: " + targetKey
+                                    + " version=" + request.getGrayscaleVersion()));
+
+            currentVersion = rule.getVersion();
+        }
+
+        // 创建灰度配置
         GrayscaleConfig config = GrayscaleConfig.builder()
-                .ruleKey(request.getRuleKey())
-                .currentVersion(rule.getVersion())
+                .ruleKey(targetKey)
+                .targetType(targetType)
+                .targetKey(targetKey)
+                .currentVersion(currentVersion)
                 .grayscaleVersion(request.getGrayscaleVersion())
                 .grayscalePercentage(request.getGrayscalePercentage())
                 .status(GrayscaleStatus.DRAFT)
+                .strategyType(request.getStrategyType() != null ? request.getStrategyType() : "PERCENTAGE")
+                .featureRules(request.getFeatureRules())
+                .whitelistIds(request.getWhitelistIds())
+                .dualRunEnabled(request.getDualRunEnabled() != null ? request.getDualRunEnabled() : false)
                 .createdBy(operator)
                 .build();
 
         config = grayscaleConfigRepository.save(config);
 
-        // 5. 初始化指标记录（当前版本和灰度版本各一条）
+        // 初始化指标记录
         initMetrics(config);
 
-        log.info("灰度配置创建成功: id={}", config.getId());
+        log.info("灰度配置创建成功: id={}, targetType={}, targetKey={}",
+                config.getId(), targetType, targetKey);
         return GrayscaleConfigResponse.fromEntity(config);
+    }
+
+    /**
+     * 解析目标 Key
+     * 优先使用 targetKey，其次使用 ruleKey
+     */
+    private String resolveTargetKey(CreateGrayscaleRequest request) {
+        if (request.getTargetKey() != null && !request.getTargetKey().isBlank()) {
+            return request.getTargetKey();
+        }
+        return request.getRuleKey();
     }
 
     /**
@@ -139,6 +198,7 @@ public class GrayscaleService {
 
     /**
      * 完成灰度（全量切换到灰度版本）
+     * 支持规则和决策流
      */
     @Transactional
     public GrayscaleConfigResponse completeGrayscale(Long configId) {
@@ -154,16 +214,36 @@ public class GrayscaleService {
                             + config.getStatus().getDescription());
         }
 
-        // 全量切换：将规则的当前版本更新为灰度版本
-        final GrayscaleConfig finalConfig = config;
-        String ruleKey = finalConfig.getRuleKey();
-        int grayscaleVer = finalConfig.getGrayscaleVersion();
+        String targetKey = config.getTargetKey() != null ? config.getTargetKey() : config.getRuleKey();
+        int grayscaleVer = config.getGrayscaleVersion();
+        String targetType = config.getTargetType() != null ? config.getTargetType() : "RULE";
 
+        if ("DECISION_FLOW".equals(targetType)) {
+            // 决策流全量切换
+            completeDecisionFlowGrayscale(targetKey, grayscaleVer);
+        } else {
+            // 规则全量切换
+            completeRuleGrayscale(targetKey, grayscaleVer);
+        }
+
+        config.setStatus(GrayscaleStatus.COMPLETED);
+        config.setCompletedAt(LocalDateTime.now());
+        config.setGrayscalePercentage(100);
+
+        GrayscaleConfig saved = grayscaleConfigRepository.save(config);
+        log.info("灰度已完成，全量切换到版本 {}: configId={}, targetType={}",
+                saved.getGrayscaleVersion(), configId, targetType);
+        return GrayscaleConfigResponse.fromEntity(saved);
+    }
+
+    /**
+     * 规则灰度全量切换
+     */
+    private void completeRuleGrayscale(String ruleKey, int grayscaleVer) {
         Rule rule = ruleRepository.findByRuleKey(ruleKey)
                 .orElseThrow(() -> new IllegalArgumentException(
                         "规则不存在: " + ruleKey));
 
-        // 从版本历史获取灰度版本的脚本
         RuleVersion grayscaleVersion = ruleVersionRepository
                 .findByRuleKeyAndVersion(ruleKey, grayscaleVer)
                 .orElseThrow(() -> new IllegalArgumentException(
@@ -172,15 +252,24 @@ public class GrayscaleService {
         rule.setVersion(grayscaleVer);
         rule.setGroovyScript(grayscaleVersion.getGroovyScript());
         ruleRepository.save(rule);
+    }
 
-        finalConfig.setStatus(GrayscaleStatus.COMPLETED);
-        finalConfig.setCompletedAt(LocalDateTime.now());
-        finalConfig.setGrayscalePercentage(100);
+    /**
+     * 决策流灰度全量切换
+     */
+    private void completeDecisionFlowGrayscale(String flowKey, int grayscaleVer) {
+        DecisionFlow flow = decisionFlowRepository.findByFlowKey(flowKey)
+                .orElseThrow(() -> new IllegalArgumentException(
+                        "决策流不存在: " + flowKey));
 
-        GrayscaleConfig saved = grayscaleConfigRepository.save(finalConfig);
-        log.info("灰度已完成，全量切换到版本 {}: configId={}",
-                saved.getGrayscaleVersion(), configId);
-        return GrayscaleConfigResponse.fromEntity(saved);
+        DecisionFlowVersion grayscaleVersion = decisionFlowVersionRepository
+                .findByFlowKeyAndVersion(flowKey, grayscaleVer)
+                .orElseThrow(() -> new IllegalArgumentException(
+                        "决策流灰度版本不存在: version=" + grayscaleVer));
+
+        flow.setVersion(grayscaleVer);
+        flow.setFlowGraph(grayscaleVersion.getFlowGraph());
+        decisionFlowRepository.save(flow);
     }
 
     /**
@@ -375,16 +464,33 @@ public class GrayscaleService {
     }
 
     /**
-     * 查询灰度配置列表（支持按状态和规则Key过滤）
+     * 查询灰度配置列表（支持按状态、规则Key和目标类型过滤）
      *
-     * @param status  状态过滤（可选）
-     * @param ruleKey 规则Key过滤（可选）
+     * @param status     状态过滤（可选）
+     * @param ruleKey    规则Key过滤（可选）
+     * @param targetType 目标类型过滤（可选）
      * @return 灰度配置列表
      */
-    public List<GrayscaleConfigResponse> listGrayscaleConfigs(String status, String ruleKey) {
+    public List<GrayscaleConfigResponse> listGrayscaleConfigs(String status, String ruleKey, String targetType) {
         List<GrayscaleConfig> configs;
 
-        if (ruleKey != null && !ruleKey.isBlank() && status != null && !status.isBlank()) {
+        if (targetType != null && !targetType.isBlank()) {
+            // 按目标类型过滤
+            configs = grayscaleConfigRepository.findByTargetType(targetType);
+
+            // 二次过滤
+            if (ruleKey != null && !ruleKey.isBlank()) {
+                configs = configs.stream()
+                        .filter(c -> ruleKey.equals(c.getRuleKey()) || ruleKey.equals(c.getTargetKey()))
+                        .collect(Collectors.toList());
+            }
+            if (status != null && !status.isBlank()) {
+                GrayscaleStatus grayscaleStatus = GrayscaleStatus.valueOf(status);
+                configs = configs.stream()
+                        .filter(c -> grayscaleStatus.equals(c.getStatus()))
+                        .collect(Collectors.toList());
+            }
+        } else if (ruleKey != null && !ruleKey.isBlank() && status != null && !status.isBlank()) {
             GrayscaleStatus grayscaleStatus = GrayscaleStatus.valueOf(status);
             configs = grayscaleConfigRepository
                     .findByRuleKeyAndStatusOrderByCreatedAtDesc(ruleKey, grayscaleStatus);

@@ -12,26 +12,56 @@ export enum GrayscaleStatusEnum {
   ROLLED_BACK = 'ROLLED_BACK',
 }
 
+/** 灰度策略类型 */
+export enum GrayscaleStrategyType {
+  PERCENTAGE = 'PERCENTAGE',
+  FEATURE = 'FEATURE',
+  WHITELIST = 'WHITELIST',
+}
+
+/** 灰度目标类型 */
+export enum GrayscaleTargetType {
+  RULE = 'RULE',
+  DECISION_FLOW = 'DECISION_FLOW',
+}
+
 /** 灰度配置（创建请求） */
 export interface GrayscaleConfig {
-  /** 规则 Key */
+  /** 规则 Key（向后兼容） */
   ruleKey: string;
+  /** 目标类型 */
+  targetType: GrayscaleTargetType;
+  /** 目标 Key */
+  targetKey: string;
   /** 灰度版本号 */
   grayscaleVersion: number;
   /** 灰度百分比（0-100） */
   percentage: number;
   /** 灰度描述 */
   description?: string;
+  /** 灰度策略类型 */
+  strategyType?: GrayscaleStrategyType;
+  /** 特征匹配规则 JSON */
+  featureRules?: string;
+  /** 白名单用户ID（逗号分隔) */
+  whitelistIds?: string;
+  /** 是否启用双跑 */
+  dualRunEnabled?: boolean;
 }
 
 /** 灰度发布记录 */
 export interface GrayscaleRecord {
   id: number;
   ruleKey: string;
-  ruleName: string;
+  /** 目标类型 */
+  targetType: GrayscaleTargetType;
+  /** 目标 Key */
+  targetKey: string;
   grayscaleVersion: number;
   currentVersion: number;
   percentage: number;
+  /** 策略类型 */
+  strategyType: GrayscaleStrategyType;
   status: GrayscaleStatusEnum;
   description: string | null;
   createdBy: string;
@@ -50,9 +80,9 @@ export interface VersionMetrics {
   hitRate: number;
   /** 平均耗时（ms） */
   avgDuration: number;
-  /** 最大耗时（ms） */
+  /** 最大耗时（ms) */
   maxDuration: number;
-  /** 最小耗时（ms） */
+  /** 最小耗时 (ms) */
   minDuration: number;
 }
 
@@ -71,10 +101,26 @@ export interface GrayscaleReport {
   grayscaleMetrics: VersionMetrics;
 }
 
+/** 灰度执行日志 */
+export interface CanaryExecutionLog {
+  id: number;
+  traceId: string;
+  targetType: string;
+  targetKey: string;
+  versionUsed: number;
+  isCanary: boolean;
+  requestFeatures: string | null;
+  decisionResult: string | null;
+  executionTimeMs: number | null;
+  errorMessage: string | null;
+  createdAt: string;
+}
+
 /** 灰度列表查询参数 */
 export interface GrayscaleQueryParams {
   status?: GrayscaleStatusEnum;
   ruleKey?: string;
+  targetType?: GrayscaleTargetType;
   page?: number;
   size?: number;
 }

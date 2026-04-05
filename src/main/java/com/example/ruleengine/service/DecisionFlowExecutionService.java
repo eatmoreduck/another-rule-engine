@@ -11,6 +11,7 @@ import com.example.ruleengine.model.flow.FlowEdgeDef;
 import com.example.ruleengine.model.flow.FlowGraph;
 import com.example.ruleengine.model.flow.FlowNodeDef;
 import com.example.ruleengine.repository.DecisionFlowVersionRepository;
+import com.example.ruleengine.service.grayscale.CanaryExecutionLogService;
 import com.example.ruleengine.service.grayscale.GrayscaleService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
@@ -19,6 +20,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 /**
@@ -37,6 +39,7 @@ public class DecisionFlowExecutionService {
     private final NameListService nameListService;
     private final GrayscaleService grayscaleService;
     private final DecisionFlowVersionRepository decisionFlowVersionRepository;
+    private final CanaryExecutionLogService canaryExecutionLogService;
 
     /**
      * 执行决策流
@@ -47,6 +50,7 @@ public class DecisionFlowExecutionService {
      */
     public DecisionResponse executeFlow(String flowKey, Map<String, Object> features) {
         long startTime = System.currentTimeMillis();
+        String traceId = UUID.randomUUID().toString().replace("-", "");
 
         try {
             DecisionFlow flow = flowCacheService.getEnabledFlow(flowKey);
@@ -62,17 +66,24 @@ public class DecisionFlowExecutionService {
             // 灰度分流：判断是否命中灰度版本
             String graphJson;
             int canaryVersion = resolveFlowVersion(flowKey, features);
-            if (canaryVersion > 0) {
+            boolean isCanary = canaryVersion > 0;
+            int versionUsed;
+
+            if (isCanary) {
                 graphJson = loadFlowVersionGraph(flowKey, canaryVersion);
                 if (graphJson == null) {
                     log.warn("灰度版本 flowGraph 加载失败, fallback 到当前版本: flowKey={}, canaryVersion={}",
                             flowKey, canaryVersion);
                     graphJson = flow.getFlowGraph();
+                    versionUsed = flow.getVersion();
+                    isCanary = false;
                 } else {
                     log.debug("决策流灰度命中: flowKey={}, canaryVersion={}", flowKey, canaryVersion);
+                    versionUsed = canaryVersion;
                 }
             } else {
                 graphJson = flow.getFlowGraph();
+                versionUsed = flow.getVersion();
             }
 
             FlowGraph graph = objectMapper.readValue(graphJson, FlowGraph.class);
@@ -82,15 +93,33 @@ public class DecisionFlowExecutionService {
                     .orElseThrow(() -> new IllegalStateException("决策流没有开始节点"));
 
             DecisionResponse response = traverseNode(flowKey, startNode, graph, features);
-            response.setExecutionTimeMs(System.currentTimeMillis() - startTime);
+            long execTime = System.currentTimeMillis() - startTime;
+            response.setExecutionTimeMs(execTime);
+
+            // 异步记录灰度执行日志
+            int finalVersionUsed = versionUsed;
+            boolean finalIsCanary = isCanary;
+            canaryExecutionLogService.asyncLog(
+                    traceId, "DECISION_FLOW", flowKey,
+                    finalVersionUsed, finalIsCanary,
+                    features, response.getDecision(), execTime);
+
             return response;
 
         } catch (Exception e) {
             log.error("决策流执行失败: flowKey={}", flowKey, e);
+            long execTime = System.currentTimeMillis() - startTime;
+
+            // 异步记录灰度执行错误日志
+            canaryExecutionLogService.asyncLogError(
+                    traceId, "DECISION_FLOW", flowKey,
+                    0, false, features,
+                    e.getMessage(), execTime);
+
             return DecisionResponse.builder()
                     .decision("REJECT")
                     .reason("决策流执行失败: " + e.getMessage())
-                    .executionTimeMs(System.currentTimeMillis() - startTime)
+                    .executionTimeMs(execTime)
                     .timeout(false)
                     .build();
         }

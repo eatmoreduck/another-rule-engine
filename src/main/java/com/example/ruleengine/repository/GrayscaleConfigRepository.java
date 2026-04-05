@@ -48,4 +48,9 @@ public interface GrayscaleConfigRepository extends JpaRepository<GrayscaleConfig
      * 根据目标类型、目标Key和状态查询灰度配置
      */
     Optional<GrayscaleConfig> findByTargetTypeAndTargetKeyAndStatus(String targetType, String targetKey, GrayscaleStatus status);
+
+    /**
+     * 根据目标类型查询灰度配置
+     */
+    List<GrayscaleConfig> findByTargetType(String targetType);
 }
