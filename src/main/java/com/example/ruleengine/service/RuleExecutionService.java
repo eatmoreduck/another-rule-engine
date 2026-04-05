@@ -1,6 +1,7 @@
 package com.example.ruleengine.service;
 
 import com.example.ruleengine.cache.RuleCacheService;
+import com.example.ruleengine.constants.VersionStatus;
 import com.example.ruleengine.domain.GrayscaleConfig;
 import com.example.ruleengine.domain.Rule;
 import com.example.ruleengine.domain.RuleVersion;
@@ -11,6 +12,7 @@ import com.example.ruleengine.model.DecisionRequest;
 import com.example.ruleengine.model.DecisionResponse;
 import com.example.ruleengine.model.FeatureRequest;
 import com.example.ruleengine.model.FeatureResponse;
+import com.example.ruleengine.repository.RuleVersionRepository;
 import com.example.ruleengine.service.executionlog.ExecutionLogService;
 import com.example.ruleengine.service.grayscale.GrayscaleService;
 import io.github.resilience4j.timelimiter.TimeLimiter;
@@ -47,6 +49,7 @@ public class RuleExecutionService {
     private final ExecutionLogService executionLogService;  // 执行日志服务
     private final RuleExecutionMetrics ruleExecutionMetrics;  // MON-01: 执行监控指标
     private final GrayscaleService grayscaleService;  // VER-03: 灰度发布服务
+    private final RuleVersionRepository ruleVersionRepository;  // 规则版本数据访问
 
     public RuleExecutionService(
         GroovyScriptEngine scriptEngine,
@@ -56,7 +59,8 @@ public class RuleExecutionService {
         RuleCacheService ruleCacheService,  // 注入规则缓存服务
         ExecutionLogService executionLogService,  // 注入执行日志服务
         RuleExecutionMetrics ruleExecutionMetrics,  // MON-01: 注入执行监控指标
-        GrayscaleService grayscaleService  // VER-03: 注入灰度发布服务
+        GrayscaleService grayscaleService,  // VER-03: 注入灰度发布服务
+        RuleVersionRepository ruleVersionRepository  // 注入规则版本数据访问
     ) {
         this.scriptEngine = scriptEngine;
         this.featureProvider = featureProvider;
@@ -66,6 +70,7 @@ public class RuleExecutionService {
         this.executionLogService = executionLogService;
         this.ruleExecutionMetrics = ruleExecutionMetrics;
         this.grayscaleService = grayscaleService;
+        this.ruleVersionRepository = ruleVersionRepository;
     }
 
     /**
@@ -310,8 +315,8 @@ public class RuleExecutionService {
     }
 
     /**
-     * 灰度分流：检查是否有运行中的灰度配置，按百分比决定使用哪个版本的脚本
-     * VER-03: 灰度发布
+     * 灰度分流：检查是否有运行中的灰度配置，使用多策略匹配决定使用哪个版本的脚本
+     * VER-03: 灰度发布，Phase 2 升级为多策略匹配
      *
      * @param ruleKey 规则Key
      * @param rule    当前规则
@@ -319,43 +324,76 @@ public class RuleExecutionService {
      */
     private void resolveGrayscaleScript(String ruleKey, Rule rule,
                                          DecisionRequest request) {
-        Optional<Integer> grayscaleVersionOpt =
-                grayscaleService.resolveGrayscaleVersion(ruleKey);
+        try {
+            // 使用请求中的 features 进行多策略匹配
+            Map<String, Object> features = request.getFeatures() != null
+                    ? request.getFeatures() : Map.of();
 
-        if (grayscaleVersionOpt.isPresent()) {
-            int grayscaleVersion = grayscaleVersionOpt.get();
-            logger.info("灰度分流命中: ruleKey={}, 使用灰度版本={}",
-                    ruleKey, grayscaleVersion);
+            Optional<Integer> grayscaleVersionOpt =
+                    grayscaleService.resolveGrayscaleVersion(ruleKey, features);
 
-            // 从灰度配置获取灰度版本的脚本
-            Optional<GrayscaleConfig> runningConfig =
-                    grayscaleService.getRunningConfig(ruleKey);
-            if (runningConfig.isPresent()) {
-                GrayscaleConfig config = runningConfig.get();
-                // 异步记录灰度指标
-                long startTime = System.currentTimeMillis();
-                try {
+            if (grayscaleVersionOpt.isPresent()) {
+                int grayscaleVersion = grayscaleVersionOpt.get();
+                logger.info("灰度分流命中: ruleKey={}, 使用灰度版本={}",
+                        ruleKey, grayscaleVersion);
+
+                // 从版本历史加载灰度版本的脚本
+                Optional<String> canaryScript = loadCanaryScript(ruleKey, grayscaleVersion);
+                if (canaryScript.isPresent()) {
+                    request.setScript(canaryScript.get());
+                } else {
+                    // 灰度版本脚本加载失败，fallback 到当前版本
+                    logger.warn("灰度版本脚本加载失败, fallback 到当前版本: ruleKey={}, version={}",
+                            ruleKey, grayscaleVersion);
                     request.setScript(rule.getGroovyScript());
-                    // 执行完成后异步记录灰度指标
-                    recordGrayscaleMetricsAsync(config.getId(),
-                            grayscaleVersion, startTime, true);
-                } catch (Exception e) {
-                    recordGrayscaleMetricsAsync(config.getId(),
-                            grayscaleVersion, startTime, false);
                 }
-            }
-        } else {
-            // 使用当前版本脚本
-            request.setScript(rule.getGroovyScript());
 
-            // 如果有运行中的灰度配置，记录当前版本指标
-            Optional<GrayscaleConfig> runningConfig =
-                    grayscaleService.getRunningConfig(ruleKey);
-            runningConfig.ifPresent(config -> {
-                long startTime = System.currentTimeMillis();
-                recordGrayscaleMetricsAsync(config.getId(),
-                        config.getCurrentVersion(), startTime, true);
-            });
+                // 记录灰度指标
+                Optional<GrayscaleConfig> runningConfig =
+                        grayscaleService.getRunningConfig(ruleKey);
+                runningConfig.ifPresent(config ->
+                        recordGrayscaleMetricsAsync(config.getId(),
+                                grayscaleVersion, System.currentTimeMillis(), true));
+            } else {
+                // 使用当前版本脚本
+                request.setScript(rule.getGroovyScript());
+
+                // 如果有运行中的灰度配置，记录当前版本指标
+                Optional<GrayscaleConfig> runningConfig =
+                        grayscaleService.getRunningConfig(ruleKey);
+                runningConfig.ifPresent(config -> {
+                    long startTime = System.currentTimeMillis();
+                    recordGrayscaleMetricsAsync(config.getId(),
+                            config.getCurrentVersion(), startTime, true);
+                });
+            }
+        } catch (Exception e) {
+            // 灰度服务异常，fallback 到当前版本脚本
+            logger.error("灰度分流异常, fallback 到当前版本: ruleKey={}", ruleKey, e);
+            request.setScript(rule.getGroovyScript());
+        }
+    }
+
+    /**
+     * 从版本历史加载灰度版本的 Groovy 脚本
+     * 优先按 CANARY 状态查找，其次按版本号查找
+     */
+    private Optional<String> loadCanaryScript(String ruleKey, int version) {
+        try {
+            // 优先从 CANARY 状态的版本中查找
+            Optional<RuleVersion> canaryVersion =
+                    ruleVersionRepository.findTopByRuleKeyAndStatusOrderByVersionDesc(
+                            ruleKey, VersionStatus.CANARY);
+            if (canaryVersion.isPresent()) {
+                return Optional.of(canaryVersion.get().getGroovyScript());
+            }
+
+            // 兜底：按版本号查找
+            return ruleVersionRepository.findByRuleKeyAndVersion(ruleKey, version)
+                    .map(RuleVersion::getGroovyScript);
+        } catch (Exception e) {
+            logger.error("加载灰度版本脚本失败: ruleKey={}, version={}", ruleKey, version, e);
+            return Optional.empty();
         }
     }
 

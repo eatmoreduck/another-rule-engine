@@ -7,6 +7,7 @@ import com.example.ruleengine.metrics.RuleExecutionMetrics;
 import com.example.ruleengine.model.DecisionRequest;
 import com.example.ruleengine.model.DecisionResponse;
 import com.example.ruleengine.model.FeatureResponse;
+import com.example.ruleengine.repository.RuleVersionRepository;
 import com.example.ruleengine.service.executionlog.ExecutionLogService;
 import com.example.ruleengine.service.grayscale.GrayscaleService;
 import io.github.resilience4j.timelimiter.TimeLimiter;
@@ -61,6 +62,9 @@ class RuleExecutionServiceTest {
     @Mock
     private GrayscaleService grayscaleService;
 
+    @Mock
+    private RuleVersionRepository ruleVersionRepository;
+
     private TimeLimiter timeLimiter;
     private ThreadPoolTaskExecutor taskExecutor;
     private RuleExecutionService ruleExecutionService;
@@ -89,7 +93,8 @@ class RuleExecutionServiceTest {
             ruleCacheService,
             executionLogService,
             ruleExecutionMetrics,
-            grayscaleService
+            grayscaleService,
+            ruleVersionRepository
         );
     }
 
