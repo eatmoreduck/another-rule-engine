@@ -20,8 +20,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
-import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.Collectors;
 
 /**
@@ -38,6 +38,7 @@ public class GrayscaleService {
     private final GrayscaleMetricRepository grayscaleMetricRepository;
     private final RuleRepository ruleRepository;
     private final RuleVersionRepository ruleVersionRepository;
+    private final CanaryStrategyMatcher canaryStrategyMatcher;
 
     /**
      * 创建灰度配置
@@ -211,33 +212,79 @@ public class GrayscaleService {
     }
 
     /**
-     * 判断指定规则是否应使用灰度版本
-     * 核心分流逻辑：按百分比随机分流
+     * 判断指定规则是否应使用灰度版本（兼容旧调用，无 features 时退化为百分比分流）
      *
      * @param ruleKey 规则Key
      * @return 如果应使用灰度版本，返回灰度版本号；否则返回空
      */
     public Optional<Integer> resolveGrayscaleVersion(String ruleKey) {
-        Optional<GrayscaleConfig> runningConfig =
-                grayscaleConfigRepository.findByRuleKeyAndStatus(
-                        ruleKey, GrayscaleStatus.RUNNING);
+        return resolveGrayscaleVersion(ruleKey, Map.of());
+    }
 
-        if (runningConfig.isEmpty()) {
+    /**
+     * 判断指定规则是否应使用灰度版本（支持多策略匹配）
+     *
+     * @param ruleKey  规则Key
+     * @param features 请求特征数据
+     * @return 如果应使用灰度版本，返回灰度版本号；否则返回空
+     */
+    public Optional<Integer> resolveGrayscaleVersion(String ruleKey, Map<String, Object> features) {
+        try {
+            Optional<GrayscaleConfig> runningConfig =
+                    grayscaleConfigRepository.findByRuleKeyAndStatus(
+                            ruleKey, GrayscaleStatus.RUNNING);
+
+            if (runningConfig.isEmpty()) {
+                return Optional.empty();
+            }
+
+            GrayscaleConfig config = runningConfig.get();
+            boolean matched = canaryStrategyMatcher.matches(config, features);
+
+            if (matched) {
+                log.debug("灰度分流命中: ruleKey={}, strategy={}, grayscaleVersion={}",
+                        ruleKey, config.getStrategyType(), config.getGrayscaleVersion());
+                return Optional.of(config.getGrayscaleVersion());
+            }
+
+            return Optional.empty();
+        } catch (Exception e) {
+            log.error("灰度分流异常, fallback 到当前版本: ruleKey={}", ruleKey, e);
             return Optional.empty();
         }
+    }
 
-        GrayscaleConfig config = runningConfig.get();
-        int percentage = config.getGrayscalePercentage();
+    /**
+     * 判断指定决策流是否应使用灰度版本
+     *
+     * @param flowKey  决策流Key
+     * @param features 请求特征数据
+     * @return 如果应使用灰度版本，返回灰度版本号；否则返回空
+     */
+    public Optional<Integer> resolveGrayscaleVersionForFlow(String flowKey, Map<String, Object> features) {
+        try {
+            Optional<GrayscaleConfig> runningConfig =
+                    grayscaleConfigRepository.findByTargetTypeAndTargetKeyAndStatus(
+                            "DECISION_FLOW", flowKey, GrayscaleStatus.RUNNING);
 
-        // 按百分比随机分流
-        int randomValue = ThreadLocalRandom.current().nextInt(100);
-        if (randomValue < percentage) {
-            log.debug("灰度分流命中: ruleKey={}, grayscaleVersion={}, random={}, percentage={}",
-                    ruleKey, config.getGrayscaleVersion(), randomValue, percentage);
-            return Optional.of(config.getGrayscaleVersion());
+            if (runningConfig.isEmpty()) {
+                return Optional.empty();
+            }
+
+            GrayscaleConfig config = runningConfig.get();
+            boolean matched = canaryStrategyMatcher.matches(config, features);
+
+            if (matched) {
+                log.debug("决策流灰度分流命中: flowKey={}, strategy={}, grayscaleVersion={}",
+                        flowKey, config.getStrategyType(), config.getGrayscaleVersion());
+                return Optional.of(config.getGrayscaleVersion());
+            }
+
+            return Optional.empty();
+        } catch (Exception e) {
+            log.error("决策流灰度分流异常, fallback 到当前版本: flowKey={}", flowKey, e);
+            return Optional.empty();
         }
-
-        return Optional.empty();
     }
 
     /**
