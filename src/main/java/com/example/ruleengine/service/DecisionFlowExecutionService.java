@@ -3,12 +3,15 @@ package com.example.ruleengine.service;
 import com.example.ruleengine.cache.DecisionFlowCacheService;
 import com.example.ruleengine.cache.RuleCacheService;
 import com.example.ruleengine.domain.DecisionFlow;
+import com.example.ruleengine.domain.DecisionFlowVersion;
 import com.example.ruleengine.domain.Rule;
 import com.example.ruleengine.engine.GroovyScriptEngine;
 import com.example.ruleengine.model.DecisionResponse;
 import com.example.ruleengine.model.flow.FlowEdgeDef;
 import com.example.ruleengine.model.flow.FlowGraph;
 import com.example.ruleengine.model.flow.FlowNodeDef;
+import com.example.ruleengine.repository.DecisionFlowVersionRepository;
+import com.example.ruleengine.service.grayscale.GrayscaleService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -32,6 +35,8 @@ public class DecisionFlowExecutionService {
     private final GroovyScriptEngine scriptEngine;
     private final ObjectMapper objectMapper;
     private final NameListService nameListService;
+    private final GrayscaleService grayscaleService;
+    private final DecisionFlowVersionRepository decisionFlowVersionRepository;
 
     /**
      * 执行决策流
@@ -54,7 +59,23 @@ public class DecisionFlowExecutionService {
                         .build();
             }
 
-            FlowGraph graph = objectMapper.readValue(flow.getFlowGraph(), FlowGraph.class);
+            // 灰度分流：判断是否命中灰度版本
+            String graphJson;
+            int canaryVersion = resolveFlowVersion(flowKey, features);
+            if (canaryVersion > 0) {
+                graphJson = loadFlowVersionGraph(flowKey, canaryVersion);
+                if (graphJson == null) {
+                    log.warn("灰度版本 flowGraph 加载失败, fallback 到当前版本: flowKey={}, canaryVersion={}",
+                            flowKey, canaryVersion);
+                    graphJson = flow.getFlowGraph();
+                } else {
+                    log.debug("决策流灰度命中: flowKey={}, canaryVersion={}", flowKey, canaryVersion);
+                }
+            } else {
+                graphJson = flow.getFlowGraph();
+            }
+
+            FlowGraph graph = objectMapper.readValue(graphJson, FlowGraph.class);
             FlowNodeDef startNode = graph.getNodes().stream()
                     .filter(n -> "start".equals(n.getType()))
                     .findFirst()
@@ -72,6 +93,34 @@ public class DecisionFlowExecutionService {
                     .executionTimeMs(System.currentTimeMillis() - startTime)
                     .timeout(false)
                     .build();
+        }
+    }
+
+    /**
+     * 解析决策流灰度版本号
+     * 异常时返回 0（不命中），确保不阻塞主流程
+     */
+    private int resolveFlowVersion(String flowKey, Map<String, Object> features) {
+        try {
+            return grayscaleService.resolveGrayscaleVersionForFlow(flowKey, features)
+                    .orElse(0);
+        } catch (Exception e) {
+            log.error("决策流灰度版本解析异常, fallback 到当前版本: flowKey={}", flowKey, e);
+            return 0;
+        }
+    }
+
+    /**
+     * 从决策流版本历史加载指定版本的 flowGraph
+     */
+    private String loadFlowVersionGraph(String flowKey, int version) {
+        try {
+            return decisionFlowVersionRepository.findByFlowKeyAndVersion(flowKey, version)
+                    .map(DecisionFlowVersion::getFlowGraph)
+                    .orElse(null);
+        } catch (Exception e) {
+            log.error("加载决策流版本 flowGraph 失败: flowKey={}, version={}", flowKey, version, e);
+            return null;
         }
     }
 
