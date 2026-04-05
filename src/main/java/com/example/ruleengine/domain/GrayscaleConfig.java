@@ -57,6 +57,20 @@ public class GrayscaleConfig {
     @Column(name = "completed_at")
     private LocalDateTime completedAt;
 
+    @Column(name = "strategy_type", length = 30)
+    @Builder.Default
+    private String strategyType = "PERCENTAGE";
+
+    @Column(name = "feature_rules", columnDefinition = "TEXT")
+    private String featureRules;
+
+    @Column(name = "whitelist_ids", columnDefinition = "TEXT")
+    private String whitelistIds;
+
+    @Column(name = "dual_run_enabled")
+    @Builder.Default
+    private Boolean dualRunEnabled = false;
+
     @Column(name = "created_by", length = 255)
     private String createdBy;
 
