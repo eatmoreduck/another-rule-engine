@@ -1,5 +1,6 @@
 package com.example.ruleengine.controller;
 
+import cn.dev33.satoken.annotation.SaCheckLogin;
 import com.example.ruleengine.model.dto.ImportRulesResponse;
 import com.example.ruleengine.model.dto.RuleExportData;
 import com.example.ruleengine.service.importexport.RuleImportExportService;
@@ -17,6 +18,7 @@ import java.util.List;
 @RequestMapping("/api/v1")
 @RequiredArgsConstructor
 @Slf4j
+@SaCheckLogin
 public class ImportExportController {
 
     private final RuleImportExportService ruleImportExportService;

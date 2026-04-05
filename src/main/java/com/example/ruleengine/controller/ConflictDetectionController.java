@@ -1,5 +1,6 @@
 package com.example.ruleengine.controller;
 
+import cn.dev33.satoken.annotation.SaCheckLogin;
 import com.example.ruleengine.model.dto.ConflictResult;
 import com.example.ruleengine.service.test.RuleConflictDetector;
 import lombok.RequiredArgsConstructor;
@@ -17,6 +18,7 @@ import java.util.List;
 @RequestMapping("/api/v1/conflicts")
 @RequiredArgsConstructor
 @Slf4j
+@SaCheckLogin
 public class ConflictDetectionController {
 
     private final RuleConflictDetector conflictDetector;

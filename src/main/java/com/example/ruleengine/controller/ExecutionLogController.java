@@ -1,5 +1,6 @@
 package com.example.ruleengine.controller;
 
+import cn.dev33.satoken.annotation.SaCheckLogin;
 import com.example.ruleengine.domain.ExecutionLog;
 import com.example.ruleengine.model.dto.ExecutionLogResponse;
 import com.example.ruleengine.service.executionlog.ExecutionLogService;
@@ -20,6 +21,7 @@ import java.util.stream.Collectors;
 @RequestMapping("/api/v1/logs")
 @RequiredArgsConstructor
 @Slf4j
+@SaCheckLogin
 public class ExecutionLogController {
 
     private final ExecutionLogService executionLogService;

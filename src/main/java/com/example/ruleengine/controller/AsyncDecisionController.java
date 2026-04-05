@@ -1,5 +1,6 @@
 package com.example.ruleengine.controller;
 
+import cn.dev33.satoken.annotation.SaCheckPermission;
 import com.example.ruleengine.model.DecisionRequest;
 import com.example.ruleengine.model.DecisionResponse;
 import com.example.ruleengine.service.async.AsyncRuleExecutionService;
@@ -47,6 +48,7 @@ public class AsyncDecisionController {
         consumes = MediaType.APPLICATION_JSON_VALUE,
         produces = MediaType.APPLICATION_JSON_VALUE
     )
+    @SaCheckPermission("api:decision:execute")
     public ResponseEntity<Map<String, String>> submitAsyncDecision(
         @Valid @RequestBody DecisionRequest request
     ) {
@@ -71,6 +73,7 @@ public class AsyncDecisionController {
         value = "/{requestId}",
         produces = MediaType.APPLICATION_JSON_VALUE
     )
+    @SaCheckPermission("api:decision:execute")
     public ResponseEntity<Map<String, Object>> getAsyncResult(
         @PathVariable String requestId
     ) {

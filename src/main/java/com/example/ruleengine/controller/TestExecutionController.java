@@ -1,5 +1,6 @@
 package com.example.ruleengine.controller;
 
+import cn.dev33.satoken.annotation.SaCheckLogin;
 import com.example.ruleengine.model.dto.TestResult;
 import com.example.ruleengine.service.test.TestExecutionService;
 import jakarta.validation.Valid;
@@ -18,6 +19,7 @@ import java.util.Map;
 @RequestMapping("/api/v1/test")
 @RequiredArgsConstructor
 @Slf4j
+@SaCheckLogin
 public class TestExecutionController {
 
     private final TestExecutionService testExecutionService;

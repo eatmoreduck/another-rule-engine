@@ -1,5 +1,7 @@
 package com.example.ruleengine.controller;
 
+import cn.dev33.satoken.annotation.SaCheckLogin;
+import cn.dev33.satoken.annotation.SaCheckPermission;
 import com.example.ruleengine.model.dto.CreateVersionRequest;
 import com.example.ruleengine.model.dto.RollbackRequest;
 import com.example.ruleengine.model.dto.VersionDiffResponse;
@@ -20,6 +22,7 @@ import java.util.List;
 @RequestMapping("/api/v1/rules")
 @RequiredArgsConstructor
 @Slf4j
+@SaCheckLogin
 public class RuleVersionController {
 
     private final VersionManagementService versionManagementService;
@@ -29,6 +32,7 @@ public class RuleVersionController {
      * GET /api/v1/rules/{ruleKey}/versions
      */
     @GetMapping("/{ruleKey}/versions")
+    @SaCheckPermission("api:rules:view")
     public ResponseEntity<List<VersionResponse>> getVersions(@PathVariable String ruleKey) {
         log.info("获取规则版本列表: ruleKey={}", ruleKey);
         List<VersionResponse> versions = versionManagementService.getVersions(ruleKey);
@@ -40,6 +44,7 @@ public class RuleVersionController {
      * GET /api/v1/rules/{ruleKey}/versions/{version}
      */
     @GetMapping("/{ruleKey}/versions/{version}")
+    @SaCheckPermission("api:rules:view")
     public ResponseEntity<VersionResponse> getVersion(
             @PathVariable String ruleKey,
             @PathVariable Integer version) {
@@ -53,6 +58,7 @@ public class RuleVersionController {
      * POST /api/v1/rules/{ruleKey}/versions
      */
     @PostMapping("/{ruleKey}/versions")
+    @SaCheckPermission("api:rules:update")
     public ResponseEntity<VersionResponse> createVersion(
             @PathVariable String ruleKey,
             @Valid @RequestBody CreateVersionRequest request,
@@ -68,6 +74,7 @@ public class RuleVersionController {
      * POST /api/v1/rules/{ruleKey}/versions/{version}/rollback
      */
     @PostMapping("/{ruleKey}/versions/{version}/rollback")
+    @SaCheckPermission("api:rules:update")
     public ResponseEntity<VersionResponse> rollbackToVersion(
             @PathVariable String ruleKey,
             @PathVariable Integer version,
@@ -84,6 +91,7 @@ public class RuleVersionController {
      * GET /api/v1/rules/{ruleKey}/versions/compare?version1=1&version2=2
      */
     @GetMapping("/{ruleKey}/versions/compare")
+    @SaCheckPermission("api:rules:view")
     public ResponseEntity<VersionDiffResponse> compareVersions(
             @PathVariable String ruleKey,
             @RequestParam Integer version1,

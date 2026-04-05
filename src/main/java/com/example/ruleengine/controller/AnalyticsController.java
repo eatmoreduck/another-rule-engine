@@ -1,5 +1,6 @@
 package com.example.ruleengine.controller;
 
+import cn.dev33.satoken.annotation.SaCheckLogin;
 import com.example.ruleengine.model.dto.DependencyGraph;
 import com.example.ruleengine.model.dto.RuleAnalytics;
 import com.example.ruleengine.service.analytics.RuleAnalyticsService;
@@ -21,6 +22,7 @@ import java.util.List;
 @RequestMapping("/api/v1/analytics")
 @RequiredArgsConstructor
 @Slf4j
+@SaCheckLogin
 public class AnalyticsController {
 
     private final RuleAnalyticsService analyticsService;

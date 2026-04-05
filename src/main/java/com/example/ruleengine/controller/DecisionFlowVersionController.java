@@ -1,5 +1,7 @@
 package com.example.ruleengine.controller;
 
+import cn.dev33.satoken.annotation.SaCheckLogin;
+import cn.dev33.satoken.annotation.SaCheckPermission;
 import com.example.ruleengine.domain.DecisionFlowVersion;
 import com.example.ruleengine.service.version.DecisionFlowVersionManagementService;
 import lombok.RequiredArgsConstructor;
@@ -17,6 +19,7 @@ import java.util.Map;
 @RequestMapping("/api/v1/decision-flows/{flowKey}/versions")
 @RequiredArgsConstructor
 @Slf4j
+@SaCheckLogin
 public class DecisionFlowVersionController {
 
     private final DecisionFlowVersionManagementService versionService;
@@ -25,6 +28,7 @@ public class DecisionFlowVersionController {
      * 查询决策流的所有版本
      */
     @GetMapping
+    @SaCheckPermission("api:decision-flows:view")
     public ResponseEntity<List<DecisionFlowVersion>> listVersions(@PathVariable String flowKey) {
         List<DecisionFlowVersion> versions = versionService.listVersions(flowKey);
         return ResponseEntity.ok(versions);
@@ -34,6 +38,7 @@ public class DecisionFlowVersionController {
      * 查询决策流的指定版本
      */
     @GetMapping("/{version}")
+    @SaCheckPermission("api:decision-flows:view")
     public ResponseEntity<DecisionFlowVersion> getVersion(
             @PathVariable String flowKey,
             @PathVariable Integer version) {
@@ -46,6 +51,7 @@ public class DecisionFlowVersionController {
      * 回滚决策流到指定版本
      */
     @PostMapping("/rollback")
+    @SaCheckPermission("api:decision-flows:update")
     public ResponseEntity<DecisionFlowVersion> rollback(
             @PathVariable String flowKey,
             @RequestBody Map<String, Object> request,

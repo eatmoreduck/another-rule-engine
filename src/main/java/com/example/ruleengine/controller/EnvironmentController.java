@@ -1,5 +1,6 @@
 package com.example.ruleengine.controller;
 
+import cn.dev33.satoken.annotation.SaCheckLogin;
 import com.example.ruleengine.domain.Environment;
 import com.example.ruleengine.domain.Rule;
 import com.example.ruleengine.model.dto.CloneEnvironmentRequest;
@@ -19,6 +20,7 @@ import java.util.List;
 @RequestMapping("/api/v1/environments")
 @RequiredArgsConstructor
 @Slf4j
+@SaCheckLogin
 public class EnvironmentController {
 
     private final EnvironmentService environmentService;

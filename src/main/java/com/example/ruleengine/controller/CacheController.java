@@ -1,5 +1,6 @@
 package com.example.ruleengine.controller;
 
+import cn.dev33.satoken.annotation.SaCheckLogin;
 import com.example.ruleengine.cache.RuleCacheService;
 import com.example.ruleengine.metrics.CacheMetrics;
 import lombok.RequiredArgsConstructor;
@@ -16,6 +17,7 @@ import java.util.Map;
 @RequestMapping("/api/v1/cache")
 @RequiredArgsConstructor
 @Slf4j
+@SaCheckLogin
 public class CacheController {
 
     private final CacheMetrics cacheMetrics;

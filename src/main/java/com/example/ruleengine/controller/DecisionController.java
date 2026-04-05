@@ -1,5 +1,6 @@
 package com.example.ruleengine.controller;
 
+import cn.dev33.satoken.annotation.SaCheckPermission;
 import com.example.ruleengine.model.DecisionRequest;
 import com.example.ruleengine.model.DecisionResponse;
 import com.example.ruleengine.service.DecisionFlowExecutionService;
@@ -51,6 +52,7 @@ public class DecisionController {
         consumes = MediaType.APPLICATION_JSON_VALUE,
         produces = MediaType.APPLICATION_JSON_VALUE
     )
+    @SaCheckPermission("api:decision:execute")
     public ResponseEntity<DecisionResponse> decide(@Valid @RequestBody DecisionRequest request) {
         logger.info("Received decision request for rule: {}", request.getRuleId());
 
@@ -90,6 +92,7 @@ public class DecisionController {
         consumes = MediaType.APPLICATION_JSON_VALUE,
         produces = MediaType.APPLICATION_JSON_VALUE
     )
+    @SaCheckPermission("api:decision:execute")
     public ResponseEntity<DecisionResponse> decideByKey(
             @PathVariable String ruleKey,
             @RequestBody Map<String, Object> features) {
@@ -138,6 +141,7 @@ public class DecisionController {
         consumes = MediaType.APPLICATION_JSON_VALUE,
         produces = MediaType.APPLICATION_JSON_VALUE
     )
+    @SaCheckPermission("api:decision:execute")
     public ResponseEntity<DecisionResponse> decideByFlow(
             @PathVariable String flowKey,
             @RequestBody Map<String, Object> features) {

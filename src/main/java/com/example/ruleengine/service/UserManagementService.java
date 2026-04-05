@@ -11,6 +11,7 @@ import com.example.ruleengine.repository.SysRolePermissionRepository;
 import com.example.ruleengine.repository.SysRoleRepository;
 import com.example.ruleengine.repository.SysUserRepository;
 import com.example.ruleengine.repository.SysUserRoleRepository;
+import com.example.ruleengine.service.auth.PasswordValidator;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
@@ -104,6 +105,12 @@ public class UserManagementService {
         // 检查用户名是否已存在
         if (sysUserRepository.existsByUsername(request.getUsername())) {
             throw new IllegalArgumentException("用户名已存在: " + request.getUsername());
+        }
+
+        // 校验密码强度
+        String passwordError = PasswordValidator.validate(request.getPassword());
+        if (passwordError != null) {
+            throw new IllegalArgumentException(passwordError);
         }
 
         // 创建用户

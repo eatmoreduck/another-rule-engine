@@ -1,5 +1,6 @@
 package com.example.ruleengine.controller;
 
+import cn.dev33.satoken.annotation.SaCheckLogin;
 import com.example.ruleengine.metrics.RuleExecutionMetrics;
 import com.example.ruleengine.model.dto.ExecutionStats;
 import io.micrometer.core.instrument.Counter;
@@ -21,6 +22,7 @@ import java.util.stream.Collectors;
  */
 @RestController
 @RequestMapping("/api/v1/metrics")
+@SaCheckLogin
 public class MetricsController {
 
     private static final Logger logger = LoggerFactory.getLogger(MetricsController.class);

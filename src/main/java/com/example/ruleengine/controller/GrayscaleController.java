@@ -1,5 +1,7 @@
 package com.example.ruleengine.controller;
 
+import cn.dev33.satoken.annotation.SaCheckLogin;
+import cn.dev33.satoken.annotation.SaCheckPermission;
 import com.example.ruleengine.model.dto.CreateGrayscaleRequest;
 import com.example.ruleengine.model.dto.GrayscaleConfigResponse;
 import com.example.ruleengine.model.dto.GrayscaleReportResponse;
@@ -22,6 +24,7 @@ import java.util.Map;
 @RequestMapping("/api/v1/grayscale")
 @RequiredArgsConstructor
 @Slf4j
+@SaCheckLogin
 public class GrayscaleController {
 
     private final GrayscaleService grayscaleService;
@@ -38,6 +41,7 @@ public class GrayscaleController {
      * @return 分页灰度配置列表
      */
     @GetMapping
+    @SaCheckPermission("api:grayscale:view")
     public ResponseEntity<Map<String, Object>> listGrayscales(
             @RequestParam(required = false) String status,
             @RequestParam(required = false) String ruleKey,
@@ -72,6 +76,7 @@ public class GrayscaleController {
      * POST /api/v1/grayscale
      */
     @PostMapping
+    @SaCheckPermission("api:grayscale:manage")
     public ResponseEntity<GrayscaleConfigResponse> createGrayscale(
             @Valid @RequestBody CreateGrayscaleRequest request,
             @RequestHeader(value = "X-Operator", defaultValue = "system") String operator) {
@@ -89,6 +94,7 @@ public class GrayscaleController {
      * PUT /api/v1/grayscale/{id}/start
      */
     @PutMapping("/{id}/start")
+    @SaCheckPermission("api:grayscale:manage")
     public ResponseEntity<GrayscaleConfigResponse> startGrayscale(
             @PathVariable Long id) {
         log.info("启动灰度: id={}", id);
@@ -102,6 +108,7 @@ public class GrayscaleController {
      * PUT /api/v1/grayscale/{id}/pause
      */
     @PutMapping("/{id}/pause")
+    @SaCheckPermission("api:grayscale:manage")
     public ResponseEntity<GrayscaleConfigResponse> pauseGrayscale(
             @PathVariable Long id) {
         log.info("暂停灰度: id={}", id);
@@ -115,6 +122,7 @@ public class GrayscaleController {
      * PUT /api/v1/grayscale/{id}/complete
      */
     @PutMapping("/{id}/complete")
+    @SaCheckPermission("api:grayscale:manage")
     public ResponseEntity<GrayscaleConfigResponse> completeGrayscale(
             @PathVariable Long id) {
         log.info("完成灰度: id={}", id);
@@ -128,6 +136,7 @@ public class GrayscaleController {
      * PUT /api/v1/grayscale/{id}/rollback
      */
     @PutMapping("/{id}/rollback")
+    @SaCheckPermission("api:grayscale:manage")
     public ResponseEntity<GrayscaleConfigResponse> rollbackGrayscale(
             @PathVariable Long id) {
         log.info("回滚灰度: id={}", id);
@@ -141,6 +150,7 @@ public class GrayscaleController {
      * GET /api/v1/grayscale/{id}/report
      */
     @GetMapping("/{id}/report")
+    @SaCheckPermission("api:grayscale:view")
     public ResponseEntity<GrayscaleReportResponse> getGrayscaleReport(
             @PathVariable Long id) {
         log.info("获取灰度对比报告: id={}", id);
@@ -154,6 +164,7 @@ public class GrayscaleController {
      * GET /api/v1/grayscale/rule/{ruleKey}
      */
     @GetMapping("/rule/{ruleKey}")
+    @SaCheckPermission("api:grayscale:view")
     public ResponseEntity<List<GrayscaleConfigResponse>> getGrayscaleConfigs(
             @PathVariable String ruleKey) {
         log.info("获取规则灰度配置列表: ruleKey={}", ruleKey);

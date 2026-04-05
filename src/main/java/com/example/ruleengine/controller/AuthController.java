@@ -1,5 +1,6 @@
 package com.example.ruleengine.controller;
 
+import cn.dev33.satoken.annotation.SaCheckLogin;
 import com.example.ruleengine.model.dto.LoginRequest;
 import com.example.ruleengine.model.dto.LoginResponse;
 import com.example.ruleengine.model.dto.UserInfoResponse;
@@ -39,6 +40,7 @@ public class AuthController {
      * POST /api/v1/auth/logout
      */
     @PostMapping("/logout")
+    @SaCheckLogin
     public ResponseEntity<Void> logout() {
         authService.logout();
         return ResponseEntity.ok().build();
@@ -49,6 +51,7 @@ public class AuthController {
      * GET /api/v1/auth/me
      */
     @GetMapping("/me")
+    @SaCheckLogin
     public ResponseEntity<UserInfoResponse> getCurrentUser() {
         UserInfoResponse response = authService.getCurrentUser();
         return ResponseEntity.ok(response);
@@ -59,6 +62,7 @@ public class AuthController {
      * GET /api/v1/auth/check
      */
     @GetMapping("/check")
+    @SaCheckLogin
     public ResponseEntity<Map<String, Object>> checkLogin() {
         return ResponseEntity.ok(Map.of(
                 "loggedIn", true,

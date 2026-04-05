@@ -1,5 +1,7 @@
 package com.example.ruleengine.controller;
 
+import cn.dev33.satoken.annotation.SaCheckLogin;
+import cn.dev33.satoken.annotation.SaCheckPermission;
 import com.example.ruleengine.domain.DecisionFlow;
 import com.example.ruleengine.domain.Rule;
 import com.example.ruleengine.model.dto.CreateRuleRequest;
@@ -34,6 +36,7 @@ import java.util.Map;
 @RequestMapping("/api/v1/rules")
 @RequiredArgsConstructor
 @Slf4j
+@SaCheckLogin
 public class RuleController {
 
     private final RuleLifecycleService ruleLifecycleService;
@@ -46,6 +49,7 @@ public class RuleController {
      * POST /api/v1/rules
      */
     @PostMapping
+    @SaCheckPermission("api:rules:create")
     public ResponseEntity<Rule> createRule(
             @Valid @RequestBody CreateRuleRequest request,
             @RequestHeader(value = "X-Operator", defaultValue = "system") String operator) {
@@ -59,6 +63,7 @@ public class RuleController {
      * PUT /api/v1/rules/{ruleKey}
      */
     @PutMapping("/{ruleKey}")
+    @SaCheckPermission("api:rules:update")
     public ResponseEntity<Rule> updateRule(
             @PathVariable String ruleKey,
             @Valid @RequestBody UpdateRuleRequest request,
@@ -73,6 +78,7 @@ public class RuleController {
      * DELETE /api/v1/rules/{ruleKey}
      */
     @DeleteMapping("/{ruleKey}")
+    @SaCheckPermission("api:rules:delete")
     public ResponseEntity<Void> deleteRule(
             @PathVariable String ruleKey,
             @RequestHeader(value = "X-Operator", defaultValue = "system") String operator) {
@@ -86,6 +92,7 @@ public class RuleController {
      * POST /api/v1/rules/{ruleKey}/enable
      */
     @PostMapping("/{ruleKey}/enable")
+    @SaCheckPermission("api:rules:enable")
     public ResponseEntity<Rule> enableRule(
             @PathVariable String ruleKey,
             @RequestHeader(value = "X-Operator", defaultValue = "system") String operator) {
@@ -99,6 +106,7 @@ public class RuleController {
      * POST /api/v1/rules/{ruleKey}/disable
      */
     @PostMapping("/{ruleKey}/disable")
+    @SaCheckPermission("api:rules:disable")
     public ResponseEntity<Rule> disableRule(
             @PathVariable String ruleKey,
             @RequestHeader(value = "X-Operator", defaultValue = "system") String operator) {
@@ -112,6 +120,7 @@ public class RuleController {
      * GET /api/v1/rules/{ruleKey}
      */
     @GetMapping("/{ruleKey}")
+    @SaCheckPermission("api:rules:view")
     public ResponseEntity<Rule> getRule(@PathVariable String ruleKey) {
         Rule rule = ruleLifecycleService.getRule(ruleKey);
         return ResponseEntity.ok(rule);
@@ -122,6 +131,7 @@ public class RuleController {
      * GET /api/v1/rules?page=0&size=20&showDeleted=true&keyword=xxx&enabled=true
      */
     @GetMapping
+    @SaCheckPermission("api:rules:view")
     public ResponseEntity<Page<Rule>> listRules(
             Pageable pageable,
             @RequestParam(value = "showDeleted", defaultValue = "false") boolean showDeleted,
@@ -136,6 +146,7 @@ public class RuleController {
      * POST /api/v1/rules/query
      */
     @PostMapping("/query")
+    @SaCheckPermission("api:rules:view")
     public ResponseEntity<Page<Rule>> queryRules(
             @RequestBody RuleQuery query,
             Pageable pageable) {
@@ -149,6 +160,7 @@ public class RuleController {
      * GET /api/v1/rules/{ruleKey}/references
      */
     @GetMapping("/{ruleKey}/references")
+    @SaCheckPermission("api:rules:view")
     public ResponseEntity<List<RuleReference>> getRuleReferences(@PathVariable String ruleKey) {
         log.info("查询规则引用: ruleKey={}", ruleKey);
 
@@ -193,6 +205,7 @@ public class RuleController {
      * POST /api/v1/rules/validate
      */
     @PostMapping("/validate")
+    @SaCheckPermission("api:rules:validate")
     public ResponseEntity<ValidateScriptResponse> validateScript(
             @Valid @RequestBody ValidateScriptRequest request) {
         log.info("验证Groovy脚本");
