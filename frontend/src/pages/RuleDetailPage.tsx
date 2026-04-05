@@ -19,6 +19,7 @@ import { parseSingleRuleForDisplay } from '../utils/dslParser';
 import type { ConditionTreeDisplayNode } from '../utils/dslParser';
 import { OPERATOR_LABELS, ACTION_LABELS } from '../types/ruleConfig';
 import RuleTestModal from '../components/rules/RuleTestModal';
+import Access from '../components/AccessControl';
 
 /** 判断展示节点是否为空条件 */
 function isEmptyDisplayNode(node: ConditionTreeDisplayNode): boolean {
@@ -173,28 +174,34 @@ export default function RuleDetailPage() {
             </Typography.Title>
           </Space>
           <Space>
-            <Button
-              icon={<ThunderboltOutlined />}
-              onClick={() => setTestModalOpen(true)}
-            >
-              测试
-            </Button>
-            <Button
-              icon={<EditOutlined />}
-              onClick={() => navigate(`/rules/${rule.ruleKey}/edit`)}
-            >
-              编辑
-            </Button>
-            <Popconfirm
-              title="确认删除此规则？删除后不可恢复。"
-              onConfirm={handleDelete}
-              okText="确认删除"
-              cancelText="取消"
-            >
-              <Button danger icon={<DeleteOutlined />}>
-                删除
+            <Access permission="api:rules:validate">
+              <Button
+                icon={<ThunderboltOutlined />}
+                onClick={() => setTestModalOpen(true)}
+              >
+                测试
               </Button>
-            </Popconfirm>
+            </Access>
+            <Access permission="api:rules:update">
+              <Button
+                icon={<EditOutlined />}
+                onClick={() => navigate(`/rules/${rule.ruleKey}/edit`)}
+              >
+                编辑
+              </Button>
+            </Access>
+            <Access permission="api:rules:delete">
+              <Popconfirm
+                title="确认删除此规则？删除后不可恢复。"
+                onConfirm={handleDelete}
+                okText="确认删除"
+                cancelText="取消"
+              >
+                <Button danger icon={<DeleteOutlined />}>
+                  删除
+                </Button>
+              </Popconfirm>
+            </Access>
           </Space>
         </div>
 
@@ -209,12 +216,16 @@ export default function RuleDetailPage() {
           </Descriptions.Item>
           <Descriptions.Item label="版本">{rule.version}</Descriptions.Item>
           <Descriptions.Item label="启用状态">
-            <Switch
-              checked={rule.enabled}
-              onChange={handleToggleEnabled}
-              checkedChildren={<CheckCircleOutlined />}
-              unCheckedChildren={<StopOutlined />}
-            />
+            <Access permission="api:rules:update" fallback={
+              <Tag color={rule.enabled ? 'green' : 'default'}>{rule.enabled ? '已启用' : '已禁用'}</Tag>
+            }>
+              <Switch
+                checked={rule.enabled}
+                onChange={handleToggleEnabled}
+                checkedChildren={<CheckCircleOutlined />}
+                unCheckedChildren={<StopOutlined />}
+              />
+            </Access>
           </Descriptions.Item>
           <Descriptions.Item label="创建人">{rule.createdBy}</Descriptions.Item>
           <Descriptions.Item label="创建时间">

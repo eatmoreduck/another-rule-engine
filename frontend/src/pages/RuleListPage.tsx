@@ -4,6 +4,7 @@ import { PlusOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import RuleTable from '../components/rules/RuleTable';
 import CreateRuleModal from '../components/rules/CreateRuleModal';
+import Access from '../components/AccessControl';
 import { useRuleStore } from '../stores/ruleStore';
 
 const { Text } = Typography;
@@ -62,9 +63,11 @@ export default function RuleListPage() {
               <Switch size="small" checked={showDeleted} onChange={handleShowDeletedChange} />
             </Space>
           </Space>
-          <Button type="primary" icon={<PlusOutlined />} onClick={() => navigate('/rules/new')}>
-            新建规则
-          </Button>
+          <Access permission="api:rules:create">
+            <Button type="primary" icon={<PlusOutlined />} onClick={() => navigate('/rules/new')}>
+              新建规则
+            </Button>
+          </Access>
         </div>
         <RuleTable
           rules={rules}

@@ -45,6 +45,7 @@ import type {
   GrayscaleQueryParams,
 } from '../types/grayscale';
 import { GrayscaleStatusEnum as GSEnum } from '../types/grayscale';
+import Access from '../components/AccessControl';
 
 /** 状态对应的颜色和标签 */
 const STATUS_MAP: Record<GrayscaleStatusEnum, { color: string; label: string }> = {
@@ -241,50 +242,52 @@ export default function GrayscalePage() {
       fixed: 'right',
       render: (_, record) => (
         <Space size="small">
-          {record.status === GSEnum.DRAFT && (
-            <Tooltip title="启动灰度">
-              <Button
-                type="link"
-                size="small"
-                icon={<PlayCircleOutlined />}
-                onClick={() => handleStart(record.id)}
-              />
-            </Tooltip>
-          )}
-          {record.status === GSEnum.RUNNING && (
-            <Tooltip title="暂停灰度">
-              <Button
-                type="link"
-                size="small"
-                icon={<PauseCircleOutlined />}
-                onClick={() => handlePause(record.id)}
-              />
-            </Tooltip>
-          )}
-          {record.status === GSEnum.RUNNING && (
-            <Popconfirm
-              title="确认完成灰度？灰度版本将全量发布。"
-              onConfirm={() => handleComplete(record.id)}
-              okText="确认"
-              cancelText="取消"
-            >
-              <Tooltip title="完成灰度（全量发布）">
-                <Button type="link" size="small" icon={<CheckCircleOutlined />} />
+          <Access permission="api:grayscale:manage">
+            {record.status === GSEnum.DRAFT && (
+              <Tooltip title="启动灰度">
+                <Button
+                  type="link"
+                  size="small"
+                  icon={<PlayCircleOutlined />}
+                  onClick={() => handleStart(record.id)}
+                />
               </Tooltip>
-            </Popconfirm>
-          )}
-          {(record.status === GSEnum.RUNNING || record.status === GSEnum.PAUSED) && (
-            <Popconfirm
-              title="确认回滚？将恢复到当前稳定版本。"
-              onConfirm={() => handleRollback(record.id)}
-              okText="确认"
-              cancelText="取消"
-            >
-              <Tooltip title="回滚灰度">
-                <Button type="link" size="small" danger icon={<RollbackOutlined />} />
+            )}
+            {record.status === GSEnum.RUNNING && (
+              <Tooltip title="暂停灰度">
+                <Button
+                  type="link"
+                  size="small"
+                  icon={<PauseCircleOutlined />}
+                  onClick={() => handlePause(record.id)}
+                />
               </Tooltip>
-            </Popconfirm>
-          )}
+            )}
+            {record.status === GSEnum.RUNNING && (
+              <Popconfirm
+                title="确认完成灰度？灰度版本将全量发布。"
+                onConfirm={() => handleComplete(record.id)}
+                okText="确认"
+                cancelText="取消"
+              >
+                <Tooltip title="完成灰度（全量发布）">
+                  <Button type="link" size="small" icon={<CheckCircleOutlined />} />
+                </Tooltip>
+              </Popconfirm>
+            )}
+            {(record.status === GSEnum.RUNNING || record.status === GSEnum.PAUSED) && (
+              <Popconfirm
+                title="确认回滚？将恢复到当前稳定版本。"
+                onConfirm={() => handleRollback(record.id)}
+                okText="确认"
+                cancelText="取消"
+              >
+                <Tooltip title="回滚灰度">
+                  <Button type="link" size="small" danger icon={<RollbackOutlined />} />
+                </Tooltip>
+              </Popconfirm>
+            )}
+          </Access>
           {(record.status === GSEnum.RUNNING || record.status === GSEnum.PAUSED || record.status === GSEnum.COMPLETED) && (
             <Tooltip title="查看对比报告">
               <Button
@@ -319,13 +322,15 @@ export default function GrayscalePage() {
               }))}
             />
           </Space>
-          <Button
-            type="primary"
-            icon={<PlusOutlined />}
-            onClick={() => setCreateModalOpen(true)}
-          >
-            新建灰度
-          </Button>
+          <Access permission="api:grayscale:manage">
+            <Button
+              type="primary"
+              icon={<PlusOutlined />}
+              onClick={() => setCreateModalOpen(true)}
+            >
+              新建灰度
+            </Button>
+          </Access>
         </div>
 
         <Table

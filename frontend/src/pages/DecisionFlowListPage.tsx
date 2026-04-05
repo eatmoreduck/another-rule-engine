@@ -6,6 +6,7 @@ import { useDecisionFlowStore } from '../stores/decisionFlowStore';
 import { DecisionFlowStatus } from '../types/decisionFlow';
 import type { DecisionFlow } from '../types/decisionFlow';
 import { deleteDecisionFlow, enableDecisionFlow, disableDecisionFlow } from '../api/decisionFlows';
+import Access from '../components/AccessControl';
 
 export default function DecisionFlowListPage() {
   const navigate = useNavigate();
@@ -75,13 +76,17 @@ export default function DecisionFlowListPage() {
     {
       title: '启用', dataIndex: 'enabled', key: 'enabled',
       render: (enabled: boolean, record: DecisionFlow) => (
-        <Switch
-          size="small"
-          checked={enabled}
-          onChange={() => handleToggleEnabled(record)}
-          checkedChildren={<CheckCircleOutlined />}
-          unCheckedChildren={<StopOutlined />}
-        />
+        <Access permission="api:decision-flows:update" fallback={
+          <Tag color={enabled ? 'green' : 'default'}>{enabled ? '已启用' : '已禁用'}</Tag>
+        }>
+          <Switch
+            size="small"
+            checked={enabled}
+            onChange={() => handleToggleEnabled(record)}
+            checkedChildren={<CheckCircleOutlined />}
+            unCheckedChildren={<StopOutlined />}
+          />
+        </Access>
       ),
     },
     { title: '创建人', dataIndex: 'createdBy', key: 'createdBy' },
@@ -94,10 +99,14 @@ export default function DecisionFlowListPage() {
       render: (_: unknown, record: DecisionFlow) => (
         <Space>
           <Button size="small" icon={<EyeOutlined />} onClick={() => navigate(`/decision-flows/${record.flowKey}`)}>详情</Button>
-          <Button size="small" icon={<EditOutlined />} onClick={() => navigate(`/decision-flows/${record.flowKey}/edit`)}>编辑</Button>
-          <Popconfirm title="确认删除？" onConfirm={() => handleDelete(record.flowKey)}>
-            <Button size="small" danger icon={<DeleteOutlined />}>删除</Button>
-          </Popconfirm>
+          <Access permission="api:decision-flows:update">
+            <Button size="small" icon={<EditOutlined />} onClick={() => navigate(`/decision-flows/${record.flowKey}/edit`)}>编辑</Button>
+          </Access>
+          <Access permission="api:decision-flows:delete">
+            <Popconfirm title="确认删除？" onConfirm={() => handleDelete(record.flowKey)}>
+              <Button size="small" danger icon={<DeleteOutlined />}>删除</Button>
+            </Popconfirm>
+          </Access>
         </Space>
       ),
     },
@@ -118,9 +127,11 @@ export default function DecisionFlowListPage() {
               ]}
             />
           </Space>
-          <Button type="primary" icon={<PlusOutlined />} onClick={() => navigate('/decision-flows/new')}>
-            新建决策流
-          </Button>
+          <Access permission="api:decision-flows:create">
+            <Button type="primary" icon={<PlusOutlined />} onClick={() => navigate('/decision-flows/new')}>
+              新建决策流
+            </Button>
+          </Access>
         </div>
         <Table
           rowKey="id"

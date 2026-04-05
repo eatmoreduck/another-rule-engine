@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import type { ColumnsType } from 'antd/es/table';
 import type { Rule } from '../../types/rule';
 import { useRuleStore } from '../../stores/ruleStore';
+import Access from '../AccessControl';
 import dayjs from 'dayjs';
 
 interface RuleTableProps {
@@ -55,11 +56,13 @@ export default function RuleTable({
       width: 80,
       align: 'center',
       render: (enabled: boolean, record: Rule) => (
-        <Switch
-          checked={enabled}
-          onChange={(checked) => toggleEnabled(record.ruleKey, checked)}
-          size="small"
-        />
+        <Access permission="api:rules:update">
+          <Switch
+            checked={enabled}
+            onChange={(checked) => toggleEnabled(record.ruleKey, checked)}
+            size="small"
+          />
+        </Access>
       ),
     },
     {
@@ -91,27 +94,31 @@ export default function RuleTable({
           >
             查看
           </Button>
-          <Tooltip title="表单编辑">
-            <Button
-              type="link"
-              size="small"
-              icon={<EditOutlined />}
-              onClick={() => navigate(`/rules/${record.ruleKey}/edit`)}
+          <Access permission="api:rules:update">
+            <Tooltip title="表单编辑">
+              <Button
+                type="link"
+                size="small"
+                icon={<EditOutlined />}
+                onClick={() => navigate(`/rules/${record.ruleKey}/edit`)}
+              >
+                编辑
+              </Button>
+            </Tooltip>
+          </Access>
+          <Access permission="api:rules:delete">
+            <Popconfirm
+              title="确认删除"
+              description={`确定要删除规则 "${record.ruleName}" 吗？`}
+              onConfirm={() => deleteRule(record.ruleKey)}
+              okText="确定"
+              cancelText="取消"
             >
-              编辑
-            </Button>
-          </Tooltip>
-          <Popconfirm
-            title="确认删除"
-            description={`确定要删除规则 "${record.ruleName}" 吗？`}
-            onConfirm={() => deleteRule(record.ruleKey)}
-            okText="确定"
-            cancelText="取消"
-          >
-            <Button type="link" size="small" danger icon={<DeleteOutlined />}>
-              删除
-            </Button>
-          </Popconfirm>
+              <Button type="link" size="small" danger icon={<DeleteOutlined />}>
+                删除
+              </Button>
+            </Popconfirm>
+          </Access>
         </Space>
       ),
     },

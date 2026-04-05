@@ -6,6 +6,7 @@ import type { NameListEntry } from '../api/nameList';
 import { getDecisionFlows } from '../api/decisionFlows';
 import { KEY_TYPE_LABELS } from '../types/flowConfig';
 import { formatDateTime } from '../utils/format';
+import Access from '../components/AccessControl';
 
 const LIST_TYPE_MAP: Record<string, { label: string; color: string }> = {
   BLACK: { label: '黑名单', color: 'red' },
@@ -144,9 +145,11 @@ export default function NameListPage() {
       key: 'action',
       width: 80,
       render: (_: unknown, record: NameListEntry) => (
-        <Popconfirm title="确认删除？" onConfirm={() => handleDelete(record.id)} okText="确认" cancelText="取消">
-          <Button type="link" danger icon={<DeleteOutlined />} size="small">删除</Button>
-        </Popconfirm>
+        <Access permission="api:name-list:delete">
+          <Popconfirm title="确认删除？" onConfirm={() => handleDelete(record.id)} okText="确认" cancelText="取消">
+            <Button type="link" danger icon={<DeleteOutlined />} size="small">删除</Button>
+          </Popconfirm>
+        </Access>
       ),
     },
   ];
@@ -158,7 +161,9 @@ export default function NameListPage() {
         <div className="page-header">
           <h2 className="page-header-title">名单管理</h2>
           <div className="page-header-actions">
-            <Button type="primary" icon={<PlusOutlined />} onClick={handleAdd}>新增</Button>
+            <Access permission="api:name-list:manage">
+              <Button type="primary" icon={<PlusOutlined />} onClick={handleAdd}>新增</Button>
+            </Access>
           </div>
         </div>
 

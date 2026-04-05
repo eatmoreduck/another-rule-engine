@@ -17,6 +17,7 @@ import BlacklistNodeComponent from '../components/flow/nodes/BlacklistNode';
 import WhitelistNodeComponent from '../components/flow/nodes/WhitelistNode';
 import MergeNodeComponent from '../components/flow/nodes/MergeNode';
 import DecisionFlowTestModal from '../components/flow/DecisionFlowTestModal';
+import Access from '../components/AccessControl';
 
 const { Text } = Typography;
 
@@ -124,11 +125,17 @@ function DetailInner() {
             <Typography.Title level={4} style={{ margin: 0 }}>{flow.flowName}</Typography.Title>
           </Space>
           <Space>
-            <Button icon={<ThunderboltOutlined />} onClick={() => setTestModalOpen(true)}>测试</Button>
-            <Button icon={<EditOutlined />} onClick={() => navigate(`/decision-flows/${flow.flowKey}/edit`)}>编辑</Button>
-            <Popconfirm title="确认删除此决策流？" onConfirm={handleDelete} okText="确认删除" cancelText="取消">
-              <Button danger icon={<DeleteOutlined />}>删除</Button>
-            </Popconfirm>
+            <Access permission="api:decision-flows:view">
+              <Button icon={<ThunderboltOutlined />} onClick={() => setTestModalOpen(true)}>测试</Button>
+            </Access>
+            <Access permission="api:decision-flows:update">
+              <Button icon={<EditOutlined />} onClick={() => navigate(`/decision-flows/${flow.flowKey}/edit`)}>编辑</Button>
+            </Access>
+            <Access permission="api:decision-flows:delete">
+              <Popconfirm title="确认删除此决策流？" onConfirm={handleDelete} okText="确认删除" cancelText="取消">
+                <Button danger icon={<DeleteOutlined />}>删除</Button>
+              </Popconfirm>
+            </Access>
           </Space>
         </div>
 
@@ -146,8 +153,12 @@ function DetailInner() {
           </Descriptions.Item>
           <Descriptions.Item label="版本">{flow.version}</Descriptions.Item>
           <Descriptions.Item label="启用">
-            <Switch checked={flow.enabled} onChange={handleToggleEnabled} size="small"
-              checkedChildren={<CheckCircleOutlined />} unCheckedChildren={<StopOutlined />} />
+            <Access permission="api:decision-flows:update" fallback={
+              <Tag color={flow.enabled ? 'green' : 'default'}>{flow.enabled ? '已启用' : '已禁用'}</Tag>
+            }>
+              <Switch checked={flow.enabled} onChange={handleToggleEnabled} size="small"
+                checkedChildren={<CheckCircleOutlined />} unCheckedChildren={<StopOutlined />} />
+            </Access>
           </Descriptions.Item>
         </Descriptions>
 

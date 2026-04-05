@@ -1,6 +1,7 @@
 import { createBrowserRouter, Navigate } from 'react-router-dom';
 import MainLayout from './layouts/MainLayout';
 import AuthGuard from './components/AuthGuard';
+import PermissionGuard from './components/PermissionGuard';
 import LoginPage from './pages/LoginPage';
 import RuleListPage from './pages/RuleListPage';
 import RuleDetailPage from './pages/RuleDetailPage';
@@ -30,22 +31,22 @@ const router = createBrowserRouter([
     ),
     children: [
       { index: true, element: <Navigate to="/rules" replace /> },
-      { path: '/rules', element: <RuleListPage /> },
-      { path: '/rules/new', element: <RuleEditPage /> },
-      { path: '/rules/:ruleKey', element: <RuleDetailPage /> },
-      { path: '/rules/:ruleKey/edit', element: <RuleEditPage /> },
-      { path: '/decision-flows', element: <DecisionFlowListPage /> },
-      { path: '/decision-flows/new', element: <DecisionFlowEditorPage /> },
-      { path: '/decision-flows/:flowKey', element: <DecisionFlowDetailPage /> },
-      { path: '/decision-flows/:flowKey/edit', element: <DecisionFlowEditorPage /> },
+      { path: '/rules', element: <PermissionGuard permission="menu:rules"><RuleListPage /></PermissionGuard> },
+      { path: '/rules/new', element: <PermissionGuard permission="api:rules:create"><RuleEditPage /></PermissionGuard> },
+      { path: '/rules/:ruleKey', element: <PermissionGuard permission="menu:rules"><RuleDetailPage /></PermissionGuard> },
+      { path: '/rules/:ruleKey/edit', element: <PermissionGuard permission="api:rules:update"><RuleEditPage /></PermissionGuard> },
+      { path: '/decision-flows', element: <PermissionGuard permission="menu:decision-flows"><DecisionFlowListPage /></PermissionGuard> },
+      { path: '/decision-flows/new', element: <PermissionGuard permission="api:decision-flows:create"><DecisionFlowEditorPage /></PermissionGuard> },
+      { path: '/decision-flows/:flowKey', element: <PermissionGuard permission="menu:decision-flows"><DecisionFlowDetailPage /></PermissionGuard> },
+      { path: '/decision-flows/:flowKey/edit', element: <PermissionGuard permission="api:decision-flows:update"><DecisionFlowEditorPage /></PermissionGuard> },
       { path: '/monitoring', element: <MonitoringPage /> },
-      { path: '/grayscale', element: <GrayscalePage /> },
+      { path: '/grayscale', element: <PermissionGuard permission="menu:grayscale"><GrayscalePage /></PermissionGuard> },
       { path: '/environments', element: <EnvironmentPage /> },
       { path: '/import-export', element: <ImportExportPage /> },
       { path: '/analytics', element: <AnalyticsPage /> },
-      { path: '/name-list', element: <NameListPage /> },
-      { path: '/system/users', element: <UserManagementPage /> },
-      { path: '/system/roles', element: <RoleManagementPage /> },
+      { path: '/name-list', element: <PermissionGuard permission="menu:name-list"><NameListPage /></PermissionGuard> },
+      { path: '/system/users', element: <PermissionGuard permission="menu:settings"><UserManagementPage /></PermissionGuard> },
+      { path: '/system/roles', element: <PermissionGuard permission="menu:settings"><RoleManagementPage /></PermissionGuard> },
       { path: '*', element: <Navigate to="/rules" replace /> },
     ],
   },
