@@ -1,5 +1,6 @@
 package com.example.ruleengine.service.grayscale;
 
+import com.example.ruleengine.cache.RuleCacheService;
 import com.example.ruleengine.constants.GrayscaleStatus;
 import com.example.ruleengine.domain.DecisionFlow;
 import com.example.ruleengine.domain.DecisionFlowVersion;
@@ -45,6 +46,7 @@ public class GrayscaleService {
     private final DecisionFlowRepository decisionFlowRepository;
     private final DecisionFlowVersionRepository decisionFlowVersionRepository;
     private final CanaryStrategyMatcher canaryStrategyMatcher;
+    private final RuleCacheService ruleCacheService;
 
     /**
      * 创建灰度配置（支持规则和决策流）
@@ -168,6 +170,12 @@ public class GrayscaleService {
         config.setStartedAt(LocalDateTime.now());
 
         config = grayscaleConfigRepository.save(config);
+
+        // 清除灰度配置缓存
+        String targetType = config.getTargetType() != null ? config.getTargetType() : "RULE";
+        String targetKey = config.getTargetKey() != null ? config.getTargetKey() : config.getRuleKey();
+        ruleCacheService.evictGrayscaleConfig(targetType, targetKey);
+
         log.info("灰度已启动: configId={}, ruleKey={}", configId, config.getRuleKey());
         return GrayscaleConfigResponse.fromEntity(config);
     }
@@ -231,6 +239,16 @@ public class GrayscaleService {
         config.setGrayscalePercentage(100);
 
         GrayscaleConfig saved = grayscaleConfigRepository.save(config);
+
+        // 清除灰度配置缓存（全量发布后不再有灰度配置）
+        ruleCacheService.evictGrayscaleConfig(targetType, targetKey);
+        // 清除规则/决策流主数据缓存（版本已切换）
+        if ("DECISION_FLOW".equals(targetType)) {
+            ruleCacheService.evictGrayscaleConfig("DECISION_FLOW", targetKey);
+        } else {
+            ruleCacheService.evictRule(targetKey);
+        }
+
         log.info("灰度已完成，全量切换到版本 {}: configId={}, targetType={}",
                 saved.getGrayscaleVersion(), configId, targetType);
         return GrayscaleConfigResponse.fromEntity(saved);
@@ -296,6 +314,12 @@ public class GrayscaleService {
         config.setGrayscalePercentage(0);
 
         config = grayscaleConfigRepository.save(config);
+
+        // 清除灰度配置缓存
+        String targetType = config.getTargetType() != null ? config.getTargetType() : "RULE";
+        String targetKey = config.getTargetKey() != null ? config.getTargetKey() : config.getRuleKey();
+        ruleCacheService.evictGrayscaleConfig(targetType, targetKey);
+
         log.info("灰度已回滚: configId={}", configId);
         return GrayscaleConfigResponse.fromEntity(config);
     }

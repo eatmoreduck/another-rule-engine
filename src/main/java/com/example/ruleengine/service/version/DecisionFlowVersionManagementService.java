@@ -1,5 +1,7 @@
 package com.example.ruleengine.service.version;
 
+import com.example.ruleengine.cache.DecisionFlowCacheService;
+import com.example.ruleengine.cache.RuleCacheService;
 import com.example.ruleengine.constants.VersionStatus;
 import com.example.ruleengine.domain.DecisionFlow;
 import com.example.ruleengine.domain.DecisionFlowVersion;
@@ -23,6 +25,8 @@ public class DecisionFlowVersionManagementService {
 
     private final DecisionFlowVersionRepository versionRepository;
     private final DecisionFlowRepository flowRepository;
+    private final DecisionFlowCacheService decisionFlowCacheService;
+    private final RuleCacheService ruleCacheService;
 
     /**
      * 查询决策流的所有版本
@@ -156,6 +160,12 @@ public class DecisionFlowVersionManagementService {
         flowRepository.save(flow);
 
         log.info("发布决策流版本: flowKey={}, version={}, operator={}", flowKey, version, operator);
+
+        // 清除缓存：决策流主数据、版本缓存、灰度配置缓存
+        decisionFlowCacheService.evictFlow(flowKey);
+        decisionFlowCacheService.evictFlowVersion(flowKey, version);
+        ruleCacheService.evictGrayscaleConfig("DECISION_FLOW", flowKey);
+
         return targetVersion;
     }
 }

@@ -1,5 +1,6 @@
 package com.example.ruleengine.service.version;
 
+import com.example.ruleengine.cache.RuleCacheService;
 import com.example.ruleengine.annotation.Auditable;
 import com.example.ruleengine.constants.AuditEvent;
 import com.example.ruleengine.constants.VersionStatus;
@@ -28,6 +29,7 @@ public class VersionManagementService {
 
     private final RuleRepository ruleRepository;
     private final RuleVersionRepository ruleVersionRepository;
+    private final RuleCacheService ruleCacheService;
 
     /**
      * 创建规则新版本
@@ -248,6 +250,11 @@ public class VersionManagementService {
         Rule updatedRule = ruleRepository.save(rule);
 
         log.info("发布规则版本: ruleKey={}, version={}, operator={}", ruleKey, version, operator);
+
+        // 清除缓存：规则主数据、版本缓存、灰度配置缓存
+        ruleCacheService.evictRule(ruleKey);
+        ruleCacheService.evictRuleVersion(ruleKey, version);
+        ruleCacheService.evictGrayscaleConfig("RULE", ruleKey);
 
         return VersionResponse.builder()
                 .ruleId(updatedRule.getId())

@@ -49,6 +49,15 @@ public class CacheConfiguration {
         // 决策流缓存
         caches.add(buildCache("decision-flows", 5000, 10, TimeUnit.MINUTES));
 
+        // 规则版本缓存（按 ruleKey+version 维度，版本发布不频繁，TTL 5 分钟）
+        caches.add(buildCache("rule-versions", 5000, 5, TimeUnit.MINUTES));
+
+        // 决策流版本缓存（按 flowKey+version 维度，TTL 5 分钟）
+        caches.add(buildCache("flow-versions", 5000, 5, TimeUnit.MINUTES));
+
+        // 灰度配置缓存（按 targetType+targetKey 维度，策略可能随时变更，TTL 10 秒）
+        caches.add(buildCache("grayscale-configs", 5000, 10, TimeUnit.SECONDS));
+
         cacheManager.setCaches(caches);
         return cacheManager;
     }
