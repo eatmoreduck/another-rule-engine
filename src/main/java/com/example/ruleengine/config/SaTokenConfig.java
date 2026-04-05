@@ -8,16 +8,20 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 /**
  * Sa-Token 配置
- * Phase 1: 注册拦截器但仅用于认证相关路由，现有 API 不做登录校验
+ * Phase 2: 认证路由 + 系统管理路由需要登录校验，其他 API 暂不拦截
  */
 @Configuration
 public class SaTokenConfig implements WebMvcConfigurer {
 
     @Override
     public void addInterceptors(InterceptorRegistry registry) {
-        // Phase 1: 仅对 /api/v1/auth/me 和 /api/v1/auth/logout 做登录校验
-        // 其他所有路由不拦截，确保现有功能不受影响
+        // Phase 2: 认证相关 + 系统管理路由需要登录校验
+        // 其他业务 API 暂不拦截（Phase 5 全面收紧）
         registry.addInterceptor(new SaInterceptor(handle -> StpUtil.checkLogin()))
-                .addPathPatterns("/api/v1/auth/me", "/api/v1/auth/logout");
+                .addPathPatterns(
+                        "/api/v1/auth/me",
+                        "/api/v1/auth/logout",
+                        "/api/v1/system/**"
+                );
     }
 }
