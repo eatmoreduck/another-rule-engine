@@ -14,6 +14,8 @@ import AnalyticsPage from './pages/AnalyticsPage';
 import EnvironmentPage from './pages/EnvironmentPage';
 import ImportExportPage from './pages/ImportExportPage';
 import NameListPage from './pages/NameListPage';
+import UserManagementPage from './pages/system/UserManagementPage';
+import RoleManagementPage from './pages/system/RoleManagementPage';
 
 const router = createBrowserRouter([
   {
@@ -42,6 +44,8 @@ const router = createBrowserRouter([
       { path: '/import-export', element: <ImportExportPage /> },
       { path: '/analytics', element: <AnalyticsPage /> },
       { path: '/name-list', element: <NameListPage /> },
+      { path: '/system/users', element: <UserManagementPage /> },
+      { path: '/system/roles', element: <RoleManagementPage /> },
       { path: '*', element: <Navigate to="/rules" replace /> },
     ],
   },

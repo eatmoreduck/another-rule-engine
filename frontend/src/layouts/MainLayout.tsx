@@ -48,12 +48,43 @@ const menuItems = [
     label: '分析中心',
   },
   {
-    key: '/settings',
+    key: '/system',
     icon: <SettingOutlined />,
-    label: '系统设置',
-    disabled: true,
+    label: '系统管理',
+    children: [
+      {
+        key: '/system/users',
+        icon: <UserOutlined />,
+        label: '用户管理',
+      },
+      {
+        key: '/system/roles',
+        icon: <SafetyOutlined />,
+        label: '角色管理',
+      },
+    ],
   },
 ];
+
+/**
+ * 根据当前路径匹配菜单 key
+ * 支持子菜单路径匹配（如 /system/users 匹配到 /system/users）
+ */
+function getSelectedMenuKey(pathname: string): string {
+  // 优先匹配具体路径（子菜单项）
+  for (const item of menuItems) {
+    if (item.children) {
+      for (const child of item.children) {
+        if (pathname.startsWith(child.key)) {
+          return child.key;
+        }
+      }
+    } else if (pathname.startsWith(item.key)) {
+      return item.key;
+    }
+  }
+  return '/rules';
+}
 
 export default function MainLayout() {
   const navigate = useNavigate();
@@ -110,7 +141,8 @@ export default function MainLayout() {
         </Text>
         <Menu
           mode="horizontal"
-          selectedKeys={[menuItems.find((item) => location.pathname.startsWith(item.key))?.key ?? '/rules']}
+          selectedKeys={[getSelectedMenuKey(location.pathname)]}
+          openKeys={location.pathname.startsWith('/system') ? ['/system'] : undefined}
           items={menuItems}
           onClick={handleMenuClick}
           style={{ flex: 1, border: 'none' }}
