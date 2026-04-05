@@ -1,7 +1,9 @@
 package com.example.ruleengine.aspect;
 
 import com.example.ruleengine.annotation.Auditable;
+import com.example.ruleengine.repository.SysUserRepository;
 import com.example.ruleengine.service.audit.AuditLogService;
+import cn.dev33.satoken.stp.StpUtil;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -48,7 +50,17 @@ public class AuditLogAspect {
             requestId = request.getHeader("X-Request-ID");
             operator = request.getHeader("X-Operator");
             if (operator == null || operator.isEmpty()) {
-                operator = "system";
+                // 优先从 Sa-Token 获取当前登录用户名
+                try {
+                    Object loginId = cn.dev33.satoken.stp.StpUtil.getLoginIdDefaultNull();
+                    if (loginId != null) {
+                        operator = "user:" + loginId;
+                    } else {
+                        operator = "system";
+                    }
+                } catch (Exception ex) {
+                    operator = "system";
+                }
             }
         }
 

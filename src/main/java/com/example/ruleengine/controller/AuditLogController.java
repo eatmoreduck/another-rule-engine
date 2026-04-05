@@ -1,9 +1,13 @@
 package com.example.ruleengine.controller;
 
+import cn.dev33.satoken.annotation.SaCheckLogin;
+import cn.dev33.satoken.annotation.SaCheckPermission;
 import com.example.ruleengine.domain.AuditLog;
 import com.example.ruleengine.service.audit.AuditLogService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -18,6 +22,7 @@ import java.util.List;
 @RequestMapping("/api/v1/audit")
 @RequiredArgsConstructor
 @Slf4j
+@SaCheckLogin
 public class AuditLogController {
 
     private final AuditLogService auditLogService;
@@ -55,5 +60,24 @@ public class AuditLogController {
 
         List<AuditLog> logs = auditLogService.getOperatorActivity(operator, start, end);
         return ResponseEntity.ok(logs);
+    }
+
+    /**
+     * 分页查询审计日志（支持多条件过滤）
+     * GET /api/v1/audit/logs?operator=xxx&entityType=RULE&operation=RULE_CREATE&startTime=xxx&endTime=xxx&page=0&size=20
+     */
+    @GetMapping("/logs")
+    @SaCheckPermission("api:system:role:view")
+    public ResponseEntity<Page<AuditLog>> queryAuditLogs(
+            @RequestParam(required = false) String operator,
+            @RequestParam(required = false) String entityType,
+            @RequestParam(required = false) String operation,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime startTime,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime endTime,
+            Pageable pageable) {
+        log.info("分页查询审计日志: operator={}, entityType={}, operation={}", operator, entityType, operation);
+        Page<AuditLog> result = auditLogService.queryAuditLogs(
+                operator, entityType, operation, startTime, endTime, pageable);
+        return ResponseEntity.ok(result);
     }
 }

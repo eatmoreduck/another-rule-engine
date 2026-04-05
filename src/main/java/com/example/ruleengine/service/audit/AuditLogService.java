@@ -7,6 +7,8 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
@@ -108,5 +110,15 @@ public class AuditLogService {
         return auditLogRepository.findByOperationTimeBetween(start, end).stream()
                 .filter(log -> log.getOperator().equals(operator))
                 .toList();
+    }
+
+    /**
+     * 分页查询审计日志（支持多条件过滤）
+     */
+    public Page<AuditLog> queryAuditLogs(String operator, String entityType,
+                                          String operation, LocalDateTime startTime,
+                                          LocalDateTime endTime, Pageable pageable) {
+        return auditLogRepository.findByConditions(
+                operator, entityType, operation, startTime, endTime, pageable);
     }
 }

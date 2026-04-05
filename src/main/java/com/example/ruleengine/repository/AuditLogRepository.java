@@ -1,6 +1,8 @@
 package com.example.ruleengine.repository;
 
 import com.example.ruleengine.domain.AuditLog;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -43,4 +45,22 @@ public interface AuditLogRepository extends JpaRepository<AuditLog, Long> {
     List<AuditLog> findByEntityTypeAndEntityIdOrderByOperationTimeDescQuery(
             @Param("entityType") String entityType,
             @Param("entityId") String entityId);
+
+    /**
+     * 综合分页查询审计日志（支持多条件过滤）
+     */
+    @Query("SELECT a FROM AuditLog a WHERE " +
+           "(:operator IS NULL OR a.operator LIKE CONCAT('%', :operator, '%')) AND " +
+           "(:entityType IS NULL OR a.entityType = :entityType) AND " +
+           "(:operation IS NULL OR a.operation = :operation) AND " +
+           "(:startTime IS NULL OR a.operationTime >= :startTime) AND " +
+           "(:endTime IS NULL OR a.operationTime <= :endTime)")
+    Page<AuditLog> findByConditions(
+            @Param("operator") String operator,
+            @Param("entityType") String entityType,
+            @Param("operation") String operation,
+            @Param("startTime") LocalDateTime startTime,
+            @Param("endTime") LocalDateTime endTime,
+            Pageable pageable
+    );
 }

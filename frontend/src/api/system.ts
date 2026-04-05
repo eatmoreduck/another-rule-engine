@@ -98,3 +98,41 @@ export async function listPermissions(): Promise<PermissionDTO[]> {
   const { data } = await apiClient.get<PermissionDTO[]>('/api/v1/system/permissions');
   return data;
 }
+
+// ==================== 审计日志 API ====================
+
+export interface AuditLogDTO {
+  id: number;
+  entityType: string;
+  entityId: string;
+  operation: string;
+  operationDetail: string | null;
+  operator: string;
+  operatorIp: string | null;
+  operationTime: string;
+  status: string;
+  errorMessage: string | null;
+}
+
+export interface PageResponse<T> {
+  content: T[];
+  totalElements: number;
+  totalPages: number;
+  number: number;
+  size: number;
+}
+
+export interface AuditLogQueryParams {
+  operator?: string;
+  entityType?: string;
+  operation?: string;
+  startTime?: string;
+  endTime?: string;
+  page?: number;
+  size?: number;
+}
+
+export async function queryAuditLogs(params: AuditLogQueryParams): Promise<PageResponse<AuditLogDTO>> {
+  const { data } = await apiClient.get<PageResponse<AuditLogDTO>>('/api/v1/audit/logs', { params });
+  return data;
+}

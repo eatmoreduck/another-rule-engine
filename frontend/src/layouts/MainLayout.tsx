@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { Layout, Menu, Typography, App, Dropdown, Avatar, Space } from 'antd';
-import { SafetyOutlined, SettingOutlined, ExperimentOutlined, BarChartOutlined, DashboardOutlined, CloudServerOutlined, ImportOutlined, ApartmentOutlined, UnorderedListOutlined, UserOutlined, LogoutOutlined } from '@ant-design/icons';
+import { SafetyOutlined, SettingOutlined, ExperimentOutlined, BarChartOutlined, DashboardOutlined, CloudServerOutlined, ImportOutlined, ApartmentOutlined, UnorderedListOutlined, UserOutlined, LogoutOutlined, FileSearchOutlined } from '@ant-design/icons';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { useAuthStore } from '../stores/authStore';
 import { usePermission } from '../hooks/usePermission';
@@ -82,6 +82,12 @@ const allMenuItems: MenuItemConfig[] = [
         key: '/system/roles',
         icon: <SafetyOutlined />,
         label: '角色管理',
+        permission: 'menu:settings',
+      },
+      {
+        key: '/system/audit',
+        icon: <FileSearchOutlined />,
+        label: '审计日志',
         permission: 'menu:settings',
       },
     ],

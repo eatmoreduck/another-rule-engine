@@ -3,8 +3,9 @@ package com.example.ruleengine.controller;
 import cn.dev33.satoken.annotation.SaCheckLogin;
 import cn.dev33.satoken.annotation.SaCheckPermission;
 import com.example.ruleengine.model.dto.*;
+import com.example.ruleengine.annotation.Auditable;
+import com.example.ruleengine.constants.AuditEvent;
 import com.example.ruleengine.domain.SysTeam;
-import com.example.ruleengine.domain.SysUserTeam;
 import com.example.ruleengine.service.RoleManagementService;
 import com.example.ruleengine.service.UserManagementService;
 import com.example.ruleengine.service.auth.TeamManagementService;
@@ -19,7 +20,7 @@ import java.util.Map;
 
 /**
  * 系统管理 API 控制器
- * 用户管理、角色管理、权限管理
+ * 用户管理、角色管理、权限管理、团队管理
  */
 @RestController
 @RequestMapping("/api/v1/system")
@@ -50,6 +51,7 @@ public class SystemController {
      */
     @PostMapping("/users")
     @SaCheckPermission("api:system:user:manage")
+    @Auditable(event = AuditEvent.USER_CREATE, entityType = "USER", entityIdExpression = "#request.username")
     public ResponseEntity<UserDTO> createUser(@Valid @RequestBody CreateUserRequest request) {
         log.info("创建用户: username={}", request.getUsername());
         return ResponseEntity.ok(userManagementService.createUser(request));
@@ -61,6 +63,7 @@ public class SystemController {
      */
     @PutMapping("/users/{id}")
     @SaCheckPermission("api:system:user:manage")
+    @Auditable(event = AuditEvent.USER_UPDATE, entityType = "USER", entityIdExpression = "#id")
     public ResponseEntity<UserDTO> updateUser(
             @PathVariable Long id,
             @RequestBody UpdateUserRequest request) {
@@ -74,6 +77,7 @@ public class SystemController {
      */
     @PutMapping("/users/{id}/status")
     @SaCheckPermission("api:system:user:manage")
+    @Auditable(event = AuditEvent.USER_DISABLE, entityType = "USER", entityIdExpression = "#id")
     public ResponseEntity<UserDTO> updateUserStatus(
             @PathVariable Long id,
             @RequestBody Map<String, String> body) {
@@ -88,6 +92,7 @@ public class SystemController {
      */
     @PutMapping("/users/{id}/reset-password")
     @SaCheckPermission("api:system:user:manage")
+    @Auditable(event = AuditEvent.USER_RESET_PASSWORD, entityType = "USER", entityIdExpression = "#id")
     public ResponseEntity<Map<String, String>> resetPassword(@PathVariable Long id) {
         log.info("重置用户密码: id={}", id);
         userManagementService.resetPassword(id);
@@ -112,6 +117,7 @@ public class SystemController {
      */
     @PutMapping("/roles/{id}/permissions")
     @SaCheckPermission("api:system:role:manage")
+    @Auditable(event = AuditEvent.ROLE_UPDATE_PERMISSIONS, entityType = "ROLE", entityIdExpression = "#id")
     public ResponseEntity<RoleDTO> updateRolePermissions(
             @PathVariable Long id,
             @RequestBody UpdateRolePermissionsRequest request) {
@@ -150,6 +156,7 @@ public class SystemController {
      */
     @PostMapping("/teams")
     @SaCheckPermission("api:system:user:manage")
+    @Auditable(event = AuditEvent.TEAM_CREATE, entityType = "TEAM", entityIdExpression = "#body['teamCode']")
     public ResponseEntity<SysTeam> createTeam(@RequestBody Map<String, String> body) {
         String teamCode = body.get("teamCode");
         String teamName = body.get("teamName");
@@ -164,6 +171,7 @@ public class SystemController {
      */
     @PutMapping("/teams/{id}")
     @SaCheckPermission("api:system:user:manage")
+    @Auditable(event = AuditEvent.TEAM_UPDATE, entityType = "TEAM", entityIdExpression = "#id")
     public ResponseEntity<SysTeam> updateTeam(
             @PathVariable Long id,
             @RequestBody Map<String, String> body) {
@@ -178,6 +186,7 @@ public class SystemController {
      */
     @DeleteMapping("/teams/{id}")
     @SaCheckPermission("api:system:user:manage")
+    @Auditable(event = AuditEvent.TEAM_DELETE, entityType = "TEAM", entityIdExpression = "#id")
     public ResponseEntity<Void> deleteTeam(@PathVariable Long id) {
         log.info("删除团队: id={}", id);
         teamManagementService.deleteTeam(id);
@@ -190,6 +199,7 @@ public class SystemController {
      */
     @PostMapping("/teams/{teamId}/members")
     @SaCheckPermission("api:system:user:manage")
+    @Auditable(event = AuditEvent.TEAM_ASSIGN_USER, entityType = "TEAM", entityIdExpression = "#teamId")
     public ResponseEntity<Void> assignUserToTeam(
             @PathVariable Long teamId,
             @RequestBody Map<String, Long> body) {
@@ -205,6 +215,7 @@ public class SystemController {
      */
     @DeleteMapping("/teams/{teamId}/members/{userId}")
     @SaCheckPermission("api:system:user:manage")
+    @Auditable(event = AuditEvent.TEAM_REMOVE_USER, entityType = "TEAM", entityIdExpression = "#teamId")
     public ResponseEntity<Void> removeUserFromTeam(
             @PathVariable Long teamId,
             @PathVariable Long userId) {

@@ -17,6 +17,7 @@ import ImportExportPage from './pages/ImportExportPage';
 import NameListPage from './pages/NameListPage';
 import UserManagementPage from './pages/system/UserManagementPage';
 import RoleManagementPage from './pages/system/RoleManagementPage';
+import AuditLogPage from './pages/system/AuditLogPage';
 
 const router = createBrowserRouter([
   {
@@ -47,6 +48,7 @@ const router = createBrowserRouter([
       { path: '/name-list', element: <PermissionGuard permission="menu:name-list"><NameListPage /></PermissionGuard> },
       { path: '/system/users', element: <PermissionGuard permission="menu:settings"><UserManagementPage /></PermissionGuard> },
       { path: '/system/roles', element: <PermissionGuard permission="menu:settings"><RoleManagementPage /></PermissionGuard> },
+      { path: '/system/audit', element: <PermissionGuard permission="menu:settings"><AuditLogPage /></PermissionGuard> },
       { path: '*', element: <Navigate to="/rules" replace /> },
     ],
   },

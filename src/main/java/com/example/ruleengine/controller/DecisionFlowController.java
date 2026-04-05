@@ -1,6 +1,8 @@
 package com.example.ruleengine.controller;
 
 import com.example.ruleengine.domain.DecisionFlow;
+import com.example.ruleengine.annotation.Auditable;
+import com.example.ruleengine.constants.AuditEvent;
 import com.example.ruleengine.model.dto.CreateDecisionFlowRequest;
 import com.example.ruleengine.model.dto.DecisionFlowQuery;
 import com.example.ruleengine.model.dto.UpdateDecisionFlowRequest;
@@ -28,6 +30,7 @@ public class DecisionFlowController {
      * 创建决策流
      */
     @PostMapping
+    @Auditable(event = AuditEvent.FLOW_CREATE, entityType = "DECISION_FLOW", entityIdExpression = "#request.flowKey")
     public ResponseEntity<DecisionFlow> createFlow(
             @Valid @RequestBody CreateDecisionFlowRequest request,
             @RequestHeader(value = "X-Operator", defaultValue = "system") String operator) {
@@ -39,6 +42,7 @@ public class DecisionFlowController {
     /**
      * 更新决策流
      */
+    @Auditable(event = AuditEvent.FLOW_UPDATE, entityType = "DECISION_FLOW", entityIdExpression = "#flowKey")
     @PutMapping("/{flowKey}")
     public ResponseEntity<DecisionFlow> updateFlow(
             @PathVariable String flowKey,
@@ -52,6 +56,7 @@ public class DecisionFlowController {
     /**
      * 删除决策流（软删除）
      */
+    @Auditable(event = AuditEvent.FLOW_DELETE, entityType = "DECISION_FLOW", entityIdExpression = "#flowKey")
     @DeleteMapping("/{flowKey}")
     public ResponseEntity<Void> deleteFlow(
             @PathVariable String flowKey,
@@ -64,6 +69,7 @@ public class DecisionFlowController {
     /**
      * 启用决策流
      */
+    @Auditable(event = AuditEvent.FLOW_ENABLE, entityType = "DECISION_FLOW", entityIdExpression = "#flowKey")
     @PostMapping("/{flowKey}/enable")
     public ResponseEntity<DecisionFlow> enableFlow(
             @PathVariable String flowKey,
@@ -76,6 +82,7 @@ public class DecisionFlowController {
     /**
      * 禁用决策流
      */
+    @Auditable(event = AuditEvent.FLOW_DISABLE, entityType = "DECISION_FLOW", entityIdExpression = "#flowKey")
     @PostMapping("/{flowKey}/disable")
     public ResponseEntity<DecisionFlow> disableFlow(
             @PathVariable String flowKey,
