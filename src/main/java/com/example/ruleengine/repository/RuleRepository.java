@@ -140,4 +140,60 @@ public interface RuleRepository extends JpaRepository<Rule, Long> {
      * 检查 ruleKey 对应的未删除规则是否存在
      */
     boolean existsByRuleKeyAndDeletedFalse(String ruleKey);
+
+    /**
+     * 综合查询 + 团队过滤（支持多条件组合）
+     * 超级管理员不传 teamIds 或传空列表，普通用户传入其所属团队ID列表
+     * team_id 为 NULL 的资源所有人可见
+     */
+    @Query("SELECT r FROM Rule r WHERE " +
+           "(:createdBy IS NULL OR r.createdBy = :createdBy) AND " +
+           "(:enabled IS NULL OR r.enabled = :enabled) AND " +
+           "(:keyword IS NULL OR r.ruleKey LIKE CONCAT('%', :keyword, '%') OR r.ruleName LIKE CONCAT('%', :keyword, '%')) AND " +
+           "(:deleted IS NULL OR r.deleted = :deleted) AND " +
+           "(:createdAtStart IS NULL OR r.createdAt >= :createdAtStart) AND " +
+           "(:createdAtEnd IS NULL OR r.createdAt <= :createdAtEnd) AND " +
+           "(:updatedAtStart IS NULL OR r.updatedAt >= :updatedAtStart) AND " +
+           "(:updatedAtEnd IS NULL OR r.updatedAt <= :updatedAtEnd) AND " +
+           "(:teamFilter = false OR r.teamId IS NULL OR r.teamId IN :teamIds)")
+    Page<Rule> findByConditionsWithTeam(
+            @Param("createdBy") String createdBy,
+            @Param("enabled") Boolean enabled,
+            @Param("keyword") String keyword,
+            @Param("deleted") Boolean deleted,
+            @Param("createdAtStart") LocalDateTime createdAtStart,
+            @Param("createdAtEnd") LocalDateTime createdAtEnd,
+            @Param("updatedAtStart") LocalDateTime updatedAtStart,
+            @Param("updatedAtEnd") LocalDateTime updatedAtEnd,
+            @Param("teamFilter") boolean teamFilter,
+            @Param("teamIds") List<Long> teamIds,
+            Pageable pageable
+    );
+
+    @Query("SELECT r FROM Rule r WHERE " +
+           "(:createdBy IS NULL OR r.createdBy = :createdBy) AND " +
+           "(:enabled IS NULL OR r.enabled = :enabled) AND " +
+           "(:keyword IS NULL OR r.ruleKey LIKE CONCAT('%', :keyword, '%') OR r.ruleName LIKE CONCAT('%', :keyword, '%')) AND " +
+           "(:deleted IS NULL OR r.deleted = :deleted) AND " +
+           "(:teamFilter = false OR r.teamId IS NULL OR r.teamId IN :teamIds)")
+    Page<Rule> findByConditionsWithoutDatesAndWithTeam(
+            @Param("createdBy") String createdBy,
+            @Param("enabled") Boolean enabled,
+            @Param("keyword") String keyword,
+            @Param("deleted") Boolean deleted,
+            @Param("teamFilter") boolean teamFilter,
+            @Param("teamIds") List<Long> teamIds,
+            Pageable pageable
+    );
+
+    /**
+     * 分页查询未删除的规则（带团队过滤）
+     */
+    @Query("SELECT r FROM Rule r WHERE r.deleted = false AND " +
+           "(:teamFilter = false OR r.teamId IS NULL OR r.teamId IN :teamIds)")
+    Page<Rule> findByDeletedFalseWithTeam(
+            @Param("teamFilter") boolean teamFilter,
+            @Param("teamIds") List<Long> teamIds,
+            Pageable pageable
+    );
 }

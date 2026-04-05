@@ -7,6 +7,7 @@ import com.example.ruleengine.model.dto.CreateRuleRequest;
 import com.example.ruleengine.model.dto.RuleQuery;
 import com.example.ruleengine.model.dto.UpdateRuleRequest;
 import com.example.ruleengine.repository.RuleRepository;
+import com.example.ruleengine.service.auth.DataPermissionService;
 import com.example.ruleengine.validator.RuleUsageChecker;
 import com.example.ruleengine.service.version.VersionManagementService;
 import com.example.ruleengine.validator.GroovyScriptValidator;
@@ -16,6 +17,8 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
 
 /**
  * 规则生命周期管理服务
@@ -29,6 +32,7 @@ public class RuleLifecycleService {
     private final GroovyScriptValidator scriptValidator;
     private final VersionManagementService versionManagementService;
     private final RuleUsageChecker ruleUsageChecker;
+    private final DataPermissionService dataPermissionService;
 
     /**
      * 创建新规则
@@ -189,21 +193,27 @@ public class RuleLifecycleService {
      * @param enabled 按启用状态过滤，可为 null（不过滤）
      */
     public Page<Rule> listRules(Pageable pageable, boolean showDeleted, String keyword, Boolean enabled) {
+        boolean isAdmin = dataPermissionService.isCurrentUserAdmin();
+        boolean teamFilter = !isAdmin;
+        List<Long> teamIds = isAdmin ? List.of() : dataPermissionService.getCurrentUserTeamIds();
+
         boolean hasFilter = keyword != null || enabled != null;
         if (hasFilter) {
             Boolean deleted = showDeleted ? null : false;
-            return ruleRepository.findByConditionsWithoutDates(
+            return ruleRepository.findByConditionsWithoutDatesAndWithTeam(
                     null,
                     enabled,
                     keyword,
                     deleted,
+                    teamFilter,
+                    teamIds,
                     pageable
             );
         }
         if (showDeleted) {
             return ruleRepository.findAll(pageable);
         }
-        return ruleRepository.findByDeletedFalse(pageable);
+        return ruleRepository.findByDeletedFalseWithTeam(teamFilter, teamIds, pageable);
     }
 
     /**
@@ -211,10 +221,14 @@ public class RuleLifecycleService {
      */
     public Page<Rule> queryRules(RuleQuery query, Pageable pageable) {
         log.info("查询规则: query={}", query);
+        boolean isAdmin = dataPermissionService.isCurrentUserAdmin();
+        boolean teamFilter = !isAdmin;
+        List<Long> teamIds = isAdmin ? List.of() : dataPermissionService.getCurrentUserTeamIds();
+
         boolean hasDateFilter = query.getCreatedAtStart() != null || query.getCreatedAtEnd() != null
                 || query.getUpdatedAtStart() != null || query.getUpdatedAtEnd() != null;
         if (hasDateFilter) {
-            return ruleRepository.findByConditions(
+            return ruleRepository.findByConditionsWithTeam(
                     query.getCreatedBy(),
                     query.getEnabled(),
                     query.getKeyword(),
@@ -223,14 +237,18 @@ public class RuleLifecycleService {
                     query.getCreatedAtEnd(),
                     query.getUpdatedAtStart(),
                     query.getUpdatedAtEnd(),
+                    teamFilter,
+                    teamIds,
                     pageable
             );
         }
-        return ruleRepository.findByConditionsWithoutDates(
+        return ruleRepository.findByConditionsWithoutDatesAndWithTeam(
                 query.getCreatedBy(),
                 query.getEnabled(),
                 query.getKeyword(),
                 false,
+                teamFilter,
+                teamIds,
                 pageable
         );
     }

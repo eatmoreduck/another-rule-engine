@@ -3,8 +3,11 @@ package com.example.ruleengine.controller;
 import cn.dev33.satoken.annotation.SaCheckLogin;
 import cn.dev33.satoken.annotation.SaCheckPermission;
 import com.example.ruleengine.model.dto.*;
+import com.example.ruleengine.domain.SysTeam;
+import com.example.ruleengine.domain.SysUserTeam;
 import com.example.ruleengine.service.RoleManagementService;
 import com.example.ruleengine.service.UserManagementService;
+import com.example.ruleengine.service.auth.TeamManagementService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -27,6 +30,7 @@ public class SystemController {
 
     private final UserManagementService userManagementService;
     private final RoleManagementService roleManagementService;
+    private final TeamManagementService teamManagementService;
 
     // ==================== 用户管理 ====================
 
@@ -126,5 +130,106 @@ public class SystemController {
     @SaCheckPermission("api:system:role:view")
     public ResponseEntity<List<PermissionDTO>> listPermissions() {
         return ResponseEntity.ok(roleManagementService.listPermissions());
+    }
+
+    // ==================== 团队管理 ====================
+
+    /**
+     * 获取团队列表
+     * GET /api/v1/system/teams
+     */
+    @GetMapping("/teams")
+    @SaCheckPermission("api:system:user:view")
+    public ResponseEntity<List<SysTeam>> listTeams() {
+        return ResponseEntity.ok(teamManagementService.listTeams());
+    }
+
+    /**
+     * 创建团队
+     * POST /api/v1/system/teams
+     */
+    @PostMapping("/teams")
+    @SaCheckPermission("api:system:user:manage")
+    public ResponseEntity<SysTeam> createTeam(@RequestBody Map<String, String> body) {
+        String teamCode = body.get("teamCode");
+        String teamName = body.get("teamName");
+        String description = body.get("description");
+        log.info("创建团队: teamCode={}, teamName={}", teamCode, teamName);
+        return ResponseEntity.ok(teamManagementService.createTeam(teamCode, teamName, description));
+    }
+
+    /**
+     * 更新团队
+     * PUT /api/v1/system/teams/{id}
+     */
+    @PutMapping("/teams/{id}")
+    @SaCheckPermission("api:system:user:manage")
+    public ResponseEntity<SysTeam> updateTeam(
+            @PathVariable Long id,
+            @RequestBody Map<String, String> body) {
+        log.info("更新团队: id={}", id);
+        return ResponseEntity.ok(teamManagementService.updateTeam(
+                id, body.get("teamName"), body.get("description")));
+    }
+
+    /**
+     * 删除团队
+     * DELETE /api/v1/system/teams/{id}
+     */
+    @DeleteMapping("/teams/{id}")
+    @SaCheckPermission("api:system:user:manage")
+    public ResponseEntity<Void> deleteTeam(@PathVariable Long id) {
+        log.info("删除团队: id={}", id);
+        teamManagementService.deleteTeam(id);
+        return ResponseEntity.ok().build();
+    }
+
+    /**
+     * 分配用户到团队
+     * POST /api/v1/system/teams/{teamId}/members
+     */
+    @PostMapping("/teams/{teamId}/members")
+    @SaCheckPermission("api:system:user:manage")
+    public ResponseEntity<Void> assignUserToTeam(
+            @PathVariable Long teamId,
+            @RequestBody Map<String, Long> body) {
+        Long userId = body.get("userId");
+        log.info("分配用户到团队: userId={}, teamId={}", userId, teamId);
+        teamManagementService.assignUserToTeam(userId, teamId);
+        return ResponseEntity.ok().build();
+    }
+
+    /**
+     * 从团队移除用户
+     * DELETE /api/v1/system/teams/{teamId}/members/{userId}
+     */
+    @DeleteMapping("/teams/{teamId}/members/{userId}")
+    @SaCheckPermission("api:system:user:manage")
+    public ResponseEntity<Void> removeUserFromTeam(
+            @PathVariable Long teamId,
+            @PathVariable Long userId) {
+        log.info("从团队移除用户: userId={}, teamId={}", userId, teamId);
+        teamManagementService.removeUserFromTeam(userId, teamId);
+        return ResponseEntity.ok().build();
+    }
+
+    /**
+     * 获取团队的用户ID列表
+     * GET /api/v1/system/teams/{teamId}/members
+     */
+    @GetMapping("/teams/{teamId}/members")
+    @SaCheckPermission("api:system:user:view")
+    public ResponseEntity<List<Long>> getTeamMembers(@PathVariable Long teamId) {
+        return ResponseEntity.ok(teamManagementService.getTeamUserIds(teamId));
+    }
+
+    /**
+     * 获取用户所属的团队列表
+     * GET /api/v1/system/users/{userId}/teams
+     */
+    @GetMapping("/users/{userId}/teams")
+    @SaCheckPermission("api:system:user:view")
+    public ResponseEntity<List<SysTeam>> getUserTeams(@PathVariable Long userId) {
+        return ResponseEntity.ok(teamManagementService.getUserTeams(userId));
     }
 }

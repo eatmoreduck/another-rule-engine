@@ -6,12 +6,15 @@ import com.example.ruleengine.model.dto.CreateDecisionFlowRequest;
 import com.example.ruleengine.model.dto.DecisionFlowQuery;
 import com.example.ruleengine.model.dto.UpdateDecisionFlowRequest;
 import com.example.ruleengine.repository.DecisionFlowRepository;
+import com.example.ruleengine.service.auth.DataPermissionService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
 
 /**
  * 决策流生命周期管理服务
@@ -22,6 +25,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class DecisionFlowLifecycleService {
 
     private final DecisionFlowRepository decisionFlowRepository;
+    private final DataPermissionService dataPermissionService;
 
     /**
      * 创建决策流
@@ -125,7 +129,10 @@ public class DecisionFlowLifecycleService {
      * 列出所有决策流（分页）
      */
     public Page<DecisionFlow> listFlows(Pageable pageable) {
-        return decisionFlowRepository.findAll(pageable);
+        boolean isAdmin = dataPermissionService.isCurrentUserAdmin();
+        boolean teamFilter = !isAdmin;
+        List<Long> teamIds = isAdmin ? List.of() : dataPermissionService.getCurrentUserTeamIds();
+        return decisionFlowRepository.findAllWithTeam(teamFilter, teamIds, pageable);
     }
 
     /**
@@ -133,7 +140,10 @@ public class DecisionFlowLifecycleService {
      */
     public Page<DecisionFlow> queryFlows(DecisionFlowQuery query, Pageable pageable) {
         log.info("查询决策流: query={}", query);
-        return decisionFlowRepository.findByConditions(
+        boolean isAdmin = dataPermissionService.isCurrentUserAdmin();
+        boolean teamFilter = !isAdmin;
+        List<Long> teamIds = isAdmin ? List.of() : dataPermissionService.getCurrentUserTeamIds();
+        return decisionFlowRepository.findByConditionsWithTeam(
                 query.getStatus(),
                 query.getCreatedBy(),
                 query.getEnabled(),
@@ -142,6 +152,8 @@ public class DecisionFlowLifecycleService {
                 query.getCreatedAtEnd(),
                 query.getUpdatedAtStart(),
                 query.getUpdatedAtEnd(),
+                teamFilter,
+                teamIds,
                 pageable
         );
     }

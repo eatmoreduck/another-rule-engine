@@ -5,6 +5,7 @@ import com.example.ruleengine.model.dto.CreateRuleRequest;
 import com.example.ruleengine.model.dto.RuleQuery;
 import com.example.ruleengine.model.dto.UpdateRuleRequest;
 import com.example.ruleengine.repository.RuleRepository;
+import com.example.ruleengine.service.auth.DataPermissionService;
 import com.example.ruleengine.validator.RuleUsageChecker;
 import com.example.ruleengine.service.version.VersionManagementService;
 import com.example.ruleengine.validator.GroovyScriptValidator;
@@ -46,6 +47,9 @@ class RuleLifecycleServiceTest {
 
   @Mock
   private RuleUsageChecker ruleUsageChecker;
+
+  @Mock
+  private DataPermissionService dataPermissionService;
 
   @InjectMocks
   private RuleLifecycleService ruleLifecycleService;
@@ -556,7 +560,8 @@ class RuleLifecycleServiceTest {
     List<Rule> rules = Arrays.asList(testRule);
     Page<Rule> rulePage = new PageImpl<>(rules, pageable, 1);
 
-    when(ruleRepository.findByDeletedFalse(pageable)).thenReturn(rulePage);
+    when(dataPermissionService.isCurrentUserAdmin()).thenReturn(true);
+    when(ruleRepository.findByDeletedFalseWithTeam(false, List.of(), pageable)).thenReturn(rulePage);
 
     // When
     Page<Rule> result = ruleLifecycleService.listRules(pageable, false, null, null);
@@ -574,7 +579,8 @@ class RuleLifecycleServiceTest {
     Pageable pageable = PageRequest.of(0, 20);
     Page<Rule> emptyPage = new PageImpl<>(Collections.emptyList(), pageable, 0);
 
-    when(ruleRepository.findByDeletedFalse(pageable)).thenReturn(emptyPage);
+    when(dataPermissionService.isCurrentUserAdmin()).thenReturn(true);
+    when(ruleRepository.findByDeletedFalseWithTeam(false, List.of(), pageable)).thenReturn(emptyPage);
 
     // When
     Page<Rule> result = ruleLifecycleService.listRules(pageable, false, null, null);
@@ -600,11 +606,14 @@ class RuleLifecycleServiceTest {
     List<Rule> rules = Arrays.asList(testRule);
     Page<Rule> rulePage = new PageImpl<>(rules, pageable, 1);
 
-    when(ruleRepository.findByConditionsWithoutDates(
+    when(dataPermissionService.isCurrentUserAdmin()).thenReturn(true);
+    when(ruleRepository.findByConditionsWithoutDatesAndWithTeam(
         eq("test_user"),
         eq(true),
         eq(null),
         eq(false),
+        eq(false),
+        eq(List.of()),
         eq(pageable)
     )).thenReturn(rulePage);
 
@@ -625,8 +634,10 @@ class RuleLifecycleServiceTest {
     List<Rule> rules = Arrays.asList(testRule);
     Page<Rule> rulePage = new PageImpl<>(rules, pageable, 1);
 
-    when(ruleRepository.findByConditionsWithoutDates(
+    when(dataPermissionService.isCurrentUserAdmin()).thenReturn(true);
+    when(ruleRepository.findByConditionsWithoutDatesAndWithTeam(
         eq(null), eq(null), eq(null), eq(false),
+        eq(false), eq(List.of()),
         eq(pageable)
     )).thenReturn(rulePage);
 

@@ -66,8 +66,9 @@ public interface DecisionFlowRepository extends JpaRepository<DecisionFlow, Long
            "(:createdAtStart IS NULL OR df.createdAt >= :createdAtStart) AND " +
            "(:createdAtEnd IS NULL OR df.createdAt <= :createdAtEnd) AND " +
            "(:updatedAtStart IS NULL OR df.updatedAt >= :updatedAtStart) AND " +
-           "(:updatedAtEnd IS NULL OR df.updatedAt <= :updatedAtEnd)")
-    Page<DecisionFlow> findByConditions(
+           "(:updatedAtEnd IS NULL OR df.updatedAt <= :updatedAtEnd) AND " +
+           "(:teamFilter = false OR df.teamId IS NULL OR df.teamId IN :teamIds)")
+    Page<DecisionFlow> findByConditionsWithTeam(
             @Param("status") DecisionFlowStatus status,
             @Param("createdBy") String createdBy,
             @Param("enabled") Boolean enabled,
@@ -76,6 +77,19 @@ public interface DecisionFlowRepository extends JpaRepository<DecisionFlow, Long
             @Param("createdAtEnd") LocalDateTime createdAtEnd,
             @Param("updatedAtStart") LocalDateTime updatedAtStart,
             @Param("updatedAtEnd") LocalDateTime updatedAtEnd,
+            @Param("teamFilter") boolean teamFilter,
+            @Param("teamIds") List<Long> teamIds,
+            Pageable pageable
+    );
+
+    /**
+     * 分页查询所有决策流（带团队过滤）
+     */
+    @Query("SELECT df FROM DecisionFlow df WHERE " +
+           "(:teamFilter = false OR df.teamId IS NULL OR df.teamId IN :teamIds)")
+    Page<DecisionFlow> findAllWithTeam(
+            @Param("teamFilter") boolean teamFilter,
+            @Param("teamIds") List<Long> teamIds,
             Pageable pageable
     );
 }

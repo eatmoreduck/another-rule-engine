@@ -84,4 +84,10 @@ public class Rule {
      */
     @Column(name = "environment_id")
     private Long environmentId;
+
+    /**
+     * 所属团队ID，NULL表示全局资源（所有人可见）
+     */
+    @Column(name = "team_id")
+    private Long teamId;
 }
