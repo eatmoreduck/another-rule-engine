@@ -1,4 +1,4 @@
--- V17__add_grayscale_strategy_fields.sql
+-- V18__add_grayscale_strategy_fields.sql
 -- 灰度发布 Phase 2: 灰度配置增加策略相关字段
 
 -- 1. 策略类型：PERCENTAGE(百分比) / FEATURE(特征匹配) / WHITELIST(白名单)
