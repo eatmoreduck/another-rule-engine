@@ -207,7 +207,7 @@ export default function MainLayout() {
         <Menu
           mode="horizontal"
           selectedKeys={[getSelectedMenuKey(location.pathname, menuItems)]}
-          openKeys={location.pathname.startsWith('/system') ? ['/system'] : undefined}
+          openKeys={location.pathname.startsWith('/system') ? ['/system'] : []}
           items={antdMenuItems}
           onClick={handleMenuClick}
           style={{ flex: 1, border: 'none' }}
