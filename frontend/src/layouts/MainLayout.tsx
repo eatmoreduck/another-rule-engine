@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { Layout, Menu, Typography, App, Dropdown, Avatar, Space } from 'antd';
 import { SafetyOutlined, SettingOutlined, ExperimentOutlined, BarChartOutlined, DashboardOutlined, CloudServerOutlined, ImportOutlined, ApartmentOutlined, UnorderedListOutlined, UserOutlined, LogoutOutlined, FileSearchOutlined } from '@ant-design/icons';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
@@ -130,6 +130,7 @@ export default function MainLayout() {
   const logout = useAuthStore((s) => s.logout);
   const { modal } = App.useApp();
   const { hasPermission, isSuperAdmin } = usePermission();
+  const [openKeys, setOpenKeys] = useState<string[]>([]);
 
   /** 根据用户权限过滤菜单项 */
   const menuItems = useMemo(() => {
@@ -160,6 +161,7 @@ export default function MainLayout() {
 
   const handleMenuClick = ({ key }: { key: string }) => {
     navigate(key);
+    setOpenKeys([]); // 点击菜单项后收起子菜单
   };
 
   const handleLogout = async () => {
@@ -207,7 +209,8 @@ export default function MainLayout() {
         <Menu
           mode="horizontal"
           selectedKeys={[getSelectedMenuKey(location.pathname, menuItems)]}
-          openKeys={location.pathname.startsWith('/system') ? ['/system'] : []}
+          openKeys={openKeys}
+          onOpenChange={setOpenKeys}
           items={antdMenuItems}
           onClick={handleMenuClick}
           style={{ flex: 1, border: 'none' }}
