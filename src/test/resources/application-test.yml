@@ -26,6 +26,10 @@ spring:
   cache:
     type: caffeine
 
+# 测试环境禁用 Sa-Token 认证拦截器
+sa-token:
+  auth-enabled: false
+
 server:
   port: 0  # 随机端口，避免冲突
 

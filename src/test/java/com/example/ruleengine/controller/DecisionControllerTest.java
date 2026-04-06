@@ -11,6 +11,14 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
+import org.springframework.test.context.TestPropertySource;
+import org.springframework.test.web.servlet.MockMvc;
+import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.util.Arrays;
@@ -34,7 +42,13 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * 5. 边界条件
  */
 @DisplayName("DecisionController 测试")
-@WebMvcTest(DecisionController.class)
+@WebMvcTest(
+    value = DecisionController.class,
+    excludeAutoConfiguration = org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfiguration.class
+)
+@TestPropertySource(properties = {
+    "sa-token.auth-enabled=false"
+})
 class DecisionControllerTest {
 
     @Autowired

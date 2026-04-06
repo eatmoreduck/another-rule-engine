@@ -110,7 +110,7 @@ class RuleControllerTest {
     }
 
     @Test
-    @DisplayName("规则 Key 重复时应抛出异常")
+    @DisplayName("规则 Key 重复时应返回 400")
     void shouldRejectDuplicateRuleKey() throws Exception {
       CreateRuleRequest request = CreateRuleRequest.builder()
           .ruleKey("duplicate_key")
@@ -125,14 +125,12 @@ class RuleControllerTest {
               .content(objectMapper.writeValueAsString(request)))
           .andExpect(status().isOk());
 
-      // 再次创建相同 ruleKey 的规则，应抛出 IllegalArgumentException
-      Exception exception = assertThrows(Exception.class, () ->
-          mockMvc.perform(post("/api/v1/rules")
+      // 再次创建相同 ruleKey 的规则，应返回 400
+      mockMvc.perform(post("/api/v1/rules")
               .header("X-Operator", "admin")
               .contentType(MediaType.APPLICATION_JSON)
               .content(objectMapper.writeValueAsString(request)))
-      );
-      assert exception.getCause() instanceof IllegalArgumentException;
+          .andExpect(status().isBadRequest());
     }
 
     @Test
@@ -184,7 +182,7 @@ class RuleControllerTest {
     }
 
     @Test
-    @DisplayName("无效的 Groovy 脚本语法应抛出异常")
+    @DisplayName("无效的 Groovy 脚本语法应返回 400")
     void shouldRejectInvalidGroovyScript() throws Exception {
       CreateRuleRequest request = CreateRuleRequest.builder()
           .ruleKey("invalid_script_rule")
@@ -192,14 +190,12 @@ class RuleControllerTest {
           .groovyScript("this is not valid groovy {{{{")
           .build();
 
-      // 没有全局异常处理器，IllegalArgumentException 会通过 ServletException 传播
-      Exception exception = assertThrows(Exception.class, () ->
-          mockMvc.perform(post("/api/v1/rules")
+      // 全局异常处理器会捕获 IllegalArgumentException 并返回 400
+      mockMvc.perform(post("/api/v1/rules")
               .header("X-Operator", "admin")
               .contentType(MediaType.APPLICATION_JSON)
               .content(objectMapper.writeValueAsString(request)))
-      );
-      assert exception.getCause() instanceof IllegalArgumentException;
+          .andExpect(status().isBadRequest());
     }
   }
 
@@ -222,13 +218,10 @@ class RuleControllerTest {
     }
 
     @Test
-    @DisplayName("查询不存在的规则应抛出异常")
-    void shouldThrowExceptionForNonExistentRule() throws Exception {
-      // 没有全局异常处理器，IllegalArgumentException 通过 ServletException 传播
-      Exception exception = assertThrows(Exception.class, () ->
-          mockMvc.perform(get("/api/v1/rules/non_existent_rule"))
-      );
-      assert exception.getCause() instanceof IllegalArgumentException;
+    @DisplayName("查询不存在的规则应返回 400")
+    void shouldReturnBadRequestForNonExistentRule() throws Exception {
+      mockMvc.perform(get("/api/v1/rules/non_existent_rule"))
+          .andExpect(status().isBadRequest());
     }
   }
 
@@ -275,19 +268,17 @@ class RuleControllerTest {
     }
 
     @Test
-    @DisplayName("更新不存在的规则应抛出异常")
-    void shouldThrowExceptionWhenUpdatingNonExistentRule() throws Exception {
+    @DisplayName("更新不存在的规则应返回 400")
+    void shouldReturnBadRequestWhenUpdatingNonExistentRule() throws Exception {
       UpdateRuleRequest request = UpdateRuleRequest.builder()
           .ruleName("不存在的规则")
           .build();
 
-      Exception exception = assertThrows(Exception.class, () ->
-          mockMvc.perform(put("/api/v1/rules/non_existent_rule")
+      mockMvc.perform(put("/api/v1/rules/non_existent_rule")
               .header("X-Operator", "admin")
               .contentType(MediaType.APPLICATION_JSON)
               .content(objectMapper.writeValueAsString(request)))
-      );
-      assert exception.getCause() instanceof IllegalArgumentException;
+          .andExpect(status().isBadRequest());
     }
   }
 
@@ -313,13 +304,11 @@ class RuleControllerTest {
     }
 
     @Test
-    @DisplayName("删除不存在的规则应抛出异常")
-    void shouldThrowExceptionWhenDeletingNonExistentRule() throws Exception {
-      Exception exception = assertThrows(Exception.class, () ->
-          mockMvc.perform(delete("/api/v1/rules/non_existent_rule")
+    @DisplayName("删除不存在的规则应返回 400")
+    void shouldReturnBadRequestWhenDeletingNonExistentRule() throws Exception {
+      mockMvc.perform(delete("/api/v1/rules/non_existent_rule")
               .header("X-Operator", "admin"))
-      );
-      assert exception.getCause() instanceof IllegalArgumentException;
+          .andExpect(status().isBadRequest());
     }
   }
 
@@ -342,13 +331,11 @@ class RuleControllerTest {
     }
 
     @Test
-    @DisplayName("启用不存在的规则应抛出异常")
-    void shouldThrowExceptionWhenEnablingNonExistentRule() throws Exception {
-      Exception exception = assertThrows(Exception.class, () ->
-          mockMvc.perform(post("/api/v1/rules/non_existent_rule/enable")
+    @DisplayName("启用不存在的规则应返回 400")
+    void shouldReturnBadRequestWhenEnablingNonExistentRule() throws Exception {
+      mockMvc.perform(post("/api/v1/rules/non_existent_rule/enable")
               .header("X-Operator", "admin"))
-      );
-      assert exception.getCause() instanceof IllegalArgumentException;
+          .andExpect(status().isBadRequest());
     }
   }
 
@@ -371,13 +358,11 @@ class RuleControllerTest {
     }
 
     @Test
-    @DisplayName("禁用不存在的规则应抛出异常")
-    void shouldThrowExceptionWhenDisablingNonExistentRule() throws Exception {
-      Exception exception = assertThrows(Exception.class, () ->
-          mockMvc.perform(post("/api/v1/rules/non_existent_rule/disable")
+    @DisplayName("禁用不存在的规则应返回 400")
+    void shouldReturnBadRequestWhenDisablingNonExistentRule() throws Exception {
+      mockMvc.perform(post("/api/v1/rules/non_existent_rule/disable")
               .header("X-Operator", "admin"))
-      );
-      assert exception.getCause() instanceof IllegalArgumentException;
+          .andExpect(status().isBadRequest());
     }
   }
 
