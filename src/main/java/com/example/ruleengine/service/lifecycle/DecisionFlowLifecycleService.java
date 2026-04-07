@@ -1,11 +1,14 @@
 package com.example.ruleengine.service.lifecycle;
 
 import com.example.ruleengine.constants.DecisionFlowStatus;
+import com.example.ruleengine.constants.VersionStatus;
 import com.example.ruleengine.domain.DecisionFlow;
+import com.example.ruleengine.domain.DecisionFlowVersion;
 import com.example.ruleengine.model.dto.CreateDecisionFlowRequest;
 import com.example.ruleengine.model.dto.DecisionFlowQuery;
 import com.example.ruleengine.model.dto.UpdateDecisionFlowRequest;
 import com.example.ruleengine.repository.DecisionFlowRepository;
+import com.example.ruleengine.repository.DecisionFlowVersionRepository;
 import com.example.ruleengine.service.auth.DataPermissionService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -25,6 +28,7 @@ import java.util.List;
 public class DecisionFlowLifecycleService {
 
     private final DecisionFlowRepository decisionFlowRepository;
+    private final DecisionFlowVersionRepository decisionFlowVersionRepository;
     private final DataPermissionService dataPermissionService;
 
     /**
@@ -48,6 +52,20 @@ public class DecisionFlowLifecycleService {
                 .build();
 
         DecisionFlow saved = decisionFlowRepository.save(flow);
+
+        // 保存初始版本记录
+        DecisionFlowVersion initialVersion = DecisionFlowVersion.builder()
+                .flowId(saved.getId())
+                .flowKey(saved.getFlowKey())
+                .version(1)
+                .flowGraph(saved.getFlowGraph())
+                .changeReason("创建决策流")
+                .changedBy(operator)
+                .isRollback(false)
+                .status(VersionStatus.ACTIVE)
+                .build();
+        decisionFlowVersionRepository.save(initialVersion);
+
         log.info("创建决策流: flowKey={}, operator={}", request.getFlowKey(), operator);
         return saved;
     }
@@ -69,6 +87,26 @@ public class DecisionFlowLifecycleService {
         if (request.getFlowGraph() != null && !request.getFlowGraph().equals(flow.getFlowGraph())) {
             flow.setFlowGraph(request.getFlowGraph());
             flow.setVersion(flow.getVersion() + 1);
+
+            // 将当前 ACTIVE 版本归档
+            decisionFlowVersionRepository.findByFlowKeyAndStatus(flowKey, VersionStatus.ACTIVE)
+                    .forEach(v -> {
+                        v.setStatus(VersionStatus.ARCHIVED);
+                        decisionFlowVersionRepository.save(v);
+                    });
+
+            // 保存新版本记录
+            DecisionFlowVersion newVersion = DecisionFlowVersion.builder()
+                    .flowId(flow.getId())
+                    .flowKey(flowKey)
+                    .version(flow.getVersion())
+                    .flowGraph(request.getFlowGraph())
+                    .changeReason(request.getChangeReason())
+                    .changedBy(operator)
+                    .isRollback(false)
+                    .status(VersionStatus.ACTIVE)
+                    .build();
+            decisionFlowVersionRepository.save(newVersion);
         }
         flow.setUpdatedBy(operator);
 

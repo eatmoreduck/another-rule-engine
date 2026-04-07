@@ -19,6 +19,7 @@ import {
   Col,
   Tooltip,
   Popconfirm,
+  Tabs,
 } from 'antd';
 import {
   PlusOutlined,
@@ -28,6 +29,7 @@ import {
   RollbackOutlined,
   BarChartOutlined,
   FileTextOutlined,
+  EyeOutlined,
 } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import {
@@ -60,6 +62,9 @@ import {
 import { getRulesForSelect } from '../api/rules';
 import { getDecisionFlows } from '../api/decisionFlows';
 import Access from '../components/AccessControl';
+import DiffViewer from '../components/DiffViewer';
+import RuleRenderedDiff from '../components/RuleRenderedDiff';
+import FlowGraphDiff from '../components/FlowGraphDiff';
 
 /** 状态对应的颜色和标签 */
 const STATUS_MAP: Record<GrayscaleStatusEnum, { color: string; label: string }> = {
@@ -154,10 +159,11 @@ export default function GrayscalePage() {
       setVersionOptions(versions);
       // 自动设置当前版本号为表单值（取最新版本号减1作为灰度候选）
       if (versions.length > 0) {
-        const latestVersion = versions[0].version;
+        const latestVersion = versions[0];
         form.setFieldsValue({
-          grayscaleVersion: latestVersion,
+          grayscaleVersion: latestVersion.version,
         });
+        setSelectedVersion(latestVersion);
       }
     } catch {
       message.error('加载版本列表失败');
@@ -185,6 +191,27 @@ export default function GrayscalePage() {
   const [logLoading, setLogLoading] = useState(false);
   const [logs, setLogs] = useState<CanaryExecutionLog[]>([]);
   const [logRecord, setLogRecord] = useState<GrayscaleRecord | null>(null);
+
+  /** 版本对比弹窗 */
+  const [diffModalOpen, setDiffModalOpen] = useState(false);
+  const [diffRecord, setDiffRecord] = useState<GrayscaleRecord | null>(null);
+  const [diffVersions, setDiffVersions] = useState<{ current?: VersionOption; grayscale?: VersionOption }>({});
+
+  /** 打开版本对比弹窗 */
+  const openDiffModal = useCallback(async (record: GrayscaleRecord) => {
+    setDiffRecord(record);
+    try {
+      const versions = record.targetType === 'RULE'
+        ? await getRuleVersions(record.targetKey)
+        : await getDecisionFlowVersions(record.targetKey);
+      const current = versions.find((v) => v.version === record.currentVersion);
+      const grayscale = versions.find((v) => v.version === record.grayscaleVersion);
+      setDiffVersions({ current, grayscale });
+    } catch {
+      setDiffVersions({});
+    }
+    setDiffModalOpen(true);
+  }, []);
 
   /** 加载灰度列表 */
   const loadData = useCallback(async (params?: GrayscaleQueryParams) => {
@@ -485,6 +512,14 @@ export default function GrayscalePage() {
               />
             </Tooltip>
           )}
+          <Tooltip title="查看规则对比">
+            <Button
+              type="link"
+              size="small"
+              icon={<EyeOutlined />}
+              onClick={() => openDiffModal(record)}
+            />
+          </Tooltip>
         </Space>
       ),
     },
@@ -773,7 +808,6 @@ export default function GrayscalePage() {
 
           {/* 版本对比面板 */}
           {selectedVersion && (() => {
-            // 找到当前版本号
             const currentVerNum = createTargetType === GrayscaleTargetType.RULE
               ? ruleOptions.find((r) => r.value === selectedTargetKey)?.version
               : flowOptions.find((f) => f.value === selectedTargetKey)?.version;
@@ -781,6 +815,20 @@ export default function GrayscalePage() {
               ? versionOptions.find((v) => v.version === currentVerNum)
               : undefined;
             const isSameVersion = currentVersion && selectedVersion.version === currentVersion.version;
+
+            // 获取对比文本
+            const formatContent = (ver: VersionOption | undefined) => {
+              if (!ver) return '';
+              if (ver.groovyScript) return ver.groovyScript;
+              if (ver.flowGraph) {
+                try { return JSON.stringify(JSON.parse(ver.flowGraph), null, 2); }
+                catch { return ver.flowGraph; }
+              }
+              return '';
+            };
+            const oldText = formatContent(currentVersion);
+            const newText = formatContent(selectedVersion);
+            const isRule = createTargetType === GrayscaleTargetType.RULE;
 
             return (
               <Card
@@ -793,90 +841,97 @@ export default function GrayscalePage() {
                     注意：灰度版本与当前版本相同，请选择不同的版本进行灰度
                   </div>
                 )}
-                <Row gutter={16}>
-                  {/* 当前版本 */}
-                  <Col span={12}>
-                    <Card
-                      size="small"
-                      title={currentVersion ? `当前版本 v${currentVersion.version}` : '当前版本'}
-                      headStyle={{ background: '#e6f7ff', fontSize: 13 }}
-                      bodyStyle={{ padding: 8 }}
-                    >
-                      {currentVersion ? (
-                        <>
-                          <Descriptions size="small" column={1} bordered>
-                            <Descriptions.Item label="状态">
-                              <Tag color={currentVersion.status === 'ACTIVE' ? 'green' : 'default'}>
-                                {currentVersion.status || '-'}
-                              </Tag>
-                            </Descriptions.Item>
-                            <Descriptions.Item label="操作人">{currentVersion.changedBy || '-'}</Descriptions.Item>
-                            <Descriptions.Item label="变更原因">{currentVersion.changeReason || '-'}</Descriptions.Item>
-                          </Descriptions>
-                          {currentVersion.groovyScript && (
-                            <Input.TextArea
-                              value={currentVersion.groovyScript}
-                              readOnly
-                              rows={5}
-                              style={{ fontFamily: 'monospace', fontSize: 11, background: '#fff', marginTop: 4 }}
-                            />
-                          )}
-                          {currentVersion.flowGraph && (
-                            <Input.TextArea
-                              value={(() => { try { return JSON.stringify(JSON.parse(currentVersion.flowGraph), null, 2); } catch { return currentVersion.flowGraph; } })()}
-                              readOnly
-                              rows={5}
-                              style={{ fontFamily: 'monospace', fontSize: 11, background: '#fff', marginTop: 4 }}
-                            />
-                          )}
-                        </>
-                      ) : (
-                        <div style={{ color: '#999', textAlign: 'center', padding: 16 }}>未找到当前版本信息</div>
-                      )}
-                    </Card>
-                  </Col>
 
-                  {/* 灰度版本 */}
+                {/* 版本元信息 */}
+                <Row gutter={16} style={{ marginBottom: 12 }}>
                   <Col span={12}>
-                    <Card
-                      size="small"
-                      title={`灰度版本 v${selectedVersion.version}`}
-                      headStyle={{ background: '#fff7e6', fontSize: 13 }}
-                      bodyStyle={{ padding: 8 }}
-                    >
-                      <Descriptions size="small" column={1} bordered>
-                        <Descriptions.Item label="状态">
+                    <Descriptions size="small" column={1} bordered>
+                      <Descriptions.Item label="当前版本">
+                        {currentVersion ? (
+                          <Space>
+                            <span>v{currentVersion.version}</span>
+                            <Tag color={currentVersion.status === 'ACTIVE' ? 'green' : 'default'}>
+                              {currentVersion.status || '-'}
+                            </Tag>
+                            <span style={{ color: '#999' }}>{currentVersion.changedBy || ''}</span>
+                          </Space>
+                        ) : '-'}
+                      </Descriptions.Item>
+                      {currentVersion?.changeReason && (
+                        <Descriptions.Item label="变更原因">{currentVersion.changeReason}</Descriptions.Item>
+                      )}
+                    </Descriptions>
+                  </Col>
+                  <Col span={12}>
+                    <Descriptions size="small" column={1} bordered>
+                      <Descriptions.Item label="灰度版本">
+                        <Space>
+                          <span>v{selectedVersion.version}</span>
                           <Tag color={selectedVersion.status === 'ACTIVE' ? 'green' : selectedVersion.status === 'CANARY' ? 'orange' : 'default'}>
                             {selectedVersion.status || '-'}
                           </Tag>
+                          <span style={{ color: '#999' }}>{selectedVersion.changedBy || ''}</span>
+                        </Space>
+                      </Descriptions.Item>
+                      {selectedVersion.changeReason && (
+                        <Descriptions.Item label="变更原因">{selectedVersion.changeReason}</Descriptions.Item>
+                      )}
+                      {selectedVersion.isRollback && selectedVersion.rollbackFromVersion && (
+                        <Descriptions.Item label="回滚来源">
+                          从 v{selectedVersion.rollbackFromVersion} 回滚
                         </Descriptions.Item>
-                        <Descriptions.Item label="操作人">{selectedVersion.changedBy || '-'}</Descriptions.Item>
-                        <Descriptions.Item label="变更原因">{selectedVersion.changeReason || '-'}</Descriptions.Item>
-                        {selectedVersion.isRollback && selectedVersion.rollbackFromVersion && (
-                          <Descriptions.Item label="回滚来源">
-                            从 v{selectedVersion.rollbackFromVersion} 回滚
-                          </Descriptions.Item>
-                        )}
-                      </Descriptions>
-                      {selectedVersion.groovyScript && (
-                        <Input.TextArea
-                          value={selectedVersion.groovyScript}
-                          readOnly
-                          rows={5}
-                          style={{ fontFamily: 'monospace', fontSize: 11, background: '#fff', marginTop: 4 }}
-                        />
                       )}
-                      {selectedVersion.flowGraph && (
-                        <Input.TextArea
-                          value={(() => { try { return JSON.stringify(JSON.parse(selectedVersion.flowGraph), null, 2); } catch { return selectedVersion.flowGraph; } })()}
-                          readOnly
-                          rows={5}
-                          style={{ fontFamily: 'monospace', fontSize: 11, background: '#fff', marginTop: 4 }}
-                        />
-                      )}
-                    </Card>
+                    </Descriptions>
                   </Col>
                 </Row>
+
+                {/* 对比内容：规则渲染 + Groovy 代码 / 决策流可视化 + JSON */}
+                {(oldText || newText) && (
+                  <Tabs
+                    size="small"
+                    items={[
+                      ...(isRule ? [{
+                        key: 'rendered',
+                        label: '规则逻辑对比',
+                        children: (
+                          <RuleRenderedDiff
+                            oldScript={currentVersion?.groovyScript}
+                            newScript={selectedVersion.groovyScript}
+                            oldTitle={currentVersion ? `当前版本 v${currentVersion.version}` : '当前版本'}
+                            newTitle={`灰度版本 v${selectedVersion.version}`}
+                          />
+                        ),
+                      }] : [{
+                        key: 'visual',
+                        label: '可视化对比',
+                        children: (
+                          <FlowGraphDiff
+                            oldFlowGraph={currentVersion?.flowGraph ?? ''}
+                            newFlowGraph={selectedVersion.flowGraph ?? ''}
+                            oldTitle={currentVersion ? `当前版本 v${currentVersion.version}` : '当前版本'}
+                            newTitle={`灰度版本 v${selectedVersion.version}`}
+                          />
+                        ),
+                      }]),
+                      {
+                        key: 'code',
+                        label: isRule ? 'Groovy 代码对比' : 'JSON 对比',
+                        children: (
+                          <DiffViewer
+                            oldText={oldText}
+                            newText={newText}
+                            oldTitle={currentVersion ? `当前版本 v${currentVersion.version}` : '当前版本'}
+                            newTitle={`灰度版本 v${selectedVersion.version}`}
+                            groovyHighlight={isRule}
+                          />
+                        ),
+                      },
+                    ]}
+                  />
+                )}
+                {!oldText && !newText && (
+                  <div style={{ color: '#999', textAlign: 'center', padding: 16 }}>无脚本内容可对比</div>
+                )}
               </Card>
             );
           })()}
@@ -1065,6 +1120,80 @@ export default function GrayscalePage() {
             暂无执行日志
           </div>
         )}
+      </Modal>
+
+      {/* 版本对比弹窗 */}
+      <Modal
+        title={`版本对比 - ${diffRecord?.targetKey || ''} (当前 v${diffRecord?.currentVersion ?? '-'} vs 灰度 v${diffRecord?.grayscaleVersion ?? '-'})`}
+        open={diffModalOpen}
+        onCancel={() => {
+          setDiffModalOpen(false);
+          setDiffRecord(null);
+          setDiffVersions({});
+        }}
+        footer={null}
+        width={960}
+      >
+        {(() => {
+          const { current: cv, grayscale: gv } = diffVersions;
+          const isRule = diffRecord?.targetType === 'RULE';
+          const formatContent = (ver: VersionOption | undefined) => {
+            if (!ver) return '';
+            if (ver.groovyScript) return ver.groovyScript;
+            if (ver.flowGraph) {
+              try { return JSON.stringify(JSON.parse(ver.flowGraph), null, 2); }
+              catch { return ver.flowGraph; }
+            }
+            return '';
+          };
+
+          if (!cv && !gv) {
+            return <div style={{ textAlign: 'center', padding: '40px 0', color: '#999' }}>未找到版本信息</div>;
+          }
+
+          return (
+            <Tabs
+              items={[
+                ...(isRule ? [{
+                  key: 'rendered',
+                  label: '规则逻辑对比',
+                  children: (
+                    <RuleRenderedDiff
+                      oldScript={cv?.groovyScript}
+                      newScript={gv?.groovyScript}
+                      oldTitle={cv ? `当前版本 v${cv.version}` : '当前版本'}
+                      newTitle={gv ? `灰度版本 v${gv.version}` : '灰度版本'}
+                    />
+                  ),
+                }] : [{
+                  key: 'visual',
+                  label: '可视化对比',
+                  children: (
+                    <FlowGraphDiff
+                      oldFlowGraph={cv?.flowGraph ?? ''}
+                      newFlowGraph={gv?.flowGraph ?? ''}
+                      oldTitle={cv ? `当前版本 v${cv.version}` : '当前版本'}
+                      newTitle={gv ? `灰度版本 v${gv.version}` : '灰度版本'}
+                    />
+                  ),
+                }]),
+                {
+                  key: 'code',
+                  label: isRule ? 'Groovy 代码对比' : 'JSON 对比',
+                  children: (
+                    <DiffViewer
+                      oldText={formatContent(cv)}
+                      newText={formatContent(gv)}
+                      oldTitle={cv ? `当前版本 v${cv.version}` : '当前版本'}
+                      newTitle={gv ? `灰度版本 v${gv.version}` : '灰度版本'}
+                      groovyHighlight={isRule}
+                    />
+                  ),
+                },
+              ]}
+            />
+          );
+        })()}
       </Modal>
     </>
   );

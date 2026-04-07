@@ -1,6 +1,7 @@
 package com.example.ruleengine.domain;
 
 import com.example.ruleengine.constants.VersionStatus;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -62,5 +63,6 @@ public class DecisionFlowVersion {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "flow_id", insertable = false, updatable = false)
+    @JsonIgnore
     private DecisionFlow decisionFlow;
 }

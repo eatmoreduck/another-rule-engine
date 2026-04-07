@@ -15,12 +15,14 @@
     "antd": "^5.22.0",
     "axios": "^1.7.0",
     "dayjs": "^1.11.0",
+    "diff": "^8.0.4",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "react-router-dom": "^7.0.0",
     "zustand": "^5.0.0"
   },
   "devDependencies": {
+    "@types/diff": "^7.0.2",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
     "@vitejs/plugin-react": "^4.3.0",
