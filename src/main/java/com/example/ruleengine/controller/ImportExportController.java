@@ -6,6 +6,7 @@ import com.example.ruleengine.model.dto.RuleExportData;
 import com.example.ruleengine.service.importexport.RuleImportExportService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -19,6 +20,7 @@ import java.util.List;
 @RequiredArgsConstructor
 @Slf4j
 @SaCheckLogin
+@ConditionalOnProperty(name = "rule-engine.features.import-export.enabled", havingValue = "true")
 public class ImportExportController {
 
     private final RuleImportExportService ruleImportExportService;

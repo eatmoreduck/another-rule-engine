@@ -87,8 +87,14 @@ server:
     accept-count: 100
     connection-timeout: 10s  # 10 秒连接超时
 
-# 异步执行配置（REXEC-02）
+# 功能开关（未充分测试的功能默认关闭）
 rule-engine:
+  features:
+    multi-environment:
+      enabled: false
+    import-export:
+      enabled: false
+
   async:
     # 异步结果存储过期时间（秒）
     result-expire-seconds: 300

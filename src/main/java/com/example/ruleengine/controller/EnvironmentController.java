@@ -8,6 +8,7 @@ import com.example.ruleengine.model.dto.CloneEnvironmentResponse;
 import com.example.ruleengine.service.environment.EnvironmentService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -21,6 +22,7 @@ import java.util.List;
 @RequiredArgsConstructor
 @Slf4j
 @SaCheckLogin
+@ConditionalOnProperty(name = "rule-engine.features.multi-environment.enabled", havingValue = "true")
 public class EnvironmentController {
 
     private final EnvironmentService environmentService;

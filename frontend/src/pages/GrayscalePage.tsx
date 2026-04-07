@@ -465,7 +465,17 @@ export default function GrayscalePage() {
                 />
               </Tooltip>
             )}
-            {record.status === GSEnum.RUNNING && (
+            {record.status === GSEnum.PAUSED && (
+              <Tooltip title="恢复灰度">
+                <Button
+                  type="link"
+                  size="small"
+                  icon={<PlayCircleOutlined />}
+                  onClick={() => handleStart(record.id)}
+                />
+              </Tooltip>
+            )}
+            {(record.status === GSEnum.RUNNING || record.status === GSEnum.PAUSED) && (
               <Popconfirm
                 title="确认完成灰度？灰度版本将全量发布。"
                 onConfirm={() => handleComplete(record.id)}

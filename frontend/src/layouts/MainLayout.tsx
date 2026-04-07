@@ -1,9 +1,10 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { Layout, Menu, Typography, App, Dropdown, Avatar, Space } from 'antd';
 import { SafetyOutlined, SettingOutlined, ExperimentOutlined, BarChartOutlined, DashboardOutlined, CloudServerOutlined, ImportOutlined, ApartmentOutlined, UnorderedListOutlined, UserOutlined, LogoutOutlined, FileSearchOutlined } from '@ant-design/icons';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { useAuthStore } from '../stores/authStore';
 import { usePermission } from '../hooks/usePermission';
+import { getFeatureFlags, type FeatureFlags } from '../api/features';
 
 const { Header, Content } = Layout;
 const { Text } = Typography;
@@ -13,6 +14,7 @@ interface MenuItemConfig {
   icon?: React.ReactNode;
   label: string;
   permission?: string;
+  feature?: keyof FeatureFlags;
   children?: MenuItemConfig[];
 }
 
@@ -47,12 +49,14 @@ const allMenuItems: MenuItemConfig[] = [
     icon: <CloudServerOutlined />,
     label: '多环境',
     permission: 'menu:environments',
+    feature: 'multiEnvironment',
   },
   {
     key: '/import-export',
     icon: <ImportOutlined />,
     label: '导入导出',
     permission: 'menu:import-export',
+    feature: 'importExport',
   },
   {
     key: '/monitoring',
@@ -131,12 +135,19 @@ export default function MainLayout() {
   const { modal } = App.useApp();
   const { hasPermission, isSuperAdmin } = usePermission();
   const [openKeys, setOpenKeys] = useState<string[]>([]);
+  const [features, setFeatures] = useState<FeatureFlags>({ multiEnvironment: false, importExport: false });
+
+  useEffect(() => {
+    getFeatureFlags().then(setFeatures);
+  }, []);
 
   /** 根据用户权限过滤菜单项 */
   const menuItems = useMemo(() => {
     const filterItems = (items: MenuItemConfig[]): MenuItemConfig[] => {
       return items
         .filter((item) => {
+          // 功能开关检查
+          if (item.feature && !features[item.feature]) return false;
           // 无权限码的菜单项始终显示
           if (!item.permission) return true;
           // 有权限码的菜单项需要检查权限
@@ -154,7 +165,7 @@ export default function MainLayout() {
         .filter(Boolean) as MenuItemConfig[];
     };
     return filterItems(allMenuItems);
-  }, [hasPermission, isSuperAdmin]);
+  }, [hasPermission, isSuperAdmin, features]);
 
   /** 转换为 Ant Design Menu 可用的 items 格式 */
   const antdMenuItems = useMemo(() => toAntdItems(menuItems), [menuItems]);

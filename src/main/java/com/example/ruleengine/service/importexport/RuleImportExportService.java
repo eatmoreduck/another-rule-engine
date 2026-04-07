@@ -8,6 +8,7 @@ import com.example.ruleengine.repository.RuleRepository;
 import com.example.ruleengine.repository.RuleVersionRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -25,6 +26,7 @@ import java.util.List;
 @Service
 @RequiredArgsConstructor
 @Slf4j
+@ConditionalOnProperty(name = "rule-engine.features.import-export.enabled", havingValue = "true")
 public class RuleImportExportService {
 
     private final RuleRepository ruleRepository;
