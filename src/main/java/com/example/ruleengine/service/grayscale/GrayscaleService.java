@@ -125,6 +125,7 @@ public class GrayscaleService {
                 .featureRules(request.getFeatureRules())
                 .whitelistIds(request.getWhitelistIds())
                 .dualRunEnabled(request.getDualRunEnabled() != null ? request.getDualRunEnabled() : false)
+                .description(request.getDescription())
                 .createdBy(operator)
                 .build();
 
@@ -160,9 +161,10 @@ public class GrayscaleService {
                 .orElseThrow(() -> new IllegalArgumentException(
                         "灰度配置不存在: " + configId));
 
-        if (config.getStatus() != GrayscaleStatus.DRAFT) {
+        if (config.getStatus() != GrayscaleStatus.DRAFT
+                && config.getStatus() != GrayscaleStatus.PAUSED) {
             throw new IllegalStateException(
-                    "只有草稿状态的灰度配置才能启动，当前状态: "
+                    "只有草稿或已暂停状态的灰度配置才能启动，当前状态: "
                             + config.getStatus().getDescription());
         }
 
@@ -181,7 +183,7 @@ public class GrayscaleService {
     }
 
     /**
-     * 暂停灰度（状态回到草稿）
+     * 暂停灰度
      */
     @Transactional
     public GrayscaleConfigResponse pauseGrayscale(Long configId) {
@@ -197,9 +199,15 @@ public class GrayscaleService {
                             + config.getStatus().getDescription());
         }
 
-        config.setStatus(GrayscaleStatus.DRAFT);
+        config.setStatus(GrayscaleStatus.PAUSED);
 
         config = grayscaleConfigRepository.save(config);
+
+        // 清除灰度配置缓存
+        String targetType = config.getTargetType() != null ? config.getTargetType() : "RULE";
+        String targetKey = config.getTargetKey() != null ? config.getTargetKey() : config.getRuleKey();
+        ruleCacheService.evictGrayscaleConfig(targetType, targetKey);
+
         log.info("灰度已暂停: configId={}", configId);
         return GrayscaleConfigResponse.fromEntity(config);
     }
@@ -216,9 +224,10 @@ public class GrayscaleService {
                 .orElseThrow(() -> new IllegalArgumentException(
                         "灰度配置不存在: " + configId));
 
-        if (config.getStatus() != GrayscaleStatus.RUNNING) {
+        if (config.getStatus() != GrayscaleStatus.RUNNING
+                && config.getStatus() != GrayscaleStatus.PAUSED) {
             throw new IllegalStateException(
-                    "只有运行中的灰度配置才能完成，当前状态: "
+                    "只有运行中或已暂停的灰度配置才能完成，当前状态: "
                             + config.getStatus().getDescription());
         }
 

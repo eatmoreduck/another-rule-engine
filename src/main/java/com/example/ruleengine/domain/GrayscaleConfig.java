@@ -71,6 +71,9 @@ public class GrayscaleConfig {
     @Builder.Default
     private Boolean dualRunEnabled = false;
 
+    @Column(name = "description", columnDefinition = "TEXT")
+    private String description;
+
     @Column(name = "created_by", length = 255)
     private String createdBy;
 

@@ -71,4 +71,9 @@ public class CreateGrayscaleRequest {
      */
     @Builder.Default
     private Boolean dualRunEnabled = false;
+
+    /**
+     * 灰度描述
+     */
+    private String description;
 }

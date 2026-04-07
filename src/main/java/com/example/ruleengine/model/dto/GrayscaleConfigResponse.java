@@ -30,6 +30,7 @@ public class GrayscaleConfigResponse {
     private String featureRules;
     private String whitelistIds;
     private Boolean dualRunEnabled;
+    private String description;
     private LocalDateTime startedAt;
     private LocalDateTime completedAt;
     private String createdBy;
@@ -53,6 +54,7 @@ public class GrayscaleConfigResponse {
                 .featureRules(entity.getFeatureRules())
                 .whitelistIds(entity.getWhitelistIds())
                 .dualRunEnabled(entity.getDualRunEnabled())
+                .description(entity.getDescription())
                 .startedAt(entity.getStartedAt())
                 .completedAt(entity.getCompletedAt())
                 .createdBy(entity.getCreatedBy())

@@ -9,6 +9,36 @@ import type {
 } from '../types/grayscale';
 import type { PageResponse } from '../types/rule';
 
+/** 版本摘要（用于灰度创建时选择版本号） */
+export interface VersionOption {
+  version: number;
+  changeReason: string | null;
+  changedBy: string;
+  changedAt: string;
+  /** 版本状态: DRAFT/CANARY/ACTIVE/ARCHIVED */
+  status?: string;
+  /** 规则脚本内容（仅规则版本有） */
+  groovyScript?: string;
+  /** 决策流图 JSON（仅决策流版本有） */
+  flowGraph?: string;
+  /** 是否为回滚产生 */
+  isRollback?: boolean;
+  /** 从哪个版本回滚的 */
+  rollbackFromVersion?: number | null;
+}
+
+/** 获取规则版本列表 */
+export async function getRuleVersions(ruleKey: string): Promise<VersionOption[]> {
+  const response = await apiClient.get<VersionOption[]>(`/api/v1/rules/${ruleKey}/versions`);
+  return response.data;
+}
+
+/** 获取决策流版本列表 */
+export async function getDecisionFlowVersions(flowKey: string): Promise<VersionOption[]> {
+  const response = await apiClient.get<VersionOption[]>(`/api/v1/decision-flows/${flowKey}/versions`);
+  return response.data;
+}
+
 /** 创建灰度配置（支持规则和决策流） */
 export async function createGrayscale(config: GrayscaleConfig): Promise<GrayscaleRecord> {
   const requestBody: Record<string, unknown> = {
@@ -17,7 +47,9 @@ export async function createGrayscale(config: GrayscaleConfig): Promise<Grayscal
     grayscalePercentage: config.percentage,
     strategyType: config.strategyType,
     featureRules: config.featureRules,
-    whitelistIds: config.whitelistIds,
+    whitelistIds: Array.isArray(config.whitelistIds)
+      ? (config.whitelistIds as string[]).join(',')
+      : config.whitelistIds,
     dualRunEnabled: config.dualRunEnabled,
   };
 

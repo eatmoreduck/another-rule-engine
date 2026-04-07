@@ -73,6 +73,8 @@ export interface GrayscaleRecord {
   whitelistIds: string | null;
   /** 是否启用双跑 */
   dualRunEnabled: boolean | null;
+  /** 灰度描述 */
+  description: string | null;
   /** 启动时间 */
   startedAt: string | null;
   /** 完成时间 */
@@ -83,18 +85,20 @@ export interface GrayscaleRecord {
 
 /** 灰度对比报告 - 版本指标 */
 export interface VersionMetrics {
+  /** 版本号 */
+  version: number;
   /** 执行次数 */
   executionCount: number;
   /** 命中次数 */
   hitCount: number;
+  /** 错误次数 */
+  errorCount: number;
+  /** 平均执行耗时（ms） */
+  avgExecutionTimeMs: number;
+  /** 错误率（百分比） */
+  errorRate: number;
   /** 命中率（百分比） */
   hitRate: number;
-  /** 平均耗时（ms） */
-  avgDuration: number;
-  /** 最大耗时（ms) */
-  maxDuration: number;
-  /** 最小耗时 (ms) */
-  minDuration: number;
 }
 
 /** 灰度对比报告（对应后端 GrayscaleReportResponse） */

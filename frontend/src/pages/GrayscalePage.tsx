@@ -39,6 +39,11 @@ import {
   getGrayscaleReport,
   getGrayscales,
   getCanaryLogs,
+  getRuleVersions,
+  getDecisionFlowVersions,
+} from '../api/grayscale';
+import type {
+  VersionOption,
 } from '../api/grayscale';
 import type {
   GrayscaleRecord,
@@ -52,6 +57,8 @@ import {
   GrayscaleTargetType,
   GrayscaleStrategyType,
 } from '../types/grayscale';
+import { getRulesForSelect } from '../api/rules';
+import { getDecisionFlows } from '../api/decisionFlows';
 import Access from '../components/AccessControl';
 
 /** 状态对应的颜色和标签 */
@@ -97,6 +104,77 @@ export default function GrayscalePage() {
   /** 创建表单中的目标类型和策略类型联动 */
   const [createTargetType, setCreateTargetType] = useState<string>(GrayscaleTargetType.RULE);
   const [createStrategyType, setCreateStrategyType] = useState<string>(GrayscaleStrategyType.PERCENTAGE);
+
+  /** 规则/决策流下拉选项 */
+  const [ruleOptions, setRuleOptions] = useState<{ label: string; value: string; version: number }[]>([]);
+  const [flowOptions, setFlowOptions] = useState<{ label: string; value: string; version: number }[]>([]);
+  const [optionsLoading, setOptionsLoading] = useState(false);
+
+  /** 版本号下拉选项 */
+  const [versionOptions, setVersionOptions] = useState<VersionOption[]>([]);
+  const [versionLoading, setVersionLoading] = useState(false);
+  /** 当前选中的灰度版本详情 */
+  const [selectedVersion, setSelectedVersion] = useState<VersionOption | null>(null);
+  /** 当前选中的目标 Key（用于获取当前版本号） */
+  const [selectedTargetKey, setSelectedTargetKey] = useState<string>('');
+
+  /** 加载规则/决策流选项 */
+  const loadTargetOptions = useCallback(async (type: string) => {
+    setOptionsLoading(true);
+    try {
+      if (type === GrayscaleTargetType.RULE) {
+        const rules = await getRulesForSelect();
+        setRuleOptions(rules.map((r) => ({ label: `${r.ruleName} (${r.ruleKey})`, value: r.ruleKey, version: r.version ?? 0 })));
+      } else {
+        const result = await getDecisionFlows({ page: 0, size: 200 });
+        setFlowOptions(result.content.map((f) => ({ label: `${f.flowName} (${f.flowKey})`, value: f.flowKey, version: f.version ?? 0 })));
+      }
+    } catch {
+      message.error('加载选项失败');
+    } finally {
+      setOptionsLoading(false);
+    }
+  }, []);
+
+  /** 选择目标后加载版本号 */
+  const handleTargetSelect = useCallback(async (targetKey: string) => {
+    if (!targetKey) {
+      setVersionOptions([]);
+      setSelectedTargetKey('');
+      setSelectedVersion(null);
+      return;
+    }
+    setSelectedTargetKey(targetKey);
+    setSelectedVersion(null);
+    setVersionLoading(true);
+    try {
+      const versions = createTargetType === GrayscaleTargetType.RULE
+        ? await getRuleVersions(targetKey)
+        : await getDecisionFlowVersions(targetKey);
+      setVersionOptions(versions);
+      // 自动设置当前版本号为表单值（取最新版本号减1作为灰度候选）
+      if (versions.length > 0) {
+        const latestVersion = versions[0].version;
+        form.setFieldsValue({
+          grayscaleVersion: latestVersion,
+        });
+      }
+    } catch {
+      message.error('加载版本列表失败');
+      setVersionOptions([]);
+    } finally {
+      setVersionLoading(false);
+    }
+  }, [createTargetType, form]);
+
+  /** 打开创建弹窗时加载选项 */
+  const openCreateModal = () => {
+    setCreateTargetType(GrayscaleTargetType.RULE);
+    setCreateStrategyType(GrayscaleStrategyType.PERCENTAGE);
+    setCreateModalOpen(true);
+    setVersionOptions([]);
+    loadTargetOptions(GrayscaleTargetType.RULE);
+  };
 
   const [reportModalOpen, setReportModalOpen] = useState(false);
   const [reportLoading, setReportLoading] = useState(false);
@@ -165,6 +243,8 @@ export default function GrayscalePage() {
       form.resetFields();
       setCreateTargetType(GrayscaleTargetType.RULE);
       setCreateStrategyType(GrayscaleStrategyType.PERCENTAGE);
+      setSelectedVersion(null);
+      setVersionOptions([]);
       loadData(queryParams);
     } catch (err: unknown) {
       if (err && typeof err === 'object' && 'response' in err) {
@@ -488,9 +568,7 @@ export default function GrayscalePage() {
               type="primary"
               icon={<PlusOutlined />}
               onClick={() => {
-                setCreateTargetType(GrayscaleTargetType.RULE);
-                setCreateStrategyType(GrayscaleStrategyType.PERCENTAGE);
-                setCreateModalOpen(true);
+                openCreateModal();
               }}
             >
               新建灰度
@@ -525,11 +603,14 @@ export default function GrayscalePage() {
           form.resetFields();
           setCreateTargetType(GrayscaleTargetType.RULE);
           setCreateStrategyType(GrayscaleStrategyType.PERCENTAGE);
+          setSelectedVersion(null);
+          setSelectedTargetKey('');
+          setVersionOptions([]);
         }}
         confirmLoading={createLoading}
         okText="创建"
         cancelText="取消"
-        width={600}
+        width={900}
       >
         <Form form={form} layout="vertical" style={{ marginTop: 16 }}>
           {/* 目标类型选择 */}
@@ -539,6 +620,8 @@ export default function GrayscalePage() {
               onChange={(val) => {
                 setCreateTargetType(val);
                 form.setFieldsValue({ ruleKey: undefined, flowKey: undefined });
+                setVersionOptions([]);
+                loadTargetOptions(val);
               }}
               options={[
                 { value: GrayscaleTargetType.RULE, label: '规则' },
@@ -551,18 +634,32 @@ export default function GrayscalePage() {
           {createTargetType === GrayscaleTargetType.RULE ? (
             <Form.Item
               name="ruleKey"
-              label="规则 Key"
-              rules={[{ required: true, message: '请输入规则 Key' }]}
+              label="规则"
+              rules={[{ required: true, message: '请选择规则' }]}
             >
-              <Input placeholder="请输入要灰度的规则 Key" />
+              <Select
+                showSearch
+                loading={optionsLoading}
+                placeholder="请搜索选择规则"
+                optionFilterProp="label"
+                onChange={(val) => handleTargetSelect(val)}
+                options={ruleOptions}
+              />
             </Form.Item>
           ) : (
             <Form.Item
               name="flowKey"
-              label="决策流 Key"
-              rules={[{ required: true, message: '请输入决策流 Key' }]}
+              label="决策流"
+              rules={[{ required: true, message: '请选择决策流' }]}
             >
-              <Input placeholder="请输入要灰度的决策流 Key" />
+              <Select
+                showSearch
+                loading={optionsLoading}
+                placeholder="请搜索选择决策流"
+                optionFilterProp="label"
+                onChange={(val) => handleTargetSelect(val)}
+                options={flowOptions}
+              />
             </Form.Item>
           )}
 
@@ -649,14 +746,140 @@ export default function GrayscalePage() {
           <Form.Item
             name="grayscaleVersion"
             label="灰度版本号"
-            rules={[{ required: true, message: '请输入灰度版本号' }]}
+            rules={[{ required: true, message: '请选择灰度版本号' }]}
+            extra={versionOptions.length > 0 ? `共 ${versionOptions.length} 个版本可选` : '请先选择目标'}
           >
-            <InputNumber
-              min={1}
-              style={{ width: '100%' }}
-              placeholder="请输入灰度版本号"
+            <Select
+              loading={versionLoading}
+              placeholder="请选择灰度版本号"
+              showSearch
+              optionFilterProp="label"
+              onChange={(val: number) => {
+                const v = versionOptions.find((opt) => opt.version === val);
+                setSelectedVersion(v ?? null);
+              }}
+              options={versionOptions.map((v) => {
+                const statusLabel = v.status ? `[${v.status}]` : '';
+                const reason = v.changeReason ? ` - ${v.changeReason}` : '';
+                const rollback = v.isRollback && v.rollbackFromVersion ? ` (从 v${v.rollbackFromVersion} 回滚)` : '';
+                const date = v.changedAt ? ` (${v.changedAt.slice(0, 16).replace('T', ' ')})` : '';
+                return {
+                  value: v.version,
+                  label: `v${v.version} ${statusLabel}${reason}${rollback}${date}`,
+                };
+              })}
             />
           </Form.Item>
+
+          {/* 版本对比面板 */}
+          {selectedVersion && (() => {
+            // 找到当前版本号
+            const currentVerNum = createTargetType === GrayscaleTargetType.RULE
+              ? ruleOptions.find((r) => r.value === selectedTargetKey)?.version
+              : flowOptions.find((f) => f.value === selectedTargetKey)?.version;
+            const currentVersion = currentVerNum
+              ? versionOptions.find((v) => v.version === currentVerNum)
+              : undefined;
+            const isSameVersion = currentVersion && selectedVersion.version === currentVersion.version;
+
+            return (
+              <Card
+                size="small"
+                title="版本对比"
+                style={{ marginBottom: 16, background: '#fafafa' }}
+              >
+                {isSameVersion && (
+                  <div style={{ color: '#faad14', marginBottom: 8, fontSize: 12 }}>
+                    注意：灰度版本与当前版本相同，请选择不同的版本进行灰度
+                  </div>
+                )}
+                <Row gutter={16}>
+                  {/* 当前版本 */}
+                  <Col span={12}>
+                    <Card
+                      size="small"
+                      title={currentVersion ? `当前版本 v${currentVersion.version}` : '当前版本'}
+                      headStyle={{ background: '#e6f7ff', fontSize: 13 }}
+                      bodyStyle={{ padding: 8 }}
+                    >
+                      {currentVersion ? (
+                        <>
+                          <Descriptions size="small" column={1} bordered>
+                            <Descriptions.Item label="状态">
+                              <Tag color={currentVersion.status === 'ACTIVE' ? 'green' : 'default'}>
+                                {currentVersion.status || '-'}
+                              </Tag>
+                            </Descriptions.Item>
+                            <Descriptions.Item label="操作人">{currentVersion.changedBy || '-'}</Descriptions.Item>
+                            <Descriptions.Item label="变更原因">{currentVersion.changeReason || '-'}</Descriptions.Item>
+                          </Descriptions>
+                          {currentVersion.groovyScript && (
+                            <Input.TextArea
+                              value={currentVersion.groovyScript}
+                              readOnly
+                              rows={5}
+                              style={{ fontFamily: 'monospace', fontSize: 11, background: '#fff', marginTop: 4 }}
+                            />
+                          )}
+                          {currentVersion.flowGraph && (
+                            <Input.TextArea
+                              value={(() => { try { return JSON.stringify(JSON.parse(currentVersion.flowGraph), null, 2); } catch { return currentVersion.flowGraph; } })()}
+                              readOnly
+                              rows={5}
+                              style={{ fontFamily: 'monospace', fontSize: 11, background: '#fff', marginTop: 4 }}
+                            />
+                          )}
+                        </>
+                      ) : (
+                        <div style={{ color: '#999', textAlign: 'center', padding: 16 }}>未找到当前版本信息</div>
+                      )}
+                    </Card>
+                  </Col>
+
+                  {/* 灰度版本 */}
+                  <Col span={12}>
+                    <Card
+                      size="small"
+                      title={`灰度版本 v${selectedVersion.version}`}
+                      headStyle={{ background: '#fff7e6', fontSize: 13 }}
+                      bodyStyle={{ padding: 8 }}
+                    >
+                      <Descriptions size="small" column={1} bordered>
+                        <Descriptions.Item label="状态">
+                          <Tag color={selectedVersion.status === 'ACTIVE' ? 'green' : selectedVersion.status === 'CANARY' ? 'orange' : 'default'}>
+                            {selectedVersion.status || '-'}
+                          </Tag>
+                        </Descriptions.Item>
+                        <Descriptions.Item label="操作人">{selectedVersion.changedBy || '-'}</Descriptions.Item>
+                        <Descriptions.Item label="变更原因">{selectedVersion.changeReason || '-'}</Descriptions.Item>
+                        {selectedVersion.isRollback && selectedVersion.rollbackFromVersion && (
+                          <Descriptions.Item label="回滚来源">
+                            从 v{selectedVersion.rollbackFromVersion} 回滚
+                          </Descriptions.Item>
+                        )}
+                      </Descriptions>
+                      {selectedVersion.groovyScript && (
+                        <Input.TextArea
+                          value={selectedVersion.groovyScript}
+                          readOnly
+                          rows={5}
+                          style={{ fontFamily: 'monospace', fontSize: 11, background: '#fff', marginTop: 4 }}
+                        />
+                      )}
+                      {selectedVersion.flowGraph && (
+                        <Input.TextArea
+                          value={(() => { try { return JSON.stringify(JSON.parse(selectedVersion.flowGraph), null, 2); } catch { return selectedVersion.flowGraph; } })()}
+                          readOnly
+                          rows={5}
+                          style={{ fontFamily: 'monospace', fontSize: 11, background: '#fff', marginTop: 4 }}
+                        />
+                      )}
+                    </Card>
+                  </Col>
+                </Row>
+              </Card>
+            );
+          })()}
 
           <Form.Item
             name="description"
