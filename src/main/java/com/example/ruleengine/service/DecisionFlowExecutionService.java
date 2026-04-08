@@ -6,11 +6,13 @@ import com.example.ruleengine.domain.DecisionFlow;
 import com.example.ruleengine.domain.DecisionFlowVersion;
 import com.example.ruleengine.domain.Rule;
 import com.example.ruleengine.engine.GroovyScriptEngine;
+import com.example.ruleengine.metrics.RuleExecutionMetrics;
 import com.example.ruleengine.model.DecisionResponse;
 import com.example.ruleengine.model.flow.FlowEdgeDef;
 import com.example.ruleengine.model.flow.FlowGraph;
 import com.example.ruleengine.model.flow.FlowNodeDef;
 import com.example.ruleengine.repository.DecisionFlowVersionRepository;
+import com.example.ruleengine.service.executionlog.ExecutionLogService;
 import com.example.ruleengine.service.grayscale.CanaryExecutionLogService;
 import com.example.ruleengine.service.grayscale.GrayscaleService;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -40,6 +42,8 @@ public class DecisionFlowExecutionService {
     private final GrayscaleService grayscaleService;
     private final DecisionFlowVersionRepository decisionFlowVersionRepository;
     private final CanaryExecutionLogService canaryExecutionLogService;
+    private final RuleExecutionMetrics ruleExecutionMetrics;
+    private final ExecutionLogService executionLogService;
 
     /**
      * 执行决策流
@@ -104,6 +108,14 @@ public class DecisionFlowExecutionService {
                     finalVersionUsed, finalIsCanary,
                     features, response.getDecision(), execTime);
 
+            // 记录 Micrometer 指标（监控仪表盘数据来源）
+            ruleExecutionMetrics.recordExecution(flowKey, response.getDecision(), execTime);
+
+            // 异步记录执行日志（最近执行日志数据来源）
+            executionLogService.logSuccess(
+                    flowKey, versionUsed, features,
+                    response.getDecision(), response.getReason(), execTime);
+
             return response;
 
         } catch (Exception e) {
@@ -115,6 +127,13 @@ public class DecisionFlowExecutionService {
                     traceId, "DECISION_FLOW", flowKey,
                     0, false, features,
                     e.getMessage(), execTime);
+
+            // 记录 Micrometer 错误指标
+            ruleExecutionMetrics.recordError(flowKey, e);
+
+            // 异步记录执行错误日志
+            executionLogService.logError(
+                    flowKey, 0, features, execTime, e.getMessage());
 
             return DecisionResponse.builder()
                     .decision("REJECT")

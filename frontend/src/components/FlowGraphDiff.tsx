@@ -7,6 +7,7 @@ import { useMemo, useState, useEffect, useCallback } from 'react';
 import { Tag, Space } from 'antd';
 import { ReactFlowProvider, ReactFlow, Controls, Background, BackgroundVariant, type NodeTypes } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
+import { useTranslation } from 'react-i18next';
 import type { FlowNode, FlowEdge } from '../types/flowConfig';
 import { createInitialNodes, createInitialEdges } from '../types/flowConfig';
 import StartNodeComponent from './flow/nodes/StartNode';
@@ -48,14 +49,12 @@ interface DiffSummary {
   modifiedEdges: number;
 }
 
-// 需要忽略的 node 字段（不影响逻辑）
 const IGNORED_NODE_KEYS = new Set([
   'position', 'selected', 'dragging', 'width', 'height',
   'measured', 'positionAbsoluteX', 'positionAbsoluteY',
   'origin', 'expandParent', 'parentId',
 ]);
 
-/** 安全解析 flowGraph JSON */
 function parseFlowGraph(json: string): { nodes: FlowNode[]; edges: FlowEdge[] } {
   try {
     const parsed = JSON.parse(json);
@@ -68,26 +67,21 @@ function parseFlowGraph(json: string): { nodes: FlowNode[]; edges: FlowEdge[] } 
   }
 }
 
-/** 比较两个节点是否逻辑相同（忽略位置和运行时字段） */
 function isNodeEqual(a: FlowNode, b: FlowNode): boolean {
   if (a.type !== b.type) return false;
-  // 比较 data（核心逻辑字段）
   return JSON.stringify(a.data) === JSON.stringify(b.data);
 }
 
-/** 边的唯一标识：source + sourceHandle + target */
 function edgeKey(edge: FlowEdge): string {
   return `${edge.source}::${edge.sourceHandle ?? ''}::${edge.target}`;
 }
 
-/** 比较两条边是否逻辑相同 */
 function isEdgeEqual(a: FlowEdge, b: FlowEdge): boolean {
   if (a.source !== b.source || a.target !== b.target) return false;
   if (a.sourceHandle !== b.sourceHandle) return false;
   return JSON.stringify(a.data) === JSON.stringify(b.data);
 }
 
-/** 节点 diff 样式 */
 const NODE_STYLES: Record<DiffStatus, React.CSSProperties> = {
   added: { boxShadow: '0 0 0 3px #52c41a, 0 0 12px rgba(82,196,26,0.4)', borderRadius: 8 },
   removed: { boxShadow: '0 0 0 3px #ff4d4f, 0 0 12px rgba(255,77,79,0.4)', borderRadius: 8, opacity: 0.6 },
@@ -95,7 +89,6 @@ const NODE_STYLES: Record<DiffStatus, React.CSSProperties> = {
   unchanged: {},
 };
 
-/** 边 diff 样式 */
 const EDGE_STYLES: Record<DiffStatus, React.CSSProperties> = {
   added: { stroke: '#52c41a', strokeWidth: 2 },
   removed: { stroke: '#ff4d4f', strokeWidth: 2, strokeDasharray: '5 5' },
@@ -103,12 +96,10 @@ const EDGE_STYLES: Record<DiffStatus, React.CSSProperties> = {
   unchanged: {},
 };
 
-/** 计算两个版本的 diff */
 function computeDiff(oldGraph: string, newGraph: string) {
   const oldParsed = parseFlowGraph(oldGraph);
   const newParsed = parseFlowGraph(newGraph);
 
-  // 节点 diff
   const oldNodeMap = new Map(oldParsed.nodes.map((n) => [n.id, n]));
   const newNodeMap = new Map(newParsed.nodes.map((n) => [n.id, n]));
 
@@ -128,7 +119,6 @@ function computeDiff(oldGraph: string, newGraph: string) {
     }
   }
 
-  // 边 diff
   const oldEdgeMap = new Map(oldParsed.edges.map((e) => [edgeKey(e), e]));
   const newEdgeMap = new Map(newParsed.edges.map((e) => [edgeKey(e), e]));
 
@@ -148,7 +138,6 @@ function computeDiff(oldGraph: string, newGraph: string) {
     }
   }
 
-  // 构建带 diff 样式的节点和边
   const oldNodes = oldParsed.nodes.map((n) => {
     const status = nodeStatus.get(n.id) ?? 'unchanged';
     return { ...n, style: NODE_STYLES[status], data: { ...n.data, _diffStatus: status } };
@@ -167,7 +156,6 @@ function computeDiff(oldGraph: string, newGraph: string) {
     return { ...e, style: EDGE_STYLES[status] };
   });
 
-  // 摘要
   let addedNodes = 0, removedNodes = 0, modifiedNodes = 0;
   nodeStatus.forEach((s) => {
     if (s === 'added') addedNodes++;
@@ -188,7 +176,6 @@ function computeDiff(oldGraph: string, newGraph: string) {
   };
 }
 
-/** 单侧画布组件 */
 function SingleCanvas({
   nodes,
   edges,
@@ -200,7 +187,6 @@ function SingleCanvas({
 }) {
   const [flowEdges, setFlowEdges] = useState<FlowEdge[]>([]);
 
-  // 延迟设置 edges（与 DecisionFlowDetailPage 相同的 workaround）
   useEffect(() => {
     setFlowEdges([]);
     requestAnimationFrame(() => {
@@ -246,9 +232,13 @@ function SingleCanvas({
 export default function FlowGraphDiff({
   oldFlowGraph,
   newFlowGraph,
-  oldTitle = '当前版本',
-  newTitle = '灰度版本',
+  oldTitle,
+  newTitle,
 }: FlowGraphDiffProps) {
+  const { t } = useTranslation();
+  const resolvedOldTitle = oldTitle ?? t('grayscale.currentVersionTitle');
+  const resolvedNewTitle = newTitle ?? t('grayscale.grayscaleVersionTitle');
+
   const { oldNodes, oldEdges, newNodes, newEdges, summary } = useMemo(
     () => computeDiff(oldFlowGraph, newFlowGraph),
     [oldFlowGraph, newFlowGraph],
@@ -259,7 +249,6 @@ export default function FlowGraphDiff({
 
   return (
     <div>
-      {/* 变更摘要 + 图例 */}
       <div style={{
         display: 'flex',
         justifyContent: 'space-between',
@@ -273,40 +262,36 @@ export default function FlowGraphDiff({
         <span>
           {hasChanges ? (
             <>
-              {summary.addedNodes > 0 && <Tag color="success">新增 {summary.addedNodes} 个节点</Tag>}
-              {summary.removedNodes > 0 && <Tag color="error">删除 {summary.removedNodes} 个节点</Tag>}
-              {summary.modifiedNodes > 0 && <Tag color="warning">修改 {summary.modifiedNodes} 个节点</Tag>}
-              {summary.addedEdges > 0 && <Tag color="success">新增 {summary.addedEdges} 条连线</Tag>}
-              {summary.removedEdges > 0 && <Tag color="error">删除 {summary.removedEdges} 条连线</Tag>}
-              {summary.modifiedEdges > 0 && <Tag color="warning">修改 {summary.modifiedEdges} 条连线</Tag>}
+              {summary.addedNodes > 0 && <Tag color="success">+{summary.addedNodes}</Tag>}
+              {summary.removedNodes > 0 && <Tag color="error">-{summary.removedNodes}</Tag>}
+              {summary.modifiedNodes > 0 && <Tag color="warning">~{summary.modifiedNodes}</Tag>}
+              {summary.addedEdges > 0 && <Tag color="success">+{summary.addedEdges}</Tag>}
+              {summary.removedEdges > 0 && <Tag color="error">-{summary.removedEdges}</Tag>}
+              {summary.modifiedEdges > 0 && <Tag color="warning">~{summary.modifiedEdges}</Tag>}
             </>
           ) : (
-            <Tag color="default">两个版本完全相同</Tag>
+            <Tag color="default">No changes</Tag>
           )}
         </span>
         <Space size="small">
           <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
             <span style={{ width: 12, height: 12, borderRadius: 2, background: '#52c41a', display: 'inline-block' }} />
-            <span style={{ color: '#666' }}>新增</span>
           </span>
           <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
             <span style={{ width: 12, height: 12, borderRadius: 2, background: '#ff4d4f', display: 'inline-block' }} />
-            <span style={{ color: '#666' }}>删除</span>
           </span>
           <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
             <span style={{ width: 12, height: 12, borderRadius: 2, background: '#faad14', display: 'inline-block' }} />
-            <span style={{ color: '#666' }}>修改</span>
           </span>
         </Space>
       </div>
 
-      {/* 并排画布 */}
       <div style={{ display: 'flex', gap: 12 }}>
         <ReactFlowProvider>
-          <SingleCanvas nodes={oldNodes} edges={oldEdges} title={oldTitle} />
+          <SingleCanvas nodes={oldNodes} edges={oldEdges} title={resolvedOldTitle} />
         </ReactFlowProvider>
         <ReactFlowProvider>
-          <SingleCanvas nodes={newNodes} edges={newEdges} title={newTitle} />
+          <SingleCanvas nodes={newNodes} edges={newEdges} title={resolvedNewTitle} />
         </ReactFlowProvider>
       </div>
     </div>

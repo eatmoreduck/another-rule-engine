@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Modal, Form, Input, message } from 'antd';
+import { useTranslation } from 'react-i18next';
 import { createRule } from '../../api/rules';
 import type { CreateRuleRequest } from '../../types/rule';
 
@@ -12,6 +13,7 @@ interface CreateRuleModalProps {
 }
 
 export default function CreateRuleModal({ open, onClose, onSuccess }: CreateRuleModalProps) {
+  const { t } = useTranslation();
   const [form] = Form.useForm<CreateRuleRequest>();
   const [confirmLoading, setConfirmLoading] = useState(false);
 
@@ -23,7 +25,7 @@ export default function CreateRuleModal({ open, onClose, onSuccess }: CreateRule
         ...values,
         groovyScript: DEFAULT_SCRIPT,
       });
-      message.success('规则创建成功');
+      message.success(t('rules.createSuccess'));
       form.resetFields();
       onSuccess();
       onClose();
@@ -38,31 +40,31 @@ export default function CreateRuleModal({ open, onClose, onSuccess }: CreateRule
 
   return (
     <Modal
-      title="新建规则"
+      title={t('rules.createRule')}
       open={open}
       onOk={handleOk}
       onCancel={onClose}
       confirmLoading={confirmLoading}
-      okText="创建"
-      cancelText="取消"
+      okText={t('common.create')}
+      cancelText={t('common.cancel')}
     >
       <Form form={form} layout="vertical">
         <Form.Item
           name="ruleKey"
-          label="规则 Key"
-          rules={[{ required: true, message: '请输入规则 Key' }]}
+          label={t('rules.ruleKey')}
+          rules={[{ required: true, message: t('rules.createRuleKeyRequired') }]}
         >
           <Input placeholder="如: risk-check-v1" />
         </Form.Item>
         <Form.Item
           name="ruleName"
-          label="规则名称"
-          rules={[{ required: true, message: '请输入规则名称' }]}
+          label={t('rules.ruleName')}
+          rules={[{ required: true, message: t('rules.createRuleNameRequired') }]}
         >
           <Input placeholder="如: 风险检查规则" />
         </Form.Item>
-        <Form.Item name="ruleDescription" label="规则描述">
-          <Input.TextArea rows={3} placeholder="可选：描述规则用途" />
+        <Form.Item name="ruleDescription" label={t('rules.ruleDescription')}>
+          <Input.TextArea rows={3} placeholder={t('rules.createRuleDescOptional')} />
         </Form.Item>
       </Form>
     </Modal>

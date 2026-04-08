@@ -1,6 +1,7 @@
 import { Table, Switch, Popconfirm, Button, Space, Tooltip, Tag } from 'antd';
 import { DeleteOutlined, EyeOutlined, EditOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import type { ColumnsType } from 'antd/es/table';
 import type { Rule } from '../../types/rule';
 import { useRuleStore } from '../../stores/ruleStore';
@@ -25,32 +26,33 @@ export default function RuleTable({
   onPageChange,
 }: RuleTableProps) {
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const { deleteRule, toggleEnabled } = useRuleStore();
 
   const columns: ColumnsType<Rule> = [
     {
-      title: '规则Key',
+      title: t('rules.ruleKey'),
       dataIndex: 'ruleKey',
       key: 'ruleKey',
       width: 180,
       ellipsis: true,
     },
     {
-      title: '规则名称',
+      title: t('rules.ruleName'),
       dataIndex: 'ruleName',
       key: 'ruleName',
       width: 200,
       ellipsis: true,
     },
     {
-      title: '版本',
+      title: t('common.version'),
       dataIndex: 'version',
       key: 'version',
       width: 80,
       align: 'center',
     },
     {
-      title: '启用',
+      title: t('common.enable'),
       dataIndex: 'enabled',
       key: 'enabled',
       width: 80,
@@ -66,14 +68,14 @@ export default function RuleTable({
       ),
     },
     {
-      title: '创建人',
+      title: t('common.createdBy'),
       dataIndex: 'createdBy',
       key: 'createdBy',
       width: 120,
       ellipsis: true,
     },
     {
-      title: '更新时间',
+      title: t('common.updatedAt'),
       dataIndex: 'updatedAt',
       key: 'updatedAt',
       width: 180,
@@ -81,7 +83,7 @@ export default function RuleTable({
         val ? dayjs(val).format('YYYY-MM-DD HH:mm:ss') : '-',
     },
     {
-      title: '操作',
+      title: t('common.actions'),
       key: 'action',
       width: 280,
       render: (_, record) => (
@@ -92,30 +94,30 @@ export default function RuleTable({
             icon={<EyeOutlined />}
             onClick={() => navigate(`/rules/${record.ruleKey}`)}
           >
-            查看
+            {t('common.view')}
           </Button>
           <Access permission="api:rules:update">
-            <Tooltip title="表单编辑">
+            <Tooltip title={t('rules.formEdit')}>
               <Button
                 type="link"
                 size="small"
                 icon={<EditOutlined />}
                 onClick={() => navigate(`/rules/${record.ruleKey}/edit`)}
               >
-                编辑
+                {t('common.edit')}
               </Button>
             </Tooltip>
           </Access>
           <Access permission="api:rules:delete">
             <Popconfirm
-              title="确认删除"
-              description={`确定要删除规则 "${record.ruleName}" 吗？`}
+              title={t('common.confirmDelete')}
+              description={t('rules.confirmDeleteName', { name: record.ruleName })}
               onConfirm={() => deleteRule(record.ruleKey)}
-              okText="确定"
-              cancelText="取消"
+              okText={t('common.ok')}
+              cancelText={t('common.cancel')}
             >
               <Button type="link" size="small" danger icon={<DeleteOutlined />}>
-                删除
+                {t('common.delete')}
               </Button>
             </Popconfirm>
           </Access>
@@ -135,7 +137,7 @@ export default function RuleTable({
         pageSize,
         total,
         showSizeChanger: true,
-        showTotal: (t) => `共 ${t} 条`,
+        showTotal: (t_val) => t('common.totalShort', { count: t_val }),
         onChange: (p, ps) => onPageChange(p - 1, ps),
       }}
     />

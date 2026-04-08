@@ -229,9 +229,20 @@ public class RuleConflictDetector {
         boolean hasReject2 = script2.contains("REJECT");
         boolean hasPass2 = script2.contains("PASS");
 
-        // 如果一个只返回 REJECT，另一个只返回 PASS，可能存在冲突
-        return (hasReject1 && !hasPass1 && hasPass2 && !hasReject2)
-            || (hasPass1 && !hasReject1 && hasReject2 && !hasPass2);
+        // 两个脚本如果包含不同的决策组合，对相同输入可能产生不同结果
+        // - 一个只 PASS，另一个只 REJECT（完全矛盾）
+        // - 一个只 PASS/只 REJECT，另一个同时有 PASS 和 REJECT（条件分支不同）
+        boolean onlyReject1 = hasReject1 && !hasPass1;
+        boolean onlyPass1 = hasPass1 && !hasReject1;
+        boolean onlyReject2 = hasReject2 && !hasPass2;
+        boolean onlyPass2 = hasPass2 && !hasReject2;
+
+        return (onlyReject1 && onlyPass2)
+            || (onlyPass1 && onlyReject2)
+            || (onlyReject1 && hasReject2 && hasPass2)
+            || (onlyPass1 && hasReject2 && hasPass2)
+            || (onlyReject2 && hasReject1 && hasPass1)
+            || (onlyPass2 && hasReject1 && hasPass1);
     }
 
     /**

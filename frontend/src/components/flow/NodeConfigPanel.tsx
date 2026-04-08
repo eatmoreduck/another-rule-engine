@@ -5,6 +5,7 @@
 
 import { useCallback, useState, useEffect } from 'react';
 import { Select, Input, Divider, Typography, Tag, message } from 'antd';
+import { useTranslation } from 'react-i18next';
 import type {
   FlowNode,
   ConditionNodeData,
@@ -35,10 +36,11 @@ function ConditionConfig({
   data: ConditionNodeData;
   onUpdate: (updates: Partial<ConditionNodeData>) => void;
 }) {
+  const { t } = useTranslation();
   return (
     <>
       <div style={{ marginBottom: 12 }}>
-        <Text type="secondary" style={{ fontSize: 12 }}>节点标签</Text>
+        <Text type="secondary" style={{ fontSize: 12 }}>{t('nodeConfig.nodeLabel')}</Text>
         <Input
           value={data.label}
           onChange={(e) => onUpdate({ label: e.target.value })}
@@ -48,17 +50,17 @@ function ConditionConfig({
       </div>
       <Divider style={{ margin: '8px 0' }} />
       <div style={{ marginBottom: 12 }}>
-        <Text type="secondary" style={{ fontSize: 12 }}>特征字段</Text>
+        <Text type="secondary" style={{ fontSize: 12 }}>{t('nodeConfig.featureField')}</Text>
         <Input
           value={data.fieldName}
           onChange={(e) => onUpdate({ fieldName: e.target.value })}
-          placeholder="例如: amount, riskScore"
+          placeholder={t('nodeConfig.featureFieldPlaceholder')}
           size="small"
           style={{ marginTop: 4 }}
         />
       </div>
       <div style={{ marginBottom: 12 }}>
-        <Text type="secondary" style={{ fontSize: 12 }}>比较运算符</Text>
+        <Text type="secondary" style={{ fontSize: 12 }}>{t('nodeConfig.comparisonOperator')}</Text>
         <Select
           value={data.operator}
           onChange={(v: Operator) => onUpdate({ operator: v })}
@@ -71,11 +73,11 @@ function ConditionConfig({
         />
       </div>
       <div style={{ marginBottom: 12 }}>
-        <Text type="secondary" style={{ fontSize: 12 }}>阈值</Text>
+        <Text type="secondary" style={{ fontSize: 12 }}>{t('nodeConfig.threshold')}</Text>
         <Input
           value={String(data.threshold)}
           onChange={(e) => onUpdate({ threshold: e.target.value })}
-          placeholder="比较值"
+          placeholder={t('nodeConfig.thresholdPlaceholder')}
           size="small"
           style={{ marginTop: 4 }}
         />
@@ -92,10 +94,11 @@ function ActionConfig({
   data: ActionNodeData;
   onUpdate: (updates: Partial<ActionNodeData>) => void;
 }) {
+  const { t } = useTranslation();
   return (
     <>
       <div style={{ marginBottom: 12 }}>
-        <Text type="secondary" style={{ fontSize: 12 }}>节点标签</Text>
+        <Text type="secondary" style={{ fontSize: 12 }}>{t('nodeConfig.nodeLabel')}</Text>
         <Input
           value={data.label}
           onChange={(e) => onUpdate({ label: e.target.value })}
@@ -105,7 +108,7 @@ function ActionConfig({
       </div>
       <Divider style={{ margin: '8px 0' }} />
       <div style={{ marginBottom: 12 }}>
-        <Text type="secondary" style={{ fontSize: 12 }}>决策结果</Text>
+        <Text type="secondary" style={{ fontSize: 12 }}>{t('nodeConfig.decisionResult')}</Text>
         <Select
           value={data.action}
           onChange={(v: Action) => onUpdate({ action: v })}
@@ -118,11 +121,11 @@ function ActionConfig({
         />
       </div>
       <div style={{ marginBottom: 12 }}>
-        <Text type="secondary" style={{ fontSize: 12 }}>原因说明</Text>
+        <Text type="secondary" style={{ fontSize: 12 }}>{t('nodeConfig.reasonDescription')}</Text>
         <Input.TextArea
           value={data.reason}
           onChange={(e) => onUpdate({ reason: e.target.value })}
-          placeholder="决策原因"
+          placeholder={t('nodeConfig.reasonPlaceholder')}
           size="small"
           rows={2}
           style={{ marginTop: 4 }}
@@ -140,10 +143,11 @@ function EndConfig({
   data: EndNodeData;
   onUpdate: (updates: Partial<EndNodeData>) => void;
 }) {
+  const { t } = useTranslation();
   return (
     <>
       <div style={{ marginBottom: 12 }}>
-        <Text type="secondary" style={{ fontSize: 12 }}>节点标签</Text>
+        <Text type="secondary" style={{ fontSize: 12 }}>{t('nodeConfig.nodeLabel')}</Text>
         <Input
           value={data.label}
           onChange={(e) => onUpdate({ label: e.target.value })}
@@ -153,7 +157,7 @@ function EndConfig({
       </div>
       <Divider style={{ margin: '8px 0' }} />
       <div style={{ marginBottom: 12 }}>
-        <Text type="secondary" style={{ fontSize: 12 }}>默认决策</Text>
+        <Text type="secondary" style={{ fontSize: 12 }}>{t('nodeConfig.defaultDecision')}</Text>
         <Select
           value={data.defaultAction}
           onChange={(v: Action) => onUpdate({ defaultAction: v })}
@@ -166,11 +170,11 @@ function EndConfig({
         />
       </div>
       <div style={{ marginBottom: 12 }}>
-        <Text type="secondary" style={{ fontSize: 12 }}>默认原因</Text>
+        <Text type="secondary" style={{ fontSize: 12 }}>{t('nodeConfig.defaultReason')}</Text>
         <Input
           value={data.defaultReason}
           onChange={(e) => onUpdate({ defaultReason: e.target.value })}
-          placeholder="默认决策原因"
+          placeholder={t('nodeConfig.defaultReasonPlaceholder')}
           size="small"
           style={{ marginTop: 4 }}
         />
@@ -187,6 +191,7 @@ function RuleSetConfig({
   data: RuleSetNodeData;
   onUpdate: (updates: Partial<RuleSetNodeData>) => void;
 }) {
+  const { t } = useTranslation();
   const [rules, setRules] = useState<RuleSelectOption[]>([]);
   const [loadingRules, setLoadingRules] = useState(false);
 
@@ -202,7 +207,7 @@ function RuleSetConfig({
       .catch((error) => {
         console.error('Failed to load rules for ruleset node:', error);
         if (active) {
-          message.error('加载引用规则失败，请稍后重试');
+          message.error(t('nodeConfig.loadRulesFailed'));
         }
       })
       .finally(() => {
@@ -222,7 +227,7 @@ function RuleSetConfig({
       .filter((ruleKey) => !rules.some((rule) => rule.ruleKey === ruleKey))
       .map((ruleKey) => ({
         ruleKey,
-        ruleName: '已引用规则',
+        ruleName: t('nodeConfig.referencedRule'),
         enabled: false,
         deleted: false,
         unavailable: true,
@@ -232,22 +237,22 @@ function RuleSetConfig({
   return (
     <>
       <div style={{ marginBottom: 12 }}>
-        <Text type="secondary" style={{ fontSize: 12 }}>节点标签</Text>
+        <Text type="secondary" style={{ fontSize: 12 }}>{t('nodeConfig.nodeLabel')}</Text>
         <Input value={data.label} onChange={(e) => onUpdate({ label: e.target.value })}
           size="small" style={{ marginTop: 4 }} />
       </div>
       <Divider style={{ margin: '8px 0' }} />
       <div style={{ marginBottom: 12, padding: '8px 10px', background: '#fff2f0', borderRadius: 4, border: '1px solid #ffccc7' }}>
         <Text type="secondary" style={{ fontSize: 12 }}>
-          执行模式：<Text type="danger" strong>拒绝优先</Text>
+          {t('nodeConfig.executionMode')}<Text type="danger" strong>{t('nodeConfig.rejectPriority')}</Text>
         </Text>
         <div style={{ fontSize: 11, color: '#999', marginTop: 4 }}>
-          任一引用规则返回拒绝，立即中断并返回拒绝决策
+          {t('nodeConfig.rejectPriorityDesc')}
         </div>
       </div>
       <Divider style={{ margin: '8px 0' }} />
       <div style={{ marginBottom: 12 }}>
-        <Text type="secondary" style={{ fontSize: 12 }}>引用规则</Text>
+        <Text type="secondary" style={{ fontSize: 12 }}>{t('nodeConfig.referenceRules')}</Text>
         <Select
           mode="multiple"
           value={data.ruleKeys ?? []}
@@ -255,11 +260,11 @@ function RuleSetConfig({
           loading={loadingRules}
           size="small"
           style={{ width: '100%', marginTop: 4 }}
-          placeholder="选择要引用的规则"
-          notFoundContent={loadingRules ? '加载中...' : '暂无可引用规则'}
+          placeholder={t('nodeConfig.selectReferenceRules')}
+          notFoundContent={loadingRules ? t('nodeConfig.loadingRules') : t('nodeConfig.noRulesAvailable')}
           options={ruleOptions.map((rule) => ({
             value: rule.ruleKey,
-            label: `${rule.ruleName} (${rule.ruleKey})${rule.unavailable ? '（当前不可用）' : rule.enabled ? '' : '（已禁用）'}`,
+            label: `${rule.ruleName} (${rule.ruleKey})${rule.unavailable ? `(${t('nodeConfig.currentlyUnavailable')})` : rule.enabled ? '' : `(${t('common.disabled')})`}`,
           }))}
           optionFilterProp="label"
           showSearch
@@ -267,7 +272,7 @@ function RuleSetConfig({
       </div>
       {data.ruleKeys && data.ruleKeys.length > 0 && (
         <div style={{ fontSize: 11, color: '#8c8c8c' }}>
-          已引用 {data.ruleKeys.length} 条规则
+          {t('nodeConfig.referencedRuleCount', { count: data.ruleKeys.length })}
         </div>
       )}
     </>
@@ -282,6 +287,7 @@ function BlacklistConfig({
   data: BlacklistNodeData;
   onUpdate: (updates: Partial<BlacklistNodeData>) => void;
 }) {
+  const { t } = useTranslation();
   const [listKeys, setListKeys] = useState<string[]>([]);
   const [loadingListKeys, setLoadingListKeys] = useState(false);
 
@@ -311,19 +317,19 @@ function BlacklistConfig({
   return (
     <>
       <div style={{ marginBottom: 12 }}>
-        <Text type="secondary" style={{ fontSize: 12 }}>节点标签</Text>
+        <Text type="secondary" style={{ fontSize: 12 }}>{t('nodeConfig.nodeLabel')}</Text>
         <Input value={data.label} onChange={(e) => onUpdate({ label: e.target.value })}
           size="small" style={{ marginTop: 4 }} />
       </div>
       <Divider style={{ margin: '8px 0' }} />
       <div style={{ marginBottom: 12 }}>
-        <Text type="secondary" style={{ fontSize: 12 }}>名单 Key</Text>
+        <Text type="secondary" style={{ fontSize: 12 }}>{t('nodeConfig.listKey')}</Text>
         <Select
           value={data.listKey || undefined}
           onChange={(v: string) => onUpdate({ listKey: v })}
           size="small"
           style={{ width: '100%', marginTop: 4 }}
-          placeholder="选择名单（留空使用当前决策流）"
+          placeholder={t('nodeConfig.selectListPlaceholder')}
           allowClear
           loading={loadingListKeys}
           options={listKeys.map(key => ({ value: key, label: key }))}
@@ -331,13 +337,13 @@ function BlacklistConfig({
         />
       </div>
       <div style={{ marginBottom: 12 }}>
-        <Text type="secondary" style={{ fontSize: 12 }}>键类型</Text>
+        <Text type="secondary" style={{ fontSize: 12 }}>{t('nodeConfig.keyType')}</Text>
         <Select
           value={data.keyType || undefined}
           onChange={(v: string) => onUpdate({ keyType: v })}
           size="small"
           style={{ width: '100%', marginTop: 4 }}
-          placeholder="选择键类型"
+          placeholder={t('nodeConfig.selectKeyTypePlaceholder')}
           options={Object.entries(KEY_TYPE_LABELS).map(([key, label]) => ({
             value: key,
             label,
@@ -347,7 +353,7 @@ function BlacklistConfig({
       <Divider style={{ margin: '8px 0' }} />
       <div style={{ padding: '8px 10px', background: '#fff2f0', borderRadius: 4, border: '1px solid #ffccc7' }}>
         <Text type="secondary" style={{ fontSize: 12 }}>
-          黑名单匹配：输入值在黑名单中则拒绝，不在则通过
+          {t('nodeConfig.blacklistMatchDesc')}
         </Text>
       </div>
     </>
@@ -362,6 +368,7 @@ function WhitelistConfig({
   data: WhitelistNodeData;
   onUpdate: (updates: Partial<WhitelistNodeData>) => void;
 }) {
+  const { t } = useTranslation();
   const [listKeys, setListKeys] = useState<string[]>([]);
   const [loadingListKeys, setLoadingListKeys] = useState(false);
 
@@ -391,19 +398,19 @@ function WhitelistConfig({
   return (
     <>
       <div style={{ marginBottom: 12 }}>
-        <Text type="secondary" style={{ fontSize: 12 }}>节点标签</Text>
+        <Text type="secondary" style={{ fontSize: 12 }}>{t('nodeConfig.nodeLabel')}</Text>
         <Input value={data.label} onChange={(e) => onUpdate({ label: e.target.value })}
           size="small" style={{ marginTop: 4 }} />
       </div>
       <Divider style={{ margin: '8px 0' }} />
       <div style={{ marginBottom: 12 }}>
-        <Text type="secondary" style={{ fontSize: 12 }}>名单 Key</Text>
+        <Text type="secondary" style={{ fontSize: 12 }}>{t('nodeConfig.listKey')}</Text>
         <Select
           value={data.listKey || undefined}
           onChange={(v: string) => onUpdate({ listKey: v })}
           size="small"
           style={{ width: '100%', marginTop: 4 }}
-          placeholder="选择名单（留空使用当前决策流）"
+          placeholder={t('nodeConfig.selectListPlaceholder')}
           allowClear
           loading={loadingListKeys}
           options={listKeys.map(key => ({ value: key, label: key }))}
@@ -411,13 +418,13 @@ function WhitelistConfig({
         />
       </div>
       <div style={{ marginBottom: 12 }}>
-        <Text type="secondary" style={{ fontSize: 12 }}>键类型</Text>
+        <Text type="secondary" style={{ fontSize: 12 }}>{t('nodeConfig.keyType')}</Text>
         <Select
           value={data.keyType || undefined}
           onChange={(v: string) => onUpdate({ keyType: v })}
           size="small"
           style={{ width: '100%', marginTop: 4 }}
-          placeholder="选择键类型"
+          placeholder={t('nodeConfig.selectKeyTypePlaceholder')}
           options={Object.entries(KEY_TYPE_LABELS).map(([key, label]) => ({
             value: key,
             label,
@@ -427,7 +434,7 @@ function WhitelistConfig({
       <Divider style={{ margin: '8px 0' }} />
       <div style={{ padding: '8px 10px', background: '#f6ffed', borderRadius: 4, border: '1px solid #b7eb8f' }}>
         <Text type="secondary" style={{ fontSize: 12 }}>
-          白名单匹配：输入值在白名单中则直接通过
+          {t('nodeConfig.whitelistMatchDesc')}
         </Text>
       </div>
     </>
@@ -435,6 +442,7 @@ function WhitelistConfig({
 }
 
 export default function NodeConfigPanel({ node, onUpdate }: NodeConfigPanelProps) {
+  const { t } = useTranslation();
   const handleUpdate = useCallback(
     (updates: Partial<ConditionNodeData | ActionNodeData | EndNodeData | RuleSetNodeData | BlacklistNodeData | WhitelistNodeData>) => {
       onUpdate(node.id, updates);
@@ -445,21 +453,21 @@ export default function NodeConfigPanel({ node, onUpdate }: NodeConfigPanelProps
   const nodeType = node.data.nodeType;
 
   const typeLabel: Record<string, { text: string; color: string }> = {
-    start: { text: '开始节点', color: 'green' },
-    end: { text: '结束节点', color: 'red' },
-    condition: { text: '条件节点', color: 'blue' },
-    action: { text: '决策节点', color: 'orange' },
-    ruleset: { text: '规则集节点', color: 'purple' },
-    blacklist: { text: '黑名单节点', color: 'red' },
-    whitelist: { text: '白名单节点', color: 'green' },
-    merge: { text: '合并节点', color: 'default' },
+    start: { text: t('nodeConfig.typeLabels.start'), color: 'green' },
+    end: { text: t('nodeConfig.typeLabels.end'), color: 'red' },
+    condition: { text: t('nodeConfig.typeLabels.condition'), color: 'blue' },
+    action: { text: t('nodeConfig.typeLabels.action'), color: 'orange' },
+    ruleset: { text: t('nodeConfig.typeLabels.ruleset'), color: 'purple' },
+    blacklist: { text: t('nodeConfig.typeLabels.blacklist'), color: 'red' },
+    whitelist: { text: t('nodeConfig.typeLabels.whitelist'), color: 'green' },
+    merge: { text: t('nodeConfig.typeLabels.merge'), color: 'default' },
   };
   const info = typeLabel[nodeType] ?? { text: nodeType, color: 'default' };
 
   return (
     <div style={{ padding: '12px', background: '#fff', borderLeft: '1px solid #f0f0f0', height: '100%', overflow: 'auto' }}>
       <div style={{ marginBottom: 12, display: 'flex', alignItems: 'center', gap: 8 }}>
-        <Text strong>节点属性</Text>
+        <Text strong>{t('nodeConfig.nodeProperties')}</Text>
         <Tag color={info.color}>{info.text}</Tag>
       </div>
       <Text type="secondary" style={{ fontSize: 11 }}>ID: {node.id}</Text>
@@ -479,7 +487,7 @@ export default function NodeConfigPanel({ node, onUpdate }: NodeConfigPanelProps
         <RuleSetConfig data={node.data as RuleSetNodeData} onUpdate={handleUpdate} />
       )}
       {nodeType === 'start' && (
-        <div style={{ color: '#999', fontSize: 13 }}>开始节点无需配置</div>
+        <div style={{ color: '#999', fontSize: 13 }}>{t('nodeConfig.startNodeNoConfig')}</div>
       )}
       {nodeType === 'blacklist' && (
         <BlacklistConfig data={node.data as BlacklistNodeData} onUpdate={handleUpdate} />
@@ -488,7 +496,7 @@ export default function NodeConfigPanel({ node, onUpdate }: NodeConfigPanelProps
         <WhitelistConfig data={node.data as WhitelistNodeData} onUpdate={handleUpdate} />
       )}
       {nodeType === 'merge' && (
-        <div style={{ color: '#999', fontSize: 13 }}>合并分支节点无需配置</div>
+        <div style={{ color: '#999', fontSize: 13 }}>{t('nodeConfig.mergeNodeNoConfig')}</div>
       )}
     </div>
   );

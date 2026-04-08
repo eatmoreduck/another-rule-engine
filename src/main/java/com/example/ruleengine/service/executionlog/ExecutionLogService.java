@@ -2,8 +2,6 @@ package com.example.ruleengine.service.executionlog;
 
 import com.example.ruleengine.domain.ExecutionLog;
 import com.example.ruleengine.repository.ExecutionLogRepository;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -29,7 +27,6 @@ import java.util.Map;
 public class ExecutionLogService {
 
     private final ExecutionLogRepository executionLogRepository;
-    private final ObjectMapper objectMapper;
 
     @Value("${rule-engine.execution-log.retention-days:30}")
     private int retentionDays;
@@ -50,11 +47,10 @@ public class ExecutionLogService {
                            String outputDecision, String outputReason,
                            long executionTimeMs) {
         try {
-            String featuresJson = serializeFeatures(inputFeatures);
             ExecutionLog executionLog = ExecutionLog.builder()
                     .ruleKey(ruleKey)
                     .ruleVersion(ruleVersion)
-                    .inputFeatures(featuresJson)
+                    .inputFeatures(inputFeatures)
                     .outputDecision(outputDecision)
                     .outputReason(outputReason)
                     .executionTimeMs((int) executionTimeMs)
@@ -79,11 +75,10 @@ public class ExecutionLogService {
                            Map<String, Object> inputFeatures,
                            long executionTimeMs) {
         try {
-            String featuresJson = serializeFeatures(inputFeatures);
             ExecutionLog executionLog = ExecutionLog.builder()
                     .ruleKey(ruleKey)
                     .ruleVersion(ruleVersion)
-                    .inputFeatures(featuresJson)
+                    .inputFeatures(inputFeatures)
                     .outputDecision("REJECT")
                     .outputReason("规则执行超时")
                     .executionTimeMs((int) executionTimeMs)
@@ -109,11 +104,10 @@ public class ExecutionLogService {
                          Map<String, Object> inputFeatures,
                          long executionTimeMs, String errorMessage) {
         try {
-            String featuresJson = serializeFeatures(inputFeatures);
             ExecutionLog executionLog = ExecutionLog.builder()
                     .ruleKey(ruleKey)
                     .ruleVersion(ruleVersion)
-                    .inputFeatures(featuresJson)
+                    .inputFeatures(inputFeatures)
                     .outputDecision("REJECT")
                     .outputReason("规则执行失败: " + errorMessage)
                     .executionTimeMs((int) executionTimeMs)
@@ -180,18 +174,4 @@ public class ExecutionLogService {
         log.info("清理过期执行日志完成: 删除 {} 条记录, 保留天数={}", deletedCount, retentionDays);
     }
 
-    /**
-     * 序列化输入特征为 JSON 字符串
-     */
-    private String serializeFeatures(Map<String, Object> features) {
-        if (features == null || features.isEmpty()) {
-            return null;
-        }
-        try {
-            return objectMapper.writeValueAsString(features);
-        } catch (JsonProcessingException e) {
-            log.warn("序列化输入特征失败", e);
-            return null;
-        }
-    }
 }

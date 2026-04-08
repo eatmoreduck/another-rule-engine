@@ -6,6 +6,7 @@
 import { useCallback } from 'react';
 import { Button, Segmented, Space } from 'antd';
 import { PlusOutlined, DeleteOutlined, GroupOutlined } from '@ant-design/icons';
+import { useTranslation } from 'react-i18next';
 import type {
   ConditionNode,
   LogicGroup,
@@ -28,6 +29,8 @@ export default function LogicGroupEditor({
   onRemove,
   depth,
 }: LogicGroupEditorProps) {
+  const { t } = useTranslation();
+
   const handleLogicChange = useCallback(
     (value: string) => {
       onChange({ ...group, logic: value as 'AND' | 'OR' });
@@ -94,7 +97,7 @@ export default function LogicGroupEditor({
           icon={<PlusOutlined />}
           onClick={handleAddCondition}
         >
-          添加条件
+          {t('ruleConfig.addSubCondition')}
         </Button>
         <Button
           type="dashed"
@@ -102,7 +105,7 @@ export default function LogicGroupEditor({
           icon={<GroupOutlined />}
           onClick={handleAddSubGroup}
         >
-          添加子组
+          {t('ruleConfig.addSubGroup')}
         </Button>
         {onRemove && (
           <Button
@@ -112,7 +115,7 @@ export default function LogicGroupEditor({
             icon={<DeleteOutlined />}
             onClick={onRemove}
           >
-            删除组
+            {t('ruleConfig.deleteGroup')}
           </Button>
         )}
       </div>

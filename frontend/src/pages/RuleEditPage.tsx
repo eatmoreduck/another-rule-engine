@@ -7,10 +7,11 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import {
   Card, Form, Input, Button, Breadcrumb, message,
-  Spin, Typography, Row, Col, Tag, Alert, Modal,
+  Spin, Typography, Row, Col, Tag, Modal,
 } from 'antd';
-import { SaveOutlined, ThunderboltOutlined, LinkOutlined } from '@ant-design/icons';
+import { SaveOutlined, ThunderboltOutlined } from '@ant-design/icons';
 import { useNavigate, useParams, useBlocker } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { getRule, createRule, updateRule, getRuleReferences } from '../api/rules';
 import type { Rule } from '../types/rule';
 import type { RuleReference } from '../types/rule';
@@ -27,6 +28,7 @@ const { Title, Text } = Typography;
 export default function RuleEditPage() {
   const { ruleKey } = useParams<{ ruleKey: string }>();
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const isNew = !ruleKey;
 
   const [form] = Form.useForm();
@@ -46,7 +48,6 @@ export default function RuleEditPage() {
   useEffect(() => {
     if (!isNew && ruleKey) {
       setLoading(true);
-      // 先加载规则数据，确保页面能尽快渲染
       getRule(ruleKey)
         .then((rule) => {
           setExistingRule(rule);
@@ -55,29 +56,26 @@ export default function RuleEditPage() {
             ruleName: rule.ruleName,
             ruleDescription: rule.ruleDescription ?? '',
           });
-          // 解析已有 groovyScript 回填条件表单
           if (rule.groovyScript) {
             const parsed = parseGroovyToSingleRule(rule.groovyScript);
             setRuleConfig(parsed);
           }
-          // 数据加载完成后，异步检查引用（不阻塞页面渲染）
           return getRuleReferences(ruleKey);
         })
         .then((refs) => {
           if (refs && refs.length > 0) {
             setReferences(refs);
-            // ref guard 防止 React Strict Mode 双弹
             if (!modalShownRef.current) {
               modalShownRef.current = true;
               Modal.warning({
-                title: '引用提示',
+                title: t('rules.referenceTitle'),
                 width: 520,
                 content: (
                   <div>
-                    <p style={{ marginBottom: 12 }}>此规则被以下资源引用，修改可能影响它们的执行结果：</p>
+                    <p style={{ marginBottom: 12 }}>{t('rules.referenceContent')}</p>
                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
                       {refs.map((r: RuleReference, idx: number) => {
-                        const typeLabel = r.type === 'decision_flow' ? '决策流' : '规则集';
+                        const typeLabel = r.type === 'decision_flow' ? t('rules.referenceDecisionFlow') : t('rules.referenceRuleSet');
                         const color = r.type === 'decision_flow' ? 'blue' : 'purple';
                         return (
                           <Tag key={idx} color={color} style={{ margin: 0 }}>
@@ -88,12 +86,12 @@ export default function RuleEditPage() {
                     </div>
                   </div>
                 ),
-                okText: '知道了，继续编辑',
+                okText: t('rules.referenceOk'),
               });
             }
           }
         })
-        .catch(() => message.error('加载规则失败'))
+        .catch(() => message.error(t('rules.loadFailed')))
         .finally(() => setLoading(false));
     }
   }, [isNew, ruleKey, form]);
@@ -109,14 +107,13 @@ export default function RuleEditPage() {
       if (justSavedRef.current) return false;
       if (!dirty) return false;
       if (currentLocation.pathname === nextLocation.pathname) return false;
-      // 模式切换不拦截
       const isRuleEditSwitch = nextLocation.pathname.startsWith('/rules/')
         && (nextLocation.pathname.endsWith('/edit')
           || nextLocation.pathname.endsWith('/flow')
           || nextLocation.pathname === '/rules/new'
           || nextLocation.pathname === '/rules/new/flow');
       if (isRuleEditSwitch) return false;
-      return !window.confirm('有未保存的修改，确认离开？');
+      return !window.confirm(t('common.confirmLeave'));
     },
   );
 
@@ -138,7 +135,7 @@ export default function RuleEditPage() {
           ruleDescription: values.ruleDescription,
           groovyScript: generatedScript,
         });
-        message.success('规则创建成功');
+        message.success(t('rules.createSuccess'));
         justSavedRef.current = true;
         navigate(`/rules/${created.ruleKey}`);
       } else if (ruleKey) {
@@ -147,13 +144,13 @@ export default function RuleEditPage() {
           ruleDescription: values.ruleDescription,
           groovyScript: generatedScript,
         });
-        message.success('规则保存成功');
+        message.success(t('rules.saveSuccess'));
         justSavedRef.current = true;
         navigate(`/rules/${ruleKey}`);
       }
     } catch (err) {
       if (err instanceof Error) {
-        message.error(`保存失败: ${err.message}`);
+        message.error(`${t('rules.saveFailed')}: ${err.message}`);
       }
     } finally {
       setSaving(false);
@@ -173,12 +170,12 @@ export default function RuleEditPage() {
       <Breadcrumb
         style={{ marginBottom: 16 }}
         items={[
-          { title: <a onClick={() => navigate('/rules')}>规则配置</a> },
+          { title: <a onClick={() => navigate('/rules')}>{t('rules.pageTitle')}</a> },
           ...(isNew
-            ? [{ title: '新建规则' }]
+            ? [{ title: t('rules.createRule') }]
             : [
                 { title: <a onClick={() => navigate(`/rules/${ruleKey}`)}>{existingRule?.ruleName ?? ruleKey}</a> },
-                { title: '编辑' },
+                { title: t('common.edit') },
               ]),
         ]}
       />
@@ -186,7 +183,7 @@ export default function RuleEditPage() {
       {/* 页面标题 + 保存按钮 */}
       <div className="page-header" style={{ marginBottom: 16 }}>
         <Title level={4} style={{ margin: 0 }}>
-          {isNew ? '新建规则（表单模式）' : `编辑规则 - ${existingRule?.ruleName ?? ruleKey}`}
+          {isNew ? t('rules.createRuleForm') : `${t('rules.editRule')} - ${existingRule?.ruleName ?? ruleKey}`}
         </Title>
         <div className="page-header-actions">
           <Button
@@ -194,7 +191,7 @@ export default function RuleEditPage() {
             onClick={() => setTestModalOpen(true)}
             disabled={isNew}
           >
-            测试
+            {t('common.test')}
           </Button>
           <Button
             type="primary"
@@ -202,7 +199,7 @@ export default function RuleEditPage() {
             loading={saving}
             onClick={handleSave}
           >
-            保存
+            {t('common.save')}
           </Button>
         </div>
       </div>
@@ -215,20 +212,20 @@ export default function RuleEditPage() {
             <Form form={form} layout="vertical">
               <Form.Item
                 name="ruleKey"
-                label="规则标识"
-                rules={[{ required: true, message: '请输入规则标识' }]}
+                label={t('rules.ruleKeyLabel')}
+                rules={[{ required: true, message: t('rules.ruleKeyRequired') }]}
               >
-                <Input placeholder="例如: black-list-check" disabled={!isNew} />
+                <Input placeholder={t('rules.ruleKeyPlaceholder')} disabled={!isNew} />
               </Form.Item>
               <Form.Item
                 name="ruleName"
-                label="规则名称"
-                rules={[{ required: true, message: '请输入规则名称' }]}
+                label={t('rules.ruleName')}
+                rules={[{ required: true, message: t('rules.ruleNameRequired') }]}
               >
-                <Input placeholder="例如: 黑名单检查规则" />
+                <Input placeholder={t('rules.ruleNamePlaceholder')} />
               </Form.Item>
-              <Form.Item name="ruleDescription" label="规则描述">
-                <Input.TextArea rows={2} placeholder="可选，描述规则的业务用途" />
+              <Form.Item name="ruleDescription" label={t('rules.ruleDescription')}>
+                <Input.TextArea rows={2} placeholder={t('rules.ruleDescPlaceholder')} />
               </Form.Item>
             </Form>
 
@@ -242,7 +239,7 @@ export default function RuleEditPage() {
         {/* 右侧：Groovy 脚本实时预览 */}
         <Col xs={24} lg={10}>
           <Card
-            title={<Text strong>Groovy 脚本预览</Text>}
+            title={<Text strong>{t('rules.groovyScriptPreview')}</Text>}
             size="small"
             style={{ position: 'sticky', top: 16 }}
           >

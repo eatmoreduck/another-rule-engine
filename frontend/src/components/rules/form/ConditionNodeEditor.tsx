@@ -6,6 +6,7 @@
 import { useCallback } from 'react';
 import { Input, Select, Button } from 'antd';
 import { DeleteOutlined } from '@ant-design/icons';
+import { useTranslation } from 'react-i18next';
 import type { ConditionNode, Operator } from '../../../types/ruleConfig';
 import { OPERATOR_LABELS } from '../../../types/ruleConfig';
 
@@ -25,6 +26,8 @@ export default function ConditionNodeEditor({
   onChange,
   onRemove,
 }: ConditionNodeEditorProps) {
+  const { t } = useTranslation();
+
   const handleFieldChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
       onChange({ ...node, fieldName: e.target.value });
@@ -49,7 +52,7 @@ export default function ConditionNodeEditor({
   return (
     <div className="condition-node-row">
       <Input
-        placeholder="字段名"
+        placeholder={t('ruleConfig.field')}
         value={node.fieldName}
         onChange={handleFieldChange}
         style={{ width: 140 }}
@@ -61,7 +64,7 @@ export default function ConditionNodeEditor({
         style={{ width: 120 }}
       />
       <Input
-        placeholder="阈值"
+        placeholder={t('ruleConfig.threshold')}
         value={String(node.threshold)}
         onChange={handleThresholdChange}
         style={{ width: 120 }}

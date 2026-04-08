@@ -51,9 +51,12 @@ public class FeatureProviderService {
         boolean fallbackToDefault = false;
 
         // 找出缺失的特征
-        List<String> missingFeatures = request.getRequiredFeatures().stream()
-            .filter(feature -> !request.getInputFeatures().containsKey(feature))
-            .collect(Collectors.toList());
+        List<String> requiredFeatures = request.getRequiredFeatures();
+        List<String> missingFeatures = (requiredFeatures != null && !requiredFeatures.isEmpty())
+            ? requiredFeatures.stream()
+                .filter(feature -> !request.getInputFeatures().containsKey(feature))
+                .collect(Collectors.toList())
+            : Collections.emptyList();
 
         if (!missingFeatures.isEmpty()) {
             // 从缓存获取

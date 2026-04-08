@@ -22,6 +22,7 @@ import {
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import { useNavigate, useParams, useBlocker } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { getRule, createRule, updateRule } from '../api/rules';
 import type { Rule } from '../types/rule';
 import type {
@@ -42,6 +43,7 @@ const { Title } = Typography;
 function FlowEditorInner() {
   const { ruleKey } = useParams<{ ruleKey: string }>();
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const isNew = !ruleKey || ruleKey === 'new';
 
   const [loading, setLoading] = useState(!isNew);
@@ -69,7 +71,7 @@ function FlowEditorInner() {
           setRuleName(rule.ruleName);
           setRuleDescription(rule.ruleDescription ?? '');
         })
-        .catch(() => message.error('加载规则失败'))
+        .catch(() => message.error(t('rules.loadFailed')))
         .finally(() => setLoading(false));
     }
   }, [isNew, ruleKey]);
@@ -137,22 +139,21 @@ function FlowEditorInner() {
     ({ currentLocation, nextLocation }) => {
       if (!dirty) return false;
       if (currentLocation.pathname === nextLocation.pathname) return false;
-      // 模式切换（表单↔流程图）不拦截
       const isRuleEditSwitch = nextLocation.pathname.startsWith('/rules/')
         && (nextLocation.pathname.endsWith('/edit') || nextLocation.pathname.endsWith('/flow') || nextLocation.pathname === '/rules/new' || nextLocation.pathname === '/rules/new/flow');
       if (isRuleEditSwitch) return false;
-      return !window.confirm('有未保存的修改，确认离开？');
+      return !window.confirm(t('common.confirmLeave'));
     },
   );
 
   // 保存
   const handleSave = useCallback(async () => {
     if (isNew && !ruleKeyInput.trim()) {
-      message.error('请输入规则标识');
+      message.error(t('rules.ruleKeyRequired'));
       return;
     }
     if (!ruleName.trim()) {
-      message.error('请输入规则名称');
+      message.error(t('rules.ruleNameRequired'));
       return;
     }
 
@@ -165,7 +166,7 @@ function FlowEditorInner() {
           ruleDescription,
           groovyScript: generatedScript,
         });
-        message.success('规则创建成功');
+        message.success(t('rules.createSuccess'));
         navigate(`/rules/${created.ruleKey}`);
       } else if (ruleKey) {
         await updateRule(ruleKey, {
@@ -173,13 +174,13 @@ function FlowEditorInner() {
           ruleDescription,
           groovyScript: generatedScript,
         });
-        message.success('规则保存成功');
+        message.success(t('rules.saveSuccess'));
         navigate(`/rules/${ruleKey}`);
       }
       setDirty(false);
     } catch (err) {
       if (err instanceof Error) {
-        message.error(`保存失败: ${err.message}`);
+        message.error(`${t('rules.saveFailed')}: ${err.message}`);
       }
     } finally {
       setSaving(false);
@@ -199,12 +200,12 @@ function FlowEditorInner() {
       <Breadcrumb
         style={{ marginBottom: 16 }}
         items={[
-          { title: <a onClick={() => navigate('/rules')}>规则管理</a> },
+          { title: <a onClick={() => navigate('/rules')}>{t('rules.ruleManagement')}</a> },
           ...(isNew
-            ? [{ title: '可视化新建' }]
+            ? [{ title: t('rules.visualCreate') }]
             : [
                 { title: <a onClick={() => navigate(`/rules/${ruleKey}`)}>{existingRule?.ruleName ?? ruleKey}</a> },
-                { title: '可视化编辑' },
+                { title: t('rules.visualEdit') },
               ]),
         ]}
       />
@@ -213,12 +214,12 @@ function FlowEditorInner() {
         {/* 页面头部 */}
         <div className="page-header">
           <Title level={4} style={{ margin: 0 }}>
-            {isNew ? '新建规则（流程图模式）' : `可视化编辑 - ${existingRule?.ruleName ?? ruleKey}`}
+            {isNew ? t('rules.createRuleFlow') : `${t('rules.visualEdit')} - ${existingRule?.ruleName ?? ruleKey}`}
           </Title>
           <div className="page-header-actions">
             <ModeSwitch currentMode="flow" ruleKey={isNew ? undefined : ruleKey} />
             <Button icon={<EyeOutlined />} onClick={() => setPreviewOpen(true)}>
-              预览脚本
+              {t('rules.previewScript')}
             </Button>
             <Button
               type="primary"
@@ -226,7 +227,7 @@ function FlowEditorInner() {
               loading={saving}
               onClick={handleSave}
             >
-              保存
+              {t('common.save')}
             </Button>
           </div>
         </div>
@@ -236,20 +237,20 @@ function FlowEditorInner() {
           <Space wrap>
             {isNew && (
               <Input
-                placeholder="规则标识"
+                placeholder={t('rules.ruleKeyLabel')}
                 value={ruleKeyInput}
                 onChange={(e) => { setRuleKeyInput(e.target.value); setDirty(true); }}
                 style={{ width: 180 }}
               />
             )}
             <Input
-              placeholder="规则名称"
+              placeholder={t('rules.ruleName')}
               value={ruleName}
               onChange={(e) => { setRuleName(e.target.value); setDirty(true); }}
               style={{ width: 200 }}
             />
             <Input
-              placeholder="规则描述（可选）"
+              placeholder={t('rules.ruleDescPlaceholder')}
               value={ruleDescription}
               onChange={(e) => { setRuleDescription(e.target.value); setDirty(true); }}
               style={{ width: 300 }}
@@ -287,7 +288,7 @@ function FlowEditorInner() {
                   block
                   onClick={() => setSelectedNode(null)}
                 >
-                  关闭面板
+                  {t('common.closePanel')}
                 </Button>
               </div>
             </div>
@@ -300,7 +301,7 @@ function FlowEditorInner() {
           items={[
             {
               key: 'preview',
-              label: '实时生成的 Groovy 脚本',
+              label: t('rules.liveGroovy'),
               children: (
                 <pre className="script-preview-code">{generatedScript}</pre>
               ),

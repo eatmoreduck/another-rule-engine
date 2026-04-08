@@ -20,6 +20,7 @@ import {
   DatabaseOutlined,
   RocketOutlined,
 } from '@ant-design/icons';
+import { useTranslation } from 'react-i18next';
 import {
   listEnvironments,
   cloneEnvironment,
@@ -41,6 +42,7 @@ const TYPE_ICON_MAP: Record<EnvironmentType, React.ReactNode> = {
 };
 
 export default function EnvironmentPage() {
+  const { t } = useTranslation();
   const [environments, setEnvironments] = useState<Environment[]>([]);
   const [loading, setLoading] = useState(false);
 
@@ -56,7 +58,7 @@ export default function EnvironmentPage() {
       const result = await listEnvironments();
       setEnvironments(result);
     } catch {
-      message.error('加载环境列表失败');
+      message.error(t('environment.loadFailed'));
     } finally {
       setLoading(false);
     }
@@ -86,7 +88,7 @@ export default function EnvironmentPage() {
       if (result.success) {
         message.success(result.message);
       } else {
-        message.error('克隆失败');
+        message.error(t('environment.cloneFailed'));
       }
       setCloneModalOpen(false);
       cloneForm.resetFields();
@@ -94,7 +96,7 @@ export default function EnvironmentPage() {
       loadData();
     } catch (err: unknown) {
       if (err && typeof err === 'object' && 'response' in err) {
-        message.error('克隆环境失败');
+        message.error(t('environment.cloneEnvFailed'));
       }
     } finally {
       setCloneLoading(false);
@@ -121,7 +123,7 @@ export default function EnvironmentPage() {
 
   return (
     <>
-      <Breadcrumb style={{ marginBottom: 16 }} items={[{ title: '多环境管理' }]} />
+      <Breadcrumb style={{ marginBottom: 16 }} items={[{ title: t('environment.pageTitle') }]} />
 
       <Spin spinning={loading}>
         <Row gutter={[16, 16]}>
@@ -146,10 +148,10 @@ export default function EnvironmentPage() {
                   </div>
 
                   <Descriptions size="small" column={1} style={{ marginBottom: 16 }}>
-                    <Descriptions.Item label="描述">
+                    <Descriptions.Item label={t('common.description')}>
                       {env.description || '-'}
                     </Descriptions.Item>
-                    <Descriptions.Item label="创建时间">
+                    <Descriptions.Item label={t('common.createdAt')}>
                       {env.createdAt}
                     </Descriptions.Item>
                   </Descriptions>
@@ -160,7 +162,7 @@ export default function EnvironmentPage() {
                       icon={<CopyOutlined />}
                       onClick={() => handleOpenClone(env)}
                     >
-                      克隆到
+                      {t('environment.cloneTo')}
                     </Button>
                   </div>
                 </Card>
@@ -172,7 +174,7 @@ export default function EnvironmentPage() {
             <Col span={24}>
               <Card>
                 <div style={{ textAlign: 'center', padding: '40px 0', color: '#999' }}>
-                  暂无环境数据，请通过数据库初始化脚本创建环境
+                  {t('environment.noEnvironments')}
                 </div>
               </Card>
             </Col>
@@ -182,7 +184,7 @@ export default function EnvironmentPage() {
 
       {/* 克隆环境弹窗 */}
       <Modal
-        title={`克隆环境: ${cloneSource?.name ?? ''}`}
+        title={t('environment.cloneTitle', { name: cloneSource?.name ?? '' })}
         open={cloneModalOpen}
         onOk={handleClone}
         onCancel={() => {
@@ -191,31 +193,31 @@ export default function EnvironmentPage() {
           setCloneSource(null);
         }}
         confirmLoading={cloneLoading}
-        okText="开始克隆"
-        cancelText="取消"
+        okText={t('environment.startClone')}
+        cancelText={t('common.cancel')}
         width={480}
       >
         <Form form={cloneForm} layout="vertical" style={{ marginTop: 16 }}>
           <Form.Item
             name="targetEnvironment"
-            label="目标环境"
-            rules={[{ required: true, message: '请选择目标环境' }]}
+            label={t('environment.targetEnv')}
+            rules={[{ required: true, message: t('environment.targetEnvRequired') }]}
           >
             <Select
-              placeholder="请选择目标环境"
+              placeholder={t('environment.targetEnvPlaceholder')}
               options={getTargetOptions()}
             />
           </Form.Item>
           <Form.Item
             name="overwrite"
-            label="覆盖模式"
+            label={t('environment.overwriteMode')}
             initialValue={false}
-            extra="开启后将覆盖目标环境中已存在的同名规则"
+            extra={t('environment.overwriteHint')}
           >
             <Select
               options={[
-                { value: false, label: '跳过已存在的规则' },
-                { value: true, label: '覆盖已存在的规则' },
+                { value: false, label: t('environment.overwriteFalse') },
+                { value: true, label: t('environment.overwriteTrue') },
               ]}
             />
           </Form.Item>

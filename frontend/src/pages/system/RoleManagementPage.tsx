@@ -3,6 +3,7 @@ import {
   Card, Breadcrumb, List, Typography, Checkbox, Button, Space, Spin, App, Tag,
 } from 'antd';
 import { SaveOutlined } from '@ant-design/icons';
+import { useTranslation } from 'react-i18next';
 import * as systemApi from '../../api/system';
 import type { RoleDTO, PermissionDTO } from '../../api/system';
 
@@ -19,6 +20,7 @@ interface PermissionGroup {
 
 export default function RoleManagementPage() {
   const { message } = App.useApp();
+  const { t } = useTranslation();
   const [roles, setRoles] = useState<RoleDTO[]>([]);
   const [permissions, setPermissions] = useState<PermissionDTO[]>([]);
   const [selectedRoleId, setSelectedRoleId] = useState<number | null>(null);
@@ -35,12 +37,11 @@ export default function RoleManagementPage() {
       ]);
       setRoles(roleData);
       setPermissions(permData);
-      // 默认选中第一个角色
       if (roleData.length > 0 && !selectedRoleId) {
         handleSelectRole(roleData[0]);
       }
     } catch (e: any) {
-      message.error('加载数据失败: ' + (e.response?.data?.message || e.message));
+      message.error(t('system.loadFailed') + ': ' + (e.response?.data?.message || e.message));
     } finally {
       setLoading(false);
     }
@@ -52,7 +53,6 @@ export default function RoleManagementPage() {
 
   const handleSelectRole = (role: RoleDTO) => {
     setSelectedRoleId(role.id);
-    // 根据 permissionCodes 从 permissions 中找到对应的 id
     const permIds = new Set<number>();
     role.permissionCodes.forEach((code) => {
       const perm = permissions.find((p) => p.permissionCode === code);
@@ -94,21 +94,18 @@ export default function RoleManagementPage() {
       const updated = await systemApi.updateRolePermissions(selectedRoleId, {
         permissionIds: Array.from(selectedPermissionIds),
       });
-      // 更新角色列表中的数据
       setRoles((prev) => prev.map((r) => (r.id === selectedRoleId ? updated : r)));
-      message.success('权限配置已保存');
+      message.success(t('roles.saveSuccess'));
     } catch (e: any) {
-      message.error('保存失败: ' + (e.response?.data?.message || e.message));
+      message.error(t('system.saveFailed') + ': ' + (e.response?.data?.message || e.message));
     } finally {
       setSaving(false);
     }
   };
 
-  // 构建菜单级权限作为分组父节点
   const menuPermissions = permissions.filter((p) => p.resourceType === 'MENU');
   const apiPermissions = permissions.filter((p) => p.resourceType === 'API');
 
-  // 按 parentId 分组 API 权限
   const permissionGroups: PermissionGroup[] = menuPermissions
     .map((menu) => {
       const children = apiPermissions
@@ -122,7 +119,6 @@ export default function RoleManagementPage() {
     })
     .filter((g) => g.permissions.length > 0);
 
-  // 未归属菜单的 API 权限
   const orphanPermissions = apiPermissions.filter((p) => p.parentId === null);
 
   const selectedRole = roles.find((r) => r.id === selectedRoleId);
@@ -137,13 +133,13 @@ export default function RoleManagementPage() {
 
   return (
     <>
-      <Breadcrumb style={{ marginBottom: 16 }} items={[{ title: '系统管理' }, { title: '角色管理' }]} />
+      <Breadcrumb style={{ marginBottom: 16 }} items={[{ title: t('system.systemManagement') }, { title: t('roles.pageTitle') }]} />
 
       <div style={{ display: 'flex', gap: 16 }}>
         {/* 左侧：角色列表 */}
         <Card style={{ width: 280, flexShrink: 0 }}>
           <Text strong style={{ fontSize: 14, display: 'block', marginBottom: 12 }}>
-            角色列表
+            {t('roles.roleList')}
           </Text>
           <List
             dataSource={roles}
@@ -165,7 +161,7 @@ export default function RoleManagementPage() {
                   </Text>
                   <div>
                     <Tag color="green" style={{ fontSize: 11 }}>
-                      {role.permissionCodes.length} 个权限
+                      {t('roles.permissionCount', { count: role.permissionCodes.length })}
                     </Tag>
                   </div>
                 </div>
@@ -179,11 +175,11 @@ export default function RoleManagementPage() {
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
             <div>
               <Text strong style={{ fontSize: 16 }}>
-                权限配置
+                {t('roles.permissionConfig')}
               </Text>
               {selectedRole && (
                 <Text type="secondary" style={{ marginLeft: 12 }}>
-                  当前角色: {selectedRole.roleName} ({selectedRole.roleCode})
+                  {t('roles.currentRole', { name: selectedRole.roleName, code: selectedRole.roleCode })}
                 </Text>
               )}
             </div>
@@ -194,13 +190,13 @@ export default function RoleManagementPage() {
               loading={saving}
               disabled={!selectedRoleId}
             >
-              保存配置
+              {t('roles.saveConfig')}
             </Button>
           </div>
 
           {!selectedRoleId ? (
             <div style={{ textAlign: 'center', padding: 60, color: '#999' }}>
-              请从左侧选择一个角色
+              {t('roles.selectRole')}
             </div>
           ) : (
             <div>
@@ -251,7 +247,7 @@ export default function RoleManagementPage() {
                   size="small"
                   style={{ marginBottom: 12 }}
                   title={
-                    <Text strong>其他权限</Text>
+                    <Text strong>{t('roles.otherPermissions')}</Text>
                   }
                 >
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px 24px' }}>

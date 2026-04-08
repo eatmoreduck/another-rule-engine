@@ -4,6 +4,7 @@ import {
   Switch, App, Tag, Typography,
 } from 'antd';
 import { PlusOutlined, ReloadOutlined } from '@ant-design/icons';
+import { useTranslation } from 'react-i18next';
 import type { ColumnsType } from 'antd/es/table';
 import * as systemApi from '../../api/system';
 import type { UserDTO, RoleDTO } from '../../api/system';
@@ -12,6 +13,7 @@ const { Text } = Typography;
 
 export default function UserManagementPage() {
   const { message, modal } = App.useApp();
+  const { t } = useTranslation();
   const [users, setUsers] = useState<UserDTO[]>([]);
   const [roles, setRoles] = useState<RoleDTO[]>([]);
   const [loading, setLoading] = useState(false);
@@ -27,7 +29,7 @@ export default function UserManagementPage() {
       const data = await systemApi.listUsers();
       setUsers(data);
     } catch (e: any) {
-      message.error('加载用户列表失败: ' + (e.response?.data?.message || e.message));
+      message.error(t('users.loadFailed') + ': ' + (e.response?.data?.message || e.message));
     } finally {
       setLoading(false);
     }
@@ -57,12 +59,12 @@ export default function UserManagementPage() {
         phone: values.phone,
         roleIds: values.roleIds,
       });
-      message.success('创建用户成功');
+      message.success(t('users.createSuccess'));
       setCreateModalOpen(false);
       createForm.resetFields();
       loadUsers();
     } catch (e: any) {
-      message.error('创建用户失败: ' + (e.response?.data?.message || e.message));
+      message.error(t('users.createFailed') + ': ' + (e.response?.data?.message || e.message));
     }
   };
 
@@ -76,13 +78,13 @@ export default function UserManagementPage() {
         roleIds: values.roleIds,
         status: values.status,
       });
-      message.success('更新用户成功');
+      message.success(t('users.updateSuccess'));
       setEditModalOpen(false);
       setEditingUser(null);
       editForm.resetFields();
       loadUsers();
     } catch (e: any) {
-      message.error('更新用户失败: ' + (e.response?.data?.message || e.message));
+      message.error(t('users.updateFailed') + ': ' + (e.response?.data?.message || e.message));
     }
   };
 
@@ -90,23 +92,23 @@ export default function UserManagementPage() {
     const newStatus = checked ? 'ACTIVE' : 'DISABLED';
     try {
       await systemApi.updateUserStatus(user.id, newStatus);
-      message.success(`用户已${checked ? '启用' : '禁用'}`);
+      message.success(t('users.statusChanged', { status: checked ? t('users.enableLabel') : t('users.disableLabel') }));
       loadUsers();
     } catch (e: any) {
-      message.error('操作失败: ' + (e.response?.data?.message || e.message));
+      message.error(t('users.operationFailed') + ': ' + (e.response?.data?.message || e.message));
     }
   };
 
   const handleResetPassword = (user: UserDTO) => {
     modal.confirm({
-      title: '确认重置密码',
-      content: `确定要重置用户 "${user.nickname || user.username}" 的密码吗？密码将重置为默认密码。`,
+      title: t('users.resetPasswordTitle'),
+      content: t('users.resetPasswordContent', { name: user.nickname || user.username }),
       onOk: async () => {
         try {
           await systemApi.resetPassword(user.id);
-          message.success('密码已重置');
+          message.success(t('users.resetPasswordSuccess'));
         } catch (e: any) {
-          message.error('重置密码失败: ' + (e.response?.data?.message || e.message));
+          message.error(t('users.resetPasswordFailed') + ': ' + (e.response?.data?.message || e.message));
         }
       },
     });
@@ -126,20 +128,20 @@ export default function UserManagementPage() {
 
   const columns: ColumnsType<UserDTO> = [
     {
-      title: '用户名',
+      title: t('users.username'),
       dataIndex: 'username',
       key: 'username',
       width: 120,
     },
     {
-      title: '姓名',
+      title: t('users.nickname'),
       dataIndex: 'nickname',
       key: 'nickname',
       width: 120,
       render: (v: string | null) => v || '-',
     },
     {
-      title: '角色',
+      title: t('users.roles'),
       dataIndex: 'roles',
       key: 'roles',
       width: 200,
@@ -151,14 +153,14 @@ export default function UserManagementPage() {
         )),
     },
     {
-      title: '邮箱',
+      title: t('users.email'),
       dataIndex: 'email',
       key: 'email',
       width: 180,
       render: (v: string | null) => v || '-',
     },
     {
-      title: '状态',
+      title: t('common.status'),
       dataIndex: 'status',
       key: 'status',
       width: 100,
@@ -166,29 +168,29 @@ export default function UserManagementPage() {
         <Switch
           checked={status === 'ACTIVE'}
           onChange={(checked) => handleStatusChange(record, checked)}
-          checkedChildren="启用"
-          unCheckedChildren="禁用"
+          checkedChildren={t('users.enableLabel')}
+          unCheckedChildren={t('users.disableLabel')}
         />
       ),
     },
     {
-      title: '创建时间',
+      title: t('common.createdAt'),
       dataIndex: 'createdAt',
       key: 'createdAt',
       width: 180,
       render: (v: string) => (v ? new Date(v).toLocaleString() : '-'),
     },
     {
-      title: '操作',
+      title: t('common.actions'),
       key: 'actions',
       width: 180,
       render: (_: any, record: UserDTO) => (
         <Space>
           <Button type="link" size="small" onClick={() => openEditModal(record)}>
-            编辑
+            {t('common.edit')}
           </Button>
           <Button type="link" size="small" danger onClick={() => handleResetPassword(record)}>
-            重置密码
+            {t('users.resetPassword')}
           </Button>
         </Space>
       ),
@@ -197,19 +199,19 @@ export default function UserManagementPage() {
 
   return (
     <>
-      <Breadcrumb style={{ marginBottom: 16 }} items={[{ title: '系统管理' }, { title: '用户管理' }]} />
+      <Breadcrumb style={{ marginBottom: 16 }} items={[{ title: t('system.systemManagement') }, { title: t('users.pageTitle') }]} />
 
       <Card>
         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16 }}>
           <Text strong style={{ fontSize: 16 }}>
-            用户管理
+            {t('users.pageTitle')}
           </Text>
           <Space>
             <Button icon={<ReloadOutlined />} onClick={loadUsers}>
-              刷新
+              {t('common.refresh')}
             </Button>
             <Button type="primary" icon={<PlusOutlined />} onClick={() => setCreateModalOpen(true)}>
-              新建用户
+              {t('users.createUser')}
             </Button>
           </Space>
         </div>
@@ -226,7 +228,7 @@ export default function UserManagementPage() {
 
       {/* 创建用户 Modal */}
       <Modal
-        title="新建用户"
+        title={t('users.createUser')}
         open={createModalOpen}
         onCancel={() => {
           setCreateModalOpen(false);
@@ -236,25 +238,25 @@ export default function UserManagementPage() {
         destroyOnClose
       >
         <Form form={createForm} layout="vertical" onFinish={handleCreate}>
-          <Form.Item name="username" label="用户名" rules={[{ required: true, message: '请输入用户名' }, { min: 3, message: '至少3个字符' }]}>
-            <Input placeholder="请输入用户名" />
+          <Form.Item name="username" label={t('users.username')} rules={[{ required: true, message: t('users.usernameRequired') }, { min: 3, message: t('users.usernameMinLength') }]}>
+            <Input placeholder={t('users.usernamePlaceholder')} />
           </Form.Item>
-          <Form.Item name="password" label="密码" rules={[{ required: true, message: '请输入密码' }, { min: 6, message: '至少6个字符' }]}>
-            <Input.Password placeholder="请输入密码" />
+          <Form.Item name="password" label={t('users.password')} rules={[{ required: true, message: t('users.passwordRequired') }, { min: 6, message: t('users.passwordMinLength') }]}>
+            <Input.Password placeholder={t('users.passwordPlaceholder')} />
           </Form.Item>
-          <Form.Item name="nickname" label="姓名">
-            <Input placeholder="请输入姓名" />
+          <Form.Item name="nickname" label={t('users.nickname')}>
+            <Input placeholder={t('users.nicknamePlaceholder')} />
           </Form.Item>
-          <Form.Item name="email" label="邮箱">
-            <Input placeholder="请输入邮箱" />
+          <Form.Item name="email" label={t('users.email')}>
+            <Input placeholder={t('users.emailPlaceholder')} />
           </Form.Item>
-          <Form.Item name="phone" label="手机号">
-            <Input placeholder="请输入手机号" />
+          <Form.Item name="phone" label={t('users.phone')}>
+            <Input placeholder={t('users.phonePlaceholder')} />
           </Form.Item>
-          <Form.Item name="roleIds" label="角色">
+          <Form.Item name="roleIds" label={t('users.roles')}>
             <Select
               mode="multiple"
-              placeholder="请选择角色"
+              placeholder={t('users.rolePlaceholder')}
               options={roles.map((r) => ({ label: r.roleName, value: r.id }))}
             />
           </Form.Item>
@@ -263,7 +265,7 @@ export default function UserManagementPage() {
 
       {/* 编辑用户 Modal */}
       <Modal
-        title="编辑用户"
+        title={t('users.editUser')}
         open={editModalOpen}
         onCancel={() => {
           setEditModalOpen(false);
@@ -274,27 +276,27 @@ export default function UserManagementPage() {
         destroyOnClose
       >
         <Form form={editForm} layout="vertical" onFinish={handleEdit}>
-          <Form.Item name="nickname" label="姓名">
-            <Input placeholder="请输入姓名" />
+          <Form.Item name="nickname" label={t('users.nickname')}>
+            <Input placeholder={t('users.nicknamePlaceholder')} />
           </Form.Item>
-          <Form.Item name="email" label="邮箱">
-            <Input placeholder="请输入邮箱" />
+          <Form.Item name="email" label={t('users.email')}>
+            <Input placeholder={t('users.emailPlaceholder')} />
           </Form.Item>
-          <Form.Item name="phone" label="手机号">
-            <Input placeholder="请输入手机号" />
+          <Form.Item name="phone" label={t('users.phone')}>
+            <Input placeholder={t('users.phonePlaceholder')} />
           </Form.Item>
-          <Form.Item name="roleIds" label="角色">
+          <Form.Item name="roleIds" label={t('users.roles')}>
             <Select
               mode="multiple"
-              placeholder="请选择角色"
+              placeholder={t('users.rolePlaceholder')}
               options={roles.map((r) => ({ label: r.roleName, value: r.id }))}
             />
           </Form.Item>
-          <Form.Item name="status" label="状态">
+          <Form.Item name="status" label={t('common.status')}>
             <Select
               options={[
-                { label: '启用', value: 'ACTIVE' },
-                { label: '禁用', value: 'DISABLED' },
+                { label: t('users.enableLabel'), value: 'ACTIVE' },
+                { label: t('users.disableLabel'), value: 'DISABLED' },
               ]}
             />
           </Form.Item>

@@ -4,6 +4,7 @@ import { SaveOutlined } from '@ant-design/icons';
 import { ReactFlowProvider, addEdge, useNodesState, useEdgesState, type Connection, type Node } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import { useNavigate, useParams, useBlocker } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { getDecisionFlow, createDecisionFlow, updateDecisionFlow } from '../api/decisionFlows';
 import type { DecisionFlow } from '../types/decisionFlow';
 import type { FlowNode, FlowEdge, ConditionNodeData, ActionNodeData, EndNodeData, RuleSetNodeData, BlacklistNodeData, WhitelistNodeData, MergeNodeData } from '../types/flowConfig';
@@ -17,6 +18,7 @@ const { Title } = Typography;
 function FlowEditorInner() {
   const { flowKey } = useParams<{ flowKey: string }>();
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const isNew = !flowKey || flowKey === 'new';
 
   const [loading, setLoading] = useState(!isNew);
@@ -45,7 +47,7 @@ function FlowEditorInner() {
             if (graph.edges) setEdges(graph.edges as FlowEdge[]);
           } catch { /* ignore parse error */ }
         })
-        .catch(() => message.error('加载决策流失败'))
+        .catch(() => message.error(t('flows.loadFailed')))
         .finally(() => setLoading(false));
     }
   }, [isNew, flowKey, setNodes, setEdges]);
@@ -86,16 +88,16 @@ function FlowEditorInner() {
   useBlocker(({ currentLocation, nextLocation }) => {
     if (!dirty) return false;
     if (currentLocation.pathname === nextLocation.pathname) return false;
-    return !window.confirm('有未保存的修改，确认离开？');
+    return !window.confirm(t('common.confirmLeave'));
   });
 
   const handleSave = useCallback(async () => {
     if (isNew && !flowKeyInput.trim()) {
-      message.error('请输入决策流标识');
+      message.error(t('flows.flowKeyRequired'));
       return;
     }
     if (!flowName.trim()) {
-      message.error('请输入决策流名称');
+      message.error(t('flows.flowNameRequired'));
       return;
     }
 
@@ -110,7 +112,7 @@ function FlowEditorInner() {
           flowGraph,
         });
         setDirty(false);
-        message.success('决策流创建成功');
+        message.success(t('flows.createSuccess'));
         navigate(`/decision-flows/${created.flowKey}`);
       } else if (flowKey) {
         await updateDecisionFlow(flowKey, {
@@ -119,11 +121,11 @@ function FlowEditorInner() {
           flowGraph,
         });
         setDirty(false);
-        message.success('决策流保存成功');
+        message.success(t('flows.saveSuccess'));
       }
     } catch (err) {
       if (err instanceof Error) {
-        message.error(`保存失败: ${err.message}`);
+        message.error(`${t('rules.saveFailed')}: ${err.message}`);
       }
     } finally {
       setSaving(false);
@@ -138,34 +140,34 @@ function FlowEditorInner() {
     <div>
       <Breadcrumb style={{ marginBottom: 16 }}
         items={[
-          { title: <a onClick={() => navigate('/decision-flows')}>决策流</a> },
+          { title: <a onClick={() => navigate('/decision-flows')}>{t('flows.pageTitle')}</a> },
           ...(isNew
-            ? [{ title: '新建决策流' }]
+            ? [{ title: t('flows.createFlow') }]
             : [
                 { title: <a onClick={() => navigate(`/decision-flows/${flowKey}`)}>{existingFlow?.flowName ?? flowKey}</a> },
-                { title: '编辑' },
+                { title: t('common.edit') },
               ]),
         ]}
       />
       <Card>
         <div className="page-header">
           <Title level={4} style={{ margin: 0 }}>
-            {isNew ? '新建决策流' : `编辑决策流 - ${existingFlow?.flowName ?? flowKey}`}
+            {isNew ? t('flows.createFlow') : `${t('flows.editFlow')} - ${existingFlow?.flowName ?? flowKey}`}
           </Title>
           <div className="page-header-actions">
-            <Button type="primary" icon={<SaveOutlined />} loading={saving} onClick={handleSave}>保存</Button>
+            <Button type="primary" icon={<SaveOutlined />} loading={saving} onClick={handleSave}>{t('common.save')}</Button>
           </div>
         </div>
 
         <div style={{ marginBottom: 16 }}>
           <Space wrap>
             {isNew && (
-              <Input placeholder="决策流标识" value={flowKeyInput}
+              <Input placeholder={t('flows.flowKeyPlaceholder')} value={flowKeyInput}
                 onChange={(e) => { setFlowKeyInput(e.target.value); setDirty(true); }} style={{ width: 180 }} />
             )}
-            <Input placeholder="决策流名称" value={flowName}
+            <Input placeholder={t('flows.flowNamePlaceholder')} value={flowName}
               onChange={(e) => { setFlowName(e.target.value); setDirty(true); }} style={{ width: 200 }} />
-            <Input placeholder="描述（可选）" value={flowDescription}
+            <Input placeholder={t('flows.flowDescPlaceholder')} value={flowDescription}
               onChange={(e) => { setFlowDescription(e.target.value); setDirty(true); }} style={{ width: 300 }} />
           </Space>
         </div>
@@ -180,7 +182,7 @@ function FlowEditorInner() {
             <div style={{ width: 280, flexShrink: 0, display: 'flex', flexDirection: 'column' }}>
               <NodeConfigPanel node={selectedNode} onUpdate={handleNodeDataUpdate} />
               <div style={{ padding: '8px 12px' }}>
-                <Button size="small" block onClick={() => setSelectedNode(null)}>关闭面板</Button>
+                <Button size="small" block onClick={() => setSelectedNode(null)}>{t('common.closePanel')}</Button>
               </div>
             </div>
           )}

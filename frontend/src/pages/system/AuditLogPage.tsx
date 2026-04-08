@@ -3,6 +3,7 @@ import {
   Table, Card, Space, DatePicker, Input, Select, Tag, Typography,
 } from 'antd';
 import { ReloadOutlined } from '@ant-design/icons';
+import { useTranslation } from 'react-i18next';
 import type { ColumnsType } from 'antd/es/table';
 import { queryAuditLogs } from '../../api/system';
 import type { AuditLogDTO } from '../../api/system';
@@ -10,136 +11,126 @@ import type { AuditLogDTO } from '../../api/system';
 const { Text } = Typography;
 const { RangePicker } = DatePicker;
 
-const ENTITY_TYPE_OPTIONS = [
-  { label: '规则', value: 'RULE' },
-  { label: '决策流', value: 'DECISION_FLOW' },
-  { label: '版本', value: 'VERSION' },
-  { label: '用户', value: 'USER' },
-  { label: '角色', value: 'ROLE' },
-  { label: '团队', value: 'TEAM' },
-];
-
-const OPERATION_OPTIONS = [
-  { label: '规则创建', value: 'RULE_CREATE' },
-  { label: '规则更新', value: 'RULE_UPDATE' },
-  { label: '规则删除', value: 'RULE_DELETE' },
-  { label: '规则启用', value: 'RULE_ENABLE' },
-  { label: '规则禁用', value: 'RULE_DISABLE' },
-  { label: '决策流创建', value: 'FLOW_CREATE' },
-  { label: '决策流更新', value: 'FLOW_UPDATE' },
-  { label: '决策流删除', value: 'FLOW_DELETE' },
-  { label: '决策流启用', value: 'FLOW_ENABLE' },
-  { label: '决策流禁用', value: 'FLOW_DISABLE' },
-  { label: '用户创建', value: 'USER_CREATE' },
-  { label: '用户更新', value: 'USER_UPDATE' },
-  { label: '用户禁用', value: 'USER_DISABLE' },
-  { label: '密码重置', value: 'USER_RESET_PASSWORD' },
-  { label: '角色权限更新', value: 'ROLE_UPDATE_PERMISSIONS' },
-  { label: '团队创建', value: 'TEAM_CREATE' },
-  { label: '团队更新', value: 'TEAM_UPDATE' },
-  { label: '团队删除', value: 'TEAM_DELETE' },
-  { label: '系统登录', value: 'SYSTEM_LOGIN' },
-  { label: '系统登出', value: 'SYSTEM_LOGOUT' },
-];
-
-const STATUS_TAG_MAP: Record<string, { color: string; label: string }> = {
-  SUCCESS: { color: 'green', label: '成功' },
-  FAILED: { color: 'red', label: '失败' },
-};
-
-const columns: ColumnsType<AuditLogDTO> = [
-  {
-    title: '时间',
-    dataIndex: 'operationTime',
-    key: 'operationTime',
-    width: 180,
-    render: (val: string) => val ? new Date(val).toLocaleString('zh-CN') : '-',
-  },
-  {
-    title: '操作人',
-    dataIndex: 'operator',
-    key: 'operator',
-    width: 140,
-  },
-  {
-    title: '操作类型',
-    dataIndex: 'operation',
-    key: 'operation',
-    width: 160,
-    render: (val: string) => <Tag>{val}</Tag>,
-  },
-  {
-    title: '资源类型',
-    dataIndex: 'entityType',
-    key: 'entityType',
-    width: 100,
-    render: (val: string) => {
-        const map: Record<string, string> = {
-          RULE: '规则',
-          DECISION_FLOW: '决策流',
-          VERSION: '版本',
-          USER: '用户',
-          ROLE: '角色',
-          TEAM: '团队',
-        };
-        return map[val] || val;
-      },
-  },
-  {
-    title: '资源标识',
-    dataIndex: 'entityId',
-    key: 'entityId',
-    width: 180,
-    render: (val: string) => <Text copyable={{ text: val }}>{val}</Text>,
-  },
-  {
-    title: 'IP地址',
-    dataIndex: 'operatorIp',
-    key: 'operatorIp',
-    width: 130,
-    render: (val: string) => val || '-',
-  },
-  {
-    title: '状态',
-    dataIndex: 'status',
-    key: 'status',
-    width: 80,
-    render: (val: string) => {
-      const cfg = STATUS_TAG_MAP[val] || { color: 'default', label: val };
-      return <Tag color={cfg.color}>{cfg.label}</Tag>;
-    },
-  },
-  {
-    title: '详情',
-    dataIndex: 'operationDetail',
-    key: 'operationDetail',
-    width: 200,
-    ellipsis: true,
-    render: (val: string | null) => {
-      if (!val) return '-';
-      try {
-        const parsed = JSON.parse(val);
-        return <Text type="secondary" ellipsis title={val}>{parsed.method || val}</Text>;
-      } catch {
-        return <Text type="secondary" ellipsis title={val}>{val}</Text>;
-      }
-    },
-  },
-];
-
-interface FilterState {
-  operator?: string;
-  entityType?: string;
-  operation?: string;
-  startTime?: string;
-  endTime?: string;
-}
-
 export default function AuditLogPage() {
+  const { t } = useTranslation();
+
+  const ENTITY_TYPE_OPTIONS = [
+    { label: t('auditLog.entityTypes.RULE'), value: 'RULE' },
+    { label: t('auditLog.entityTypes.DECISION_FLOW'), value: 'DECISION_FLOW' },
+    { label: t('auditLog.entityTypes.VERSION'), value: 'VERSION' },
+    { label: t('auditLog.entityTypes.USER'), value: 'USER' },
+    { label: t('auditLog.entityTypes.ROLE'), value: 'ROLE' },
+    { label: t('auditLog.entityTypes.TEAM'), value: 'TEAM' },
+  ];
+
+  const OPERATION_OPTIONS = [
+    { label: t('auditLog.operations.RULE_CREATE'), value: 'RULE_CREATE' },
+    { label: t('auditLog.operations.RULE_UPDATE'), value: 'RULE_UPDATE' },
+    { label: t('auditLog.operations.RULE_DELETE'), value: 'RULE_DELETE' },
+    { label: t('auditLog.operations.RULE_ENABLE'), value: 'RULE_ENABLE' },
+    { label: t('auditLog.operations.RULE_DISABLE'), value: 'RULE_DISABLE' },
+    { label: t('auditLog.operations.FLOW_CREATE'), value: 'FLOW_CREATE' },
+    { label: t('auditLog.operations.FLOW_UPDATE'), value: 'FLOW_UPDATE' },
+    { label: t('auditLog.operations.FLOW_DELETE'), value: 'FLOW_DELETE' },
+    { label: t('auditLog.operations.FLOW_ENABLE'), value: 'FLOW_ENABLE' },
+    { label: t('auditLog.operations.FLOW_DISABLE'), value: 'FLOW_DISABLE' },
+    { label: t('auditLog.operations.USER_CREATE'), value: 'USER_CREATE' },
+    { label: t('auditLog.operations.USER_UPDATE'), value: 'USER_UPDATE' },
+    { label: t('auditLog.operations.USER_DISABLE'), value: 'USER_DISABLE' },
+    { label: t('auditLog.operations.USER_RESET_PASSWORD'), value: 'USER_RESET_PASSWORD' },
+    { label: t('auditLog.operations.ROLE_UPDATE_PERMISSIONS'), value: 'ROLE_UPDATE_PERMISSIONS' },
+    { label: t('auditLog.operations.TEAM_CREATE'), value: 'TEAM_CREATE' },
+    { label: t('auditLog.operations.TEAM_UPDATE'), value: 'TEAM_UPDATE' },
+    { label: t('auditLog.operations.TEAM_DELETE'), value: 'TEAM_DELETE' },
+    { label: t('auditLog.operations.SYSTEM_LOGIN'), value: 'SYSTEM_LOGIN' },
+    { label: t('auditLog.operations.SYSTEM_LOGOUT'), value: 'SYSTEM_LOGOUT' },
+  ];
+
+  const STATUS_TAG_MAP: Record<string, { color: string; label: string }> = {
+    SUCCESS: { color: 'green', label: t('auditLog.success') },
+    FAILED: { color: 'red', label: t('auditLog.failed') },
+  };
+
+  const columns: ColumnsType<AuditLogDTO> = [
+    {
+      title: t('auditLog.time'),
+      dataIndex: 'operationTime',
+      key: 'operationTime',
+      width: 180,
+      render: (val: string) => val ? new Date(val).toLocaleString('zh-CN') : '-',
+    },
+    {
+      title: t('auditLog.operator'),
+      dataIndex: 'operator',
+      key: 'operator',
+      width: 140,
+    },
+    {
+      title: t('auditLog.operationType'),
+      dataIndex: 'operation',
+      key: 'operation',
+      width: 160,
+      render: (val: string) => <Tag>{val}</Tag>,
+    },
+    {
+      title: t('auditLog.resourceType'),
+      dataIndex: 'entityType',
+      key: 'entityType',
+      width: 100,
+      render: (val: string) => t(`auditLog.entityTypes.${val}`, val),
+    },
+    {
+      title: t('auditLog.resourceId'),
+      dataIndex: 'entityId',
+      key: 'entityId',
+      width: 180,
+      render: (val: string) => <Text copyable={{ text: val }}>{val}</Text>,
+    },
+    {
+      title: t('auditLog.ipAddress'),
+      dataIndex: 'operatorIp',
+      key: 'operatorIp',
+      width: 130,
+      render: (val: string) => val || '-',
+    },
+    {
+      title: t('common.status'),
+      dataIndex: 'status',
+      key: 'status',
+      width: 80,
+      render: (val: string) => {
+        const cfg = STATUS_TAG_MAP[val] || { color: 'default', label: val };
+        return <Tag color={cfg.color}>{cfg.label}</Tag>;
+      },
+    },
+    {
+      title: t('auditLog.detail'),
+      dataIndex: 'operationDetail',
+      key: 'operationDetail',
+      width: 200,
+      ellipsis: true,
+      render: (val: string | null) => {
+        if (!val) return '-';
+        try {
+          const parsed = JSON.parse(val);
+          return <Text type="secondary" ellipsis title={val}>{parsed.method || val}</Text>;
+        } catch {
+          return <Text type="secondary" ellipsis title={val}>{val}</Text>;
+        }
+      },
+    },
+  ];
+
   const [data, setData] = useState<AuditLogDTO[]>([]);
   const [loading, setLoading] = useState(false);
   const [pagination, setPagination] = useState({ current: 1, pageSize: 20, total: 0 });
-  const [filters, setFilters] = useState<FilterState>({});
+  const [filters, setFilters] = useState<{
+    operator?: string;
+    entityType?: string;
+    operation?: string;
+    startTime?: string;
+    endTime?: string;
+  }>({});
 
   const loadData = useCallback(async (page = 1, size = 20) => {
     setLoading(true);
@@ -185,11 +176,11 @@ export default function AuditLogPage() {
 
   return (
     <Card
-      title="审计日志"
+      title={t('auditLog.pageTitle')}
       extra={
         <Space>
           <Input
-            placeholder="操作人"
+            placeholder={t('auditLog.operatorPlaceholder')}
             allowClear
             style={{ width: 120 }}
             onPressEnter={(e) => {
@@ -206,7 +197,7 @@ export default function AuditLogPage() {
             }}
           />
           <Select
-            placeholder="资源类型"
+            placeholder={t('auditLog.resourceTypePlaceholder')}
             allowClear
             style={{ width: 120 }}
             options={ENTITY_TYPE_OPTIONS}
@@ -223,7 +214,7 @@ export default function AuditLogPage() {
             }}
           />
           <Select
-            placeholder="操作类型"
+            placeholder={t('auditLog.operationTypePlaceholder')}
             allowClear
             style={{ width: 140 }}
             options={OPERATION_OPTIONS}
@@ -258,7 +249,7 @@ export default function AuditLogPage() {
         loading={loading}
         pagination={{
           ...pagination,
-          showTotal: (total) => `共 ${total} 条`,
+          showTotal: (total) => t('common.totalShort', { count: total }),
           showSizeChanger: true,
         }}
         onChange={handleTableChange}

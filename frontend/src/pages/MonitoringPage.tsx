@@ -19,6 +19,7 @@ import {
   ClockCircleOutlined,
   WarningOutlined,
 } from '@ant-design/icons';
+import { useTranslation } from 'react-i18next';
 import {
   getMetricsOverview,
   getRuleMetricsRanking,
@@ -40,96 +41,8 @@ const defaultOverview: MetricsOverview = {
   errorRate: 0,
 };
 
-/** 规则排行表格列定义 */
-const ruleColumns: TableProps<RuleMetrics>['columns'] = [
-  {
-    title: '规则名称',
-    dataIndex: 'ruleName',
-    key: 'ruleName',
-    ellipsis: true,
-  },
-  {
-    title: '规则 Key',
-    dataIndex: 'ruleKey',
-    key: 'ruleKey',
-    ellipsis: true,
-  },
-  {
-    title: '执行次数',
-    dataIndex: 'executionCount',
-    key: 'executionCount',
-    sorter: (a, b) => a.executionCount - b.executionCount,
-    render: (val: number) => val.toLocaleString(),
-  },
-  {
-    title: '命中次数',
-    dataIndex: 'hitCount',
-    key: 'hitCount',
-    render: (val: number) => val.toLocaleString(),
-  },
-  {
-    title: '命中率',
-    dataIndex: 'hitRate',
-    key: 'hitRate',
-    sorter: (a, b) => a.hitRate - b.hitRate,
-    render: (val: number) => `${val.toFixed(1)}%`,
-  },
-  {
-    title: '平均耗时',
-    dataIndex: 'avgExecutionTime',
-    key: 'avgExecutionTime',
-    sorter: (a, b) => a.avgExecutionTime - b.avgExecutionTime,
-    render: (val: number) => `${val.toFixed(2)} ms`,
-  },
-  {
-    title: '错误次数',
-    dataIndex: 'errorCount',
-    key: 'errorCount',
-    render: (val: number) =>
-      val > 0 ? <Tag color="red">{val}</Tag> : <Tag color="green">0</Tag>,
-  },
-  {
-    title: '状态',
-    dataIndex: 'enabled',
-    key: 'enabled',
-    render: (enabled: boolean) =>
-      enabled ? (
-        <Tag color="green">启用</Tag>
-      ) : (
-        <Tag color="default">禁用</Tag>
-      ),
-  },
-];
-
-/** 日志结果对应的 Tag 颜色 */
-function getResultTag(result: ExecutionLog['result']) {
-  switch (result) {
-    case 'HIT':
-      return <Tag color="green">命中</Tag>;
-    case 'MISS':
-      return <Tag color="blue">未命中</Tag>;
-    case 'ERROR':
-      return <Tag color="red">错误</Tag>;
-    default:
-      return <Tag>{result}</Tag>;
-  }
-}
-
-/** 日志级别对应的 Tag 颜色 */
-function getLevelTag(level: LogLevel) {
-  switch (level) {
-    case 'INFO':
-      return <Tag color="blue">{level}</Tag>;
-    case 'WARN':
-      return <Tag color="orange">{level}</Tag>;
-    case 'ERROR':
-      return <Tag color="red">{level}</Tag>;
-    default:
-      return <Tag>{level}</Tag>;
-  }
-}
-
 export default function MonitoringPage() {
+  const { t } = useTranslation();
   const [overview, setOverview] = useState<MetricsOverview>(defaultOverview);
   const [rules, setRules] = useState<RuleMetrics[]>([]);
   const [logs, setLogs] = useState<ExecutionLog[]>([]);
@@ -148,7 +61,7 @@ export default function MonitoringPage() {
       setRules(rulesData);
       setLogs(logsData);
     } catch {
-      message.error('加载监控数据失败');
+      message.error(t('monitoring.loadFailed'));
     } finally {
       setLoading(false);
     }
@@ -158,30 +71,119 @@ export default function MonitoringPage() {
     fetchData();
   }, [fetchData]);
 
+  /** 规则排行表格列定义 */
+  const ruleColumns: TableProps<RuleMetrics>['columns'] = [
+    {
+      title: t('monitoring.columns.ruleName'),
+      dataIndex: 'ruleName',
+      key: 'ruleName',
+      ellipsis: true,
+    },
+    {
+      title: t('monitoring.columns.ruleKey'),
+      dataIndex: 'ruleKey',
+      key: 'ruleKey',
+      ellipsis: true,
+    },
+    {
+      title: t('monitoring.columns.executionCount'),
+      dataIndex: 'executionCount',
+      key: 'executionCount',
+      sorter: (a, b) => a.executionCount - b.executionCount,
+      render: (val: number) => val.toLocaleString(),
+    },
+    {
+      title: t('monitoring.columns.hitCount'),
+      dataIndex: 'hitCount',
+      key: 'hitCount',
+      render: (val: number) => val.toLocaleString(),
+    },
+    {
+      title: t('monitoring.columns.hitRate'),
+      dataIndex: 'hitRate',
+      key: 'hitRate',
+      sorter: (a, b) => a.hitRate - b.hitRate,
+      render: (val: number) => `${val.toFixed(1)}%`,
+    },
+    {
+      title: t('monitoring.columns.avgExecutionTime'),
+      dataIndex: 'avgExecutionTime',
+      key: 'avgExecutionTime',
+      sorter: (a, b) => a.avgExecutionTime - b.avgExecutionTime,
+      render: (val: number) => `${val.toFixed(2)} ms`,
+    },
+    {
+      title: t('monitoring.columns.errorCount'),
+      dataIndex: 'errorCount',
+      key: 'errorCount',
+      render: (val: number) =>
+        val > 0 ? <Tag color="red">{val}</Tag> : <Tag color="green">0</Tag>,
+    },
+    {
+      title: t('monitoring.columns.status'),
+      dataIndex: 'enabled',
+      key: 'enabled',
+      render: (enabled: boolean) =>
+        enabled ? (
+          <Tag color="green">{t('monitoring.columns.enabled')}</Tag>
+        ) : (
+          <Tag color="default">{t('monitoring.columns.disabled')}</Tag>
+        ),
+    },
+  ];
+
+  /** 日志结果对应的 Tag 颜色 */
+  function getResultTag(result: ExecutionLog['result']) {
+    switch (result) {
+      case 'HIT':
+        return <Tag color="green">{t('monitoring.results.HIT')}</Tag>;
+      case 'MISS':
+        return <Tag color="blue">{t('monitoring.results.MISS')}</Tag>;
+      case 'ERROR':
+        return <Tag color="red">{t('monitoring.results.ERROR')}</Tag>;
+      default:
+        return <Tag>{result}</Tag>;
+    }
+  }
+
+  /** 日志级别对应的 Tag 颜色 */
+  function getLevelTag(level: LogLevel) {
+    switch (level) {
+      case 'INFO':
+        return <Tag color="blue">{level}</Tag>;
+      case 'WARN':
+        return <Tag color="orange">{level}</Tag>;
+      case 'ERROR':
+        return <Tag color="red">{level}</Tag>;
+      default:
+        return <Tag>{level}</Tag>;
+    }
+  }
+
   /** 日志表格列定义 */
   const logColumns: TableProps<ExecutionLog>['columns'] = [
     {
-      title: '执行时间',
+      title: t('monitoring.columns.executedAt'),
       dataIndex: 'executedAt',
       key: 'executedAt',
       width: 180,
       render: (val: string) => new Date(val).toLocaleString('zh-CN'),
     },
     {
-      title: '规则名称',
+      title: t('monitoring.columns.ruleName'),
       dataIndex: 'ruleName',
       key: 'ruleName',
       ellipsis: true,
     },
     {
-      title: '结果',
+      title: t('monitoring.columns.result'),
       dataIndex: 'result',
       key: 'result',
       width: 100,
       render: (result: ExecutionLog['result']) => getResultTag(result),
     },
     {
-      title: '耗时',
+      title: t('monitoring.columns.time'),
       dataIndex: 'executionTime',
       key: 'executionTime',
       width: 120,
@@ -191,14 +193,14 @@ export default function MonitoringPage() {
       },
     },
     {
-      title: '级别',
+      title: t('monitoring.columns.level'),
       dataIndex: 'level',
       key: 'level',
       width: 80,
       render: (level: LogLevel) => getLevelTag(level),
     },
     {
-      title: '错误信息',
+      title: t('monitoring.columns.errorMessage'),
       dataIndex: 'errorMessage',
       key: 'errorMessage',
       ellipsis: true,
@@ -210,16 +212,15 @@ export default function MonitoringPage() {
     <>
       <Breadcrumb
         style={{ marginBottom: 16 }}
-        items={[{ title: '监控仪表盘' }]}
+        items={[{ title: t('monitoring.pageTitle') }]}
       />
 
       <Spin spinning={loading}>
-        {/* 顶部统计卡片 */}
         <Row gutter={16} style={{ marginBottom: 24 }}>
           <Col span={6}>
             <Card>
               <Statistic
-                title="总执行次数"
+                title={t('monitoring.totalExecutions')}
                 value={overview.totalExecutions}
                 prefix={<ThunderboltOutlined />}
               />
@@ -228,7 +229,7 @@ export default function MonitoringPage() {
           <Col span={6}>
             <Card>
               <Statistic
-                title="命中率"
+                title={t('monitoring.hitRate')}
                 value={overview.hitRate}
                 precision={1}
                 suffix="%"
@@ -240,7 +241,7 @@ export default function MonitoringPage() {
           <Col span={6}>
             <Card>
               <Statistic
-                title="平均耗时"
+                title={t('monitoring.avgTime')}
                 value={overview.avgExecutionTime}
                 precision={2}
                 suffix="ms"
@@ -252,7 +253,7 @@ export default function MonitoringPage() {
           <Col span={6}>
             <Card>
               <Statistic
-                title="错误率"
+                title={t('monitoring.errorRate')}
                 value={overview.errorRate}
                 precision={2}
                 suffix="%"
@@ -263,9 +264,8 @@ export default function MonitoringPage() {
           </Col>
         </Row>
 
-        {/* 规则执行排行 */}
         <Card
-          title="规则执行排行"
+          title={t('monitoring.ruleRanking')}
           style={{ marginBottom: 24 }}
         >
           <Table<RuleMetrics>
@@ -277,13 +277,12 @@ export default function MonitoringPage() {
           />
         </Card>
 
-        {/* 最近执行日志 */}
         <Card
-          title="最近执行日志"
+          title={t('monitoring.recentLogs')}
           extra={
             <Space>
               <Select
-                placeholder="日志级别"
+                placeholder={t('monitoring.logLevel')}
                 allowClear
                 style={{ width: 120 }}
                 value={logLevelFilter}

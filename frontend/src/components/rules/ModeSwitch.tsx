@@ -7,16 +7,20 @@ import { useCallback } from 'react';
 import { Segmented } from 'antd';
 import { EditOutlined, ApartmentOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 
 interface ModeSwitchProps {
   /** 当前模式 */
   currentMode: 'form' | 'flow';
   /** 规则 key（新建时为 undefined） */
   ruleKey?: string;
+  /** 是否有未保存的修改（由父组件传入） */
+  dirty?: boolean;
 }
 
-export default function ModeSwitch({ currentMode, ruleKey }: ModeSwitchProps) {
+export default function ModeSwitch({ currentMode, ruleKey, dirty = false }: ModeSwitchProps) {
   const navigate = useNavigate();
+  const { t } = useTranslation();
 
   const handleChange = useCallback(
     (value: string | number) => {
@@ -25,7 +29,7 @@ export default function ModeSwitch({ currentMode, ruleKey }: ModeSwitchProps) {
 
       // 切换前提示
       if (dirty) {
-        const confirmed = window.confirm('切换模式将丢失当前未保存的修改，确认切换？');
+        const confirmed = window.confirm(t('rules.modeSwitchConfirm'));
         if (!confirmed) return;
       }
 
@@ -45,11 +49,8 @@ export default function ModeSwitch({ currentMode, ruleKey }: ModeSwitchProps) {
         }
       }
     },
-    [currentMode, ruleKey, navigate],
+    [currentMode, ruleKey, navigate, dirty],
   );
-
-  // 跟踪是否有未保存修改（简化版：由外部管理，此处仅做占位逻辑）
-  const dirty = false;
 
   return (
     <div className="mode-switch">
@@ -60,12 +61,12 @@ export default function ModeSwitch({ currentMode, ruleKey }: ModeSwitchProps) {
           {
             value: 'form',
             icon: <EditOutlined />,
-            label: '表单模式',
+            label: t('rules.formMode'),
           },
           {
             value: 'flow',
             icon: <ApartmentOutlined />,
-            label: '流程图模式',
+            label: t('rules.flowMode'),
           },
         ]}
       />

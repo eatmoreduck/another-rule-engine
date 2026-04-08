@@ -13,6 +13,7 @@ import {
   CheckCircleOutlined, StopOutlined, ThunderboltOutlined,
 } from '@ant-design/icons';
 import { useParams, useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { getRule, deleteRule, enableRule, disableRule } from '../api/rules';
 import type { Rule } from '../types/rule';
 import { parseSingleRuleForDisplay } from '../utils/dslParser';
@@ -71,6 +72,7 @@ function ConditionTreeDisplay({ node }: { node: ConditionTreeDisplayNode }) {
 export default function RuleDetailPage() {
   const { ruleKey } = useParams<{ ruleKey: string }>();
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const [rule, setRule] = useState<Rule | null>(null);
   const [loading, setLoading] = useState(true);
   const [testModalOpen, setTestModalOpen] = useState(false);
@@ -82,7 +84,7 @@ export default function RuleDetailPage() {
       const data = await getRule(ruleKey);
       setRule(data);
     } catch {
-      message.error('加载规则详情失败');
+      message.error(t('rules.loadFailed'));
     } finally {
       setLoading(false);
     }
@@ -99,9 +101,9 @@ export default function RuleDetailPage() {
         ? await disableRule(rule.ruleKey)
         : await enableRule(rule.ruleKey);
       setRule(updated);
-      message.success(rule.enabled ? '已禁用' : '已启用');
+      message.success(rule.enabled ? t('common.disabled') : t('common.enabled'));
     } catch {
-      message.error('操作失败');
+      message.error(t('common.error'));
     }
   }, [rule]);
 
@@ -109,10 +111,10 @@ export default function RuleDetailPage() {
     if (!rule) return;
     try {
       await deleteRule(rule.ruleKey);
-      message.success('删除成功');
+      message.success(t('rules.deleteSuccess'));
       navigate('/rules');
     } catch {
-      message.error('删除失败');
+      message.error(t('rules.deleteFailed'));
     }
   }, [rule, navigate]);
 
@@ -133,24 +135,24 @@ export default function RuleDetailPage() {
   if (!rule) {
     return (
       <div style={{ textAlign: 'center', padding: 48 }}>
-        <Text type="secondary">规则不存在或加载失败</Text>
+        <Text type="secondary">{t('rules.notExist')}</Text>
         <br />
         <Button style={{ marginTop: 16 }} onClick={() => navigate('/rules')}>
-          返回列表
+          {t('common.returnList')}
         </Button>
       </div>
     );
   }
 
   const actionTagColor = (label: string) =>
-    label === '通过' ? 'green' : label === '拒绝' ? 'red' : 'orange';
+    label === ACTION_LABELS.PASS ? 'green' : label === ACTION_LABELS.REJECT ? 'red' : 'orange';
 
   return (
     <div>
       <Breadcrumb
         style={{ marginBottom: 16 }}
         items={[
-          { title: <a onClick={() => navigate('/rules')}>规则配置</a> },
+          { title: <a onClick={() => navigate('/rules')}>{t('rules.pageTitle')}</a> },
           { title: rule.ruleName },
         ]}
       />
@@ -167,7 +169,7 @@ export default function RuleDetailPage() {
               icon={<ArrowLeftOutlined />}
               onClick={() => navigate('/rules')}
             >
-              返回
+              {t('common.back')}
             </Button>
             <Typography.Title level={4} style={{ margin: 0 }}>
               {rule.ruleName}
@@ -179,7 +181,7 @@ export default function RuleDetailPage() {
                 icon={<ThunderboltOutlined />}
                 onClick={() => setTestModalOpen(true)}
               >
-                测试
+                {t('common.test')}
               </Button>
             </Access>
             <Access permission="api:rules:update">
@@ -187,18 +189,18 @@ export default function RuleDetailPage() {
                 icon={<EditOutlined />}
                 onClick={() => navigate(`/rules/${rule.ruleKey}/edit`)}
               >
-                编辑
+                {t('common.edit')}
               </Button>
             </Access>
             <Access permission="api:rules:delete">
               <Popconfirm
-                title="确认删除此规则？删除后不可恢复。"
+                title={t('rules.confirmDeleteRule')}
                 onConfirm={handleDelete}
-                okText="确认删除"
-                cancelText="取消"
+                okText={t('common.delete')}
+                cancelText={t('common.cancel')}
               >
                 <Button danger icon={<DeleteOutlined />}>
-                  删除
+                  {t('common.delete')}
                 </Button>
               </Popconfirm>
             </Access>
@@ -206,18 +208,18 @@ export default function RuleDetailPage() {
         </div>
 
         <Descriptions bordered column={2} style={{ marginBottom: 24 }}>
-          <Descriptions.Item label="规则标识">{rule.ruleKey}</Descriptions.Item>
-          <Descriptions.Item label="状态">
+          <Descriptions.Item label={t('rules.ruleKeyLabel')}>{rule.ruleKey}</Descriptions.Item>
+          <Descriptions.Item label={t('common.status')}>
             {rule.enabled ? (
-              <Tag color="green">已启用</Tag>
+              <Tag color="green">{t('common.enabled')}</Tag>
             ) : (
-              <Tag color="default">已禁用</Tag>
+              <Tag color="default">{t('common.disabled')}</Tag>
             )}
           </Descriptions.Item>
-          <Descriptions.Item label="版本">{rule.version}</Descriptions.Item>
-          <Descriptions.Item label="启用状态">
+          <Descriptions.Item label={t('common.version')}>{rule.version}</Descriptions.Item>
+          <Descriptions.Item label={t('rules.enabledStatus')}>
             <Access permission="api:rules:update" fallback={
-              <Tag color={rule.enabled ? 'green' : 'default'}>{rule.enabled ? '已启用' : '已禁用'}</Tag>
+              <Tag color={rule.enabled ? 'green' : 'default'}>{rule.enabled ? t('common.enabled') : t('common.disabled')}</Tag>
             }>
               <Switch
                 checked={rule.enabled}
@@ -227,15 +229,15 @@ export default function RuleDetailPage() {
               />
             </Access>
           </Descriptions.Item>
-          <Descriptions.Item label="创建人">{rule.createdBy}</Descriptions.Item>
-          <Descriptions.Item label="创建时间">
+          <Descriptions.Item label={t('common.createdBy')}>{rule.createdBy}</Descriptions.Item>
+          <Descriptions.Item label={t('common.createdAt')}>
             {rule.createdAt ? new Date(rule.createdAt).toLocaleString('zh-CN') : '-'}
           </Descriptions.Item>
-          <Descriptions.Item label="更新人">{rule.updatedBy ?? '-'}</Descriptions.Item>
-          <Descriptions.Item label="更新时间">
+          <Descriptions.Item label={t('common.updatedBy')}>{rule.updatedBy ?? '-'}</Descriptions.Item>
+          <Descriptions.Item label={t('common.updatedAt')}>
             {rule.updatedAt ? new Date(rule.updatedAt).toLocaleString('zh-CN') : '-'}
           </Descriptions.Item>
-          <Descriptions.Item label="规则描述" span={2}>
+          <Descriptions.Item label={t('rules.ruleDescription')} span={2}>
             {rule.ruleDescription ?? '-'}
           </Descriptions.Item>
         </Descriptions>
@@ -245,13 +247,13 @@ export default function RuleDetailPage() {
           {/* 左侧：规则逻辑 */}
           <Col xs={24} lg={14}>
             {parsedDisplay && (
-              <Card title="规则逻辑" size="small">
+              <Card title={t('rules.ruleLogic')} size="small">
                 {isEmptyDisplayNode(parsedDisplay.conditionTree) ? (
                   <>
                     <Alert
                       type="info"
                       showIcon
-                      message="无条件限制，所有请求执行以下动作"
+                      message={t('rules.unconditional')}
                       style={{ marginBottom: 12 }}
                     />
                     <div style={{
@@ -259,7 +261,7 @@ export default function RuleDetailPage() {
                       background: '#fafafa',
                       borderRadius: 6,
                     }}>
-                      <Text type="secondary">执行动作：</Text>
+                      <Text type="secondary">{t('rules.executeAction')}</Text>
                       <Tag
                         color={actionTagColor(parsedDisplay.defaultActionLabel)}
                         style={{ marginLeft: 8 }}
@@ -273,7 +275,7 @@ export default function RuleDetailPage() {
                   <>
                     {/* 条件树 */}
                     <div style={{ marginBottom: 12 }}>
-                      <Text type="secondary" style={{ marginRight: 8 }}>条件：</Text>
+                      <Text type="secondary" style={{ marginRight: 8 }}>{t('rules.conditionLabel')}</Text>
                       <ConditionTreeDisplay node={parsedDisplay.conditionTree} />
                     </div>
 
@@ -285,7 +287,7 @@ export default function RuleDetailPage() {
                       border: '1px solid #b7eb8f',
                       marginBottom: 8,
                     }}>
-                      <Text type="secondary">满足条件时：</Text>
+                      <Text type="secondary">{t('rules.whenMatched')}</Text>
                       <Tag
                         color={actionTagColor(parsedDisplay.actionLabel)}
                         style={{ marginLeft: 8 }}
@@ -303,7 +305,7 @@ export default function RuleDetailPage() {
                       background: '#fafafa',
                       borderRadius: 6,
                     }}>
-                      <Text type="secondary">不满足条件时（默认）：</Text>
+                      <Text type="secondary">{t('rules.whenNotMatched')}</Text>
                       <Tag
                         color={actionTagColor(parsedDisplay.defaultActionLabel)}
                         style={{ marginLeft: 8 }}
@@ -321,7 +323,7 @@ export default function RuleDetailPage() {
           {/* 右侧：Groovy 脚本 */}
           <Col xs={24} lg={10}>
             <Card
-              title={<Text strong>Groovy 脚本</Text>}
+              title={<Text strong>{t('rules.groovyScript')}</Text>}
               size="small"
               style={{ position: 'sticky', top: 16 }}
             >

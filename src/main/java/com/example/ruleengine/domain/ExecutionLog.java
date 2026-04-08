@@ -6,8 +6,11 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 import java.time.LocalDateTime;
+import java.util.Map;
 
 /**
  * 规则执行日志实体类
@@ -30,8 +33,9 @@ public class ExecutionLog {
     @Column(name = "rule_version")
     private Integer ruleVersion;
 
+    @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "input_features", columnDefinition = "jsonb")
-    private String inputFeatures;
+    private Map<String, Object> inputFeatures;
 
     @Column(name = "output_decision", length = 50)
     private String outputDecision;

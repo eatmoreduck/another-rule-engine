@@ -25,6 +25,7 @@ import {
   SearchOutlined,
   ReloadOutlined,
 } from '@ant-design/icons';
+import { useTranslation } from 'react-i18next';
 import dayjs from 'dayjs';
 import type { Dayjs } from 'dayjs';
 import {
@@ -42,23 +43,20 @@ import type {
 const { RangePicker } = DatePicker;
 
 export default function AnalyticsPage() {
+  const { t } = useTranslation();
   const [loading, setLoading] = useState(false);
   const [activeTab, setActiveTab] = useState<'analytics' | 'conflicts' | 'dependencies'>('analytics');
 
-  // 分析数据
   const [dateRange, setDateRange] = useState<[Dayjs, Dayjs]>([
     dayjs().subtract(7, 'day'),
     dayjs(),
   ]);
   const [analyticsData, setAnalyticsData] = useState<RuleAnalytics[]>([]);
 
-  // 冲突数据
   const [conflicts, setConflicts] = useState<ConflictResult[]>([]);
 
-  // 依赖数据
   const [dependencyGraph, setDependencyGraph] = useState<DependencyGraph | null>(null);
 
-  /** 加载分析数据 */
   const fetchAnalytics = useCallback(async () => {
     setLoading(true);
     try {
@@ -68,34 +66,32 @@ export default function AnalyticsPage() {
       );
       setAnalyticsData(data);
     } catch {
-      message.error('加载分析数据失败');
+      message.error(t('analytics.loadFailed'));
     } finally {
       setLoading(false);
     }
   }, [dateRange]);
 
-  /** 加载冲突数据 */
   const fetchConflicts = useCallback(async () => {
     setLoading(true);
     try {
       const data = await detectAllConflicts();
       setConflicts(data);
-      message.success(`检测完成，发现 ${data.length} 个冲突`);
+      message.success(t('analytics.conflictDetected', { count: data.length }));
     } catch {
-      message.error('冲突检测失败');
+      message.error(t('analytics.conflictDetectFailed'));
     } finally {
       setLoading(false);
     }
   }, []);
 
-  /** 加载依赖关系 */
   const fetchDependencies = useCallback(async () => {
     setLoading(true);
     try {
       const data = await getDependencyGraph();
       setDependencyGraph(data);
     } catch {
-      message.error('加载依赖关系失败');
+      message.error(t('analytics.dependencyLoadFailed'));
     } finally {
       setLoading(false);
     }
@@ -111,35 +107,34 @@ export default function AnalyticsPage() {
     }
   }, [activeTab, fetchAnalytics, fetchConflicts, fetchDependencies]);
 
-  /** 分析数据表格列 */
   const analyticsColumns: ColumnsType<RuleAnalytics> = [
     {
-      title: '规则 Key',
+      title: t('analytics.columns.ruleKey'),
       dataIndex: 'ruleKey',
       key: 'ruleKey',
       ellipsis: true,
     },
     {
-      title: '规则名称',
+      title: t('analytics.columns.ruleName'),
       dataIndex: 'ruleName',
       key: 'ruleName',
       ellipsis: true,
     },
     {
-      title: '总执行',
+      title: t('analytics.columns.totalExecutions'),
       dataIndex: 'totalExecutions',
       key: 'totalExecutions',
       sorter: (a, b) => a.totalExecutions - b.totalExecutions,
       render: (val: number) => val.toLocaleString(),
     },
     {
-      title: '命中次数',
+      title: t('analytics.columns.hitCount'),
       dataIndex: 'hitCount',
       key: 'hitCount',
       render: (val: number) => val.toLocaleString(),
     },
     {
-      title: '命中率',
+      title: t('analytics.columns.hitRate'),
       dataIndex: 'hitRate',
       key: 'hitRate',
       sorter: (a, b) => a.hitRate - b.hitRate,
@@ -150,13 +145,13 @@ export default function AnalyticsPage() {
       ),
     },
     {
-      title: '拦截率',
+      title: t('analytics.columns.rejectRate'),
       dataIndex: 'rejectRate',
       key: 'rejectRate',
       render: (val: number) => `${val.toFixed(1)}%`,
     },
     {
-      title: '错误率',
+      title: t('analytics.columns.errorRate'),
       dataIndex: 'errorRate',
       key: 'errorRate',
       render: (val: number) =>
@@ -167,7 +162,7 @@ export default function AnalyticsPage() {
         ),
     },
     {
-      title: '平均耗时',
+      title: t('analytics.columns.avgExecutionTime'),
       dataIndex: 'avgExecutionTimeMs',
       key: 'avgExecutionTimeMs',
       sorter: (a, b) => a.avgExecutionTimeMs - b.avgExecutionTimeMs,
@@ -178,17 +173,16 @@ export default function AnalyticsPage() {
       ),
     },
     {
-      title: 'P99 耗时',
+      title: t('analytics.columns.p99ExecutionTime'),
       dataIndex: 'p99ExecutionTimeMs',
       key: 'p99ExecutionTimeMs',
       render: (val: number) => `${val.toFixed(2)} ms`,
     },
   ];
 
-  /** 冲突结果表格列 */
   const conflictColumns: ColumnsType<ConflictResult> = [
     {
-      title: '冲突类型',
+      title: t('analytics.columns.conflictType'),
       dataIndex: 'conflictType',
       key: 'conflictType',
       width: 140,
@@ -201,7 +195,7 @@ export default function AnalyticsPage() {
       },
     },
     {
-      title: '规则 1',
+      title: t('analytics.columns.rule1'),
       key: 'rule1',
       width: 160,
       render: (_, record) => (
@@ -213,7 +207,7 @@ export default function AnalyticsPage() {
       ),
     },
     {
-      title: '规则 2',
+      title: t('analytics.columns.rule2'),
       key: 'rule2',
       width: 160,
       render: (_, record) => (
@@ -225,13 +219,13 @@ export default function AnalyticsPage() {
       ),
     },
     {
-      title: '描述',
+      title: t('common.description'),
       dataIndex: 'description',
       key: 'description',
       ellipsis: true,
     },
     {
-      title: '严重程度',
+      title: t('analytics.columns.severity'),
       dataIndex: 'severity',
       key: 'severity',
       width: 100,
@@ -246,34 +240,33 @@ export default function AnalyticsPage() {
     },
   ];
 
-  /** 依赖边表格列 */
   const dependencyColumns: ColumnsType<DependencyEdge> = [
     {
-      title: '源规则',
+      title: t('analytics.columns.source'),
       dataIndex: 'source',
       key: 'source',
       width: 150,
     },
     {
-      title: '目标规则',
+      title: t('analytics.columns.target'),
       dataIndex: 'target',
       key: 'target',
       width: 150,
     },
     {
-      title: '依赖类型',
+      title: t('analytics.columns.dependencyType'),
       dataIndex: 'dependencyType',
       key: 'dependencyType',
       width: 150,
       render: (val: string) => {
         const labelMap: Record<string, string> = {
-          FEATURE_DEPENDENCY: '特征依赖',
+          FEATURE_DEPENDENCY: t('analytics.featureDependency'),
         };
         return <Tag color="blue">{labelMap[val] || val}</Tag>;
       },
     },
     {
-      title: '共享特征',
+      title: t('analytics.columns.sharedFeatures'),
       dataIndex: 'sharedFeatureList',
       key: 'sharedFeatureList',
       render: (val: string[]) =>
@@ -285,41 +278,39 @@ export default function AnalyticsPage() {
     <>
       <Breadcrumb
         style={{ marginBottom: 16 }}
-        items={[{ title: '分析中心' }]}
+        items={[{ title: t('analytics.pageTitle') }]}
       />
 
-      {/* Tab 切换 */}
       <Space style={{ marginBottom: 16 }}>
         <Button
           type={activeTab === 'analytics' ? 'primary' : 'default'}
           icon={<BarChartOutlined />}
           onClick={() => setActiveTab('analytics')}
         >
-          效果分析
+          {t('analytics.effectAnalysis')}
         </Button>
         <Button
           type={activeTab === 'conflicts' ? 'primary' : 'default'}
           icon={<WarningOutlined />}
           onClick={() => setActiveTab('conflicts')}
         >
-          冲突检测
+          {t('analytics.conflictDetection')}
         </Button>
         <Button
           type={activeTab === 'dependencies' ? 'primary' : 'default'}
           icon={<DisconnectOutlined />}
           onClick={() => setActiveTab('dependencies')}
         >
-          依赖分析
+          {t('analytics.dependencyAnalysis')}
         </Button>
       </Space>
 
       <Spin spinning={loading}>
-        {/* 效果分析 */}
         {activeTab === 'analytics' && (
           <>
             <Card style={{ marginBottom: 16 }}>
               <Space>
-                <span>时间范围:</span>
+                <span>{t('analytics.timeRange')}</span>
                 <RangePicker
                   value={dateRange}
                   onChange={(dates) => {
@@ -333,18 +324,17 @@ export default function AnalyticsPage() {
                   onClick={fetchAnalytics}
                   loading={loading}
                 >
-                  查询
+                  {t('analytics.query')}
                 </Button>
               </Space>
             </Card>
 
-            {/* 汇总统计 */}
             {analyticsData.length > 0 && (
               <Row gutter={16} style={{ marginBottom: 24 }}>
                 <Col span={6}>
                   <Card>
                     <Statistic
-                      title="规则总数"
+                      title={t('analytics.summary.ruleCount')}
                       value={analyticsData.length}
                       prefix={<CheckCircleOutlined />}
                     />
@@ -353,7 +343,7 @@ export default function AnalyticsPage() {
                 <Col span={6}>
                   <Card>
                     <Statistic
-                      title="总执行次数"
+                      title={t('analytics.summary.totalExecutions')}
                       value={analyticsData.reduce(
                         (sum, a) => sum + a.totalExecutions,
                         0,
@@ -364,7 +354,7 @@ export default function AnalyticsPage() {
                 <Col span={6}>
                   <Card>
                     <Statistic
-                      title="平均命中率"
+                      title={t('analytics.summary.avgHitRate')}
                       value={
                         analyticsData.length > 0
                           ? analyticsData.reduce(
@@ -381,7 +371,7 @@ export default function AnalyticsPage() {
                 <Col span={6}>
                   <Card>
                     <Statistic
-                      title="平均耗时"
+                      title={t('analytics.summary.avgExecutionTime')}
                       value={
                         analyticsData.length > 0
                           ? analyticsData.reduce(
@@ -398,44 +388,43 @@ export default function AnalyticsPage() {
               </Row>
             )}
 
-            <Card title="规则效果分析">
+            <Card title={t('analytics.effectAnalysisTitle')}>
               <Table
                 rowKey="ruleKey"
                 columns={analyticsColumns}
                 dataSource={analyticsData}
                 pagination={{ pageSize: 10 }}
                 size="middle"
-                locale={{ emptyText: '暂无分析数据' }}
+                locale={{ emptyText: t('analytics.noAnalyticsData') }}
               />
             </Card>
           </>
         )}
 
-        {/* 冲突检测 */}
         {activeTab === 'conflicts' && (
           <Card
-            title="规则冲突检测"
+            title={t('analytics.conflictTitle')}
             extra={
               <Button
                 icon={<ReloadOutlined />}
                 onClick={fetchConflicts}
                 loading={loading}
               >
-                重新检测
+                {t('analytics.reDetect')}
               </Button>
             }
           >
             {conflicts.length === 0 ? (
               <Empty
-                description="未发现规则冲突"
+                description={t('analytics.noConflicts')}
                 image={Empty.PRESENTED_IMAGE_SIMPLE}
               />
             ) : (
               <>
                 <Alert
                   type="warning"
-                  message={`发现 ${conflicts.length} 个规则冲突`}
-                  description="建议优先处理 HIGH 级别的冲突，以避免规则执行结果不一致。"
+                  message={t('analytics.conflictWarning', { count: conflicts.length })}
+                  description={t('analytics.conflictWarningDesc')}
                   showIcon
                   style={{ marginBottom: 16 }}
                 />
@@ -451,18 +440,17 @@ export default function AnalyticsPage() {
           </Card>
         )}
 
-        {/* 依赖分析 */}
         {activeTab === 'dependencies' && (
           <>
             <Card
-              title="规则依赖关系图"
+              title={t('analytics.dependencyTitle')}
               extra={
                 <Button
                   icon={<ReloadOutlined />}
                   onClick={fetchDependencies}
                   loading={loading}
                 >
-                  刷新
+                  {t('common.refresh')}
                 </Button>
               }
               style={{ marginBottom: 24 }}
@@ -470,13 +458,13 @@ export default function AnalyticsPage() {
               {dependencyGraph && dependencyGraph.nodes.length > 0 ? (
                 <>
                   <Descriptions bordered size="small" column={3} style={{ marginBottom: 16 }}>
-                    <Descriptions.Item label="规则数量">
+                    <Descriptions.Item label={t('analytics.nodeCount')}>
                       {dependencyGraph.nodes.length}
                     </Descriptions.Item>
-                    <Descriptions.Item label="依赖关系数">
+                    <Descriptions.Item label={t('analytics.edgeCount')}>
                       {dependencyGraph.edges.length}
                     </Descriptions.Item>
-                    <Descriptions.Item label="共享特征数">
+                    <Descriptions.Item label={t('analytics.sharedFeatureCount')}>
                       {dependencyGraph.sharedFeatures?.length ?? 0}
                     </Descriptions.Item>
                   </Descriptions>
@@ -484,7 +472,7 @@ export default function AnalyticsPage() {
                   {dependencyGraph.sharedFeatures &&
                     dependencyGraph.sharedFeatures.length > 0 && (
                       <div style={{ marginBottom: 16 }}>
-                        <strong>共享特征:</strong>
+                        <strong>{t('analytics.sharedFeaturesLabel')}</strong>
                         <div style={{ marginTop: 8 }}>
                           {dependencyGraph.sharedFeatures.map((f, i) => (
                             <Tag key={i} color="blue" style={{ marginBottom: 4 }}>
@@ -497,14 +485,14 @@ export default function AnalyticsPage() {
                 </>
               ) : (
                 <Empty
-                  description="暂无依赖关系数据"
+                  description={t('analytics.noDependencyData')}
                   image={Empty.PRESENTED_IMAGE_SIMPLE}
                 />
               )}
             </Card>
 
             {dependencyGraph && dependencyGraph.edges.length > 0 && (
-              <Card title="依赖关系详情">
+              <Card title={t('analytics.dependencyDetailTitle')}>
                 <Table
                   rowKey={(_, index) => String(index)}
                   columns={dependencyColumns}

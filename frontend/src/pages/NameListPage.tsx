@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Card, Table, Button, Space, Select, Input, Modal, Form, Breadcrumb, Tag, Popconfirm, Alert, DatePicker } from 'antd';
 import { PlusOutlined, DeleteOutlined } from '@ant-design/icons';
+import { useTranslation } from 'react-i18next';
 import { getNameListEntries, createNameListEntry, deleteNameListEntry } from '../api/nameList';
 import type { NameListEntry } from '../api/nameList';
 import { getDecisionFlows } from '../api/decisionFlows';
@@ -8,12 +9,8 @@ import { KEY_TYPE_LABELS } from '../types/flowConfig';
 import { formatDateTime } from '../utils/format';
 import Access from '../components/AccessControl';
 
-const LIST_TYPE_MAP: Record<string, { label: string; color: string }> = {
-  BLACK: { label: '黑名单', color: 'red' },
-  WHITE: { label: '白名单', color: 'green' },
-};
-
 export default function NameListPage() {
+  const { t } = useTranslation();
   const [data, setData] = useState<NameListEntry[]>([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(false);
@@ -27,14 +24,18 @@ export default function NameListPage() {
   const [error, setError] = useState<string | null>(null);
   const [form] = Form.useForm();
 
-  // 决策流 Key 列表（用于下拉选择）
   const [flowKeyOptions, setFlowKeyOptions] = useState<{ value: string; label: string }[]>([]);
+
+  const LIST_TYPE_MAP: Record<string, { label: string; color: string }> = {
+    BLACK: { label: t('nameList.listTypes.BLACK'), color: 'red' },
+    WHITE: { label: t('nameList.listTypes.WHITE'), color: 'green' },
+  };
 
   useEffect(() => {
     getDecisionFlows({ page: 0, size: 200 })
       .then((res) => {
         const opts = res.content.map((f) => ({ value: f.flowKey, label: `${f.flowName} (${f.flowKey})` }));
-        opts.unshift({ value: 'GLOBAL', label: 'GLOBAL（全局共享）' });
+        opts.unshift({ value: 'GLOBAL', label: t('nameList.globalLabel') });
         setFlowKeyOptions(opts);
       })
       .catch(() => {});
@@ -54,7 +55,7 @@ export default function NameListPage() {
       setData(result.content);
       setTotal(result.totalElements);
     } catch (err) {
-      setError(err instanceof Error ? err.message : '加载名单失败');
+      setError(err instanceof Error ? err.message : t('nameList.loadFailed'));
     } finally {
       setLoading(false);
     }
@@ -93,21 +94,21 @@ export default function NameListPage() {
       await deleteNameListEntry(id);
       fetchData();
     } catch (err) {
-      setError(err instanceof Error ? err.message : '删除失败');
+      setError(err instanceof Error ? err.message : t('nameList.deleteFailed'));
     }
   }, [fetchData]);
 
   const columns = [
     { title: 'ID', dataIndex: 'id', key: 'id', width: 60 },
     {
-      title: '名单 Key',
+      title: t('nameList.listKey'),
       dataIndex: 'listKey',
       key: 'listKey',
       width: 120,
       render: (val: string) => <Tag>{val || 'GLOBAL'}</Tag>,
     },
     {
-      title: '类型',
+      title: t('common.type'),
       dataIndex: 'listType',
       key: 'listType',
       width: 100,
@@ -117,37 +118,37 @@ export default function NameListPage() {
       },
     },
     {
-      title: '键类型',
+      title: t('nameList.keyType'),
       dataIndex: 'keyType',
       key: 'keyType',
       width: 100,
       render: (val: string) => KEY_TYPE_LABELS[val] ?? val,
     },
-    { title: '键值', dataIndex: 'keyValue', key: 'keyValue', ellipsis: true, width: 180 },
-    { title: '原因', dataIndex: 'reason', key: 'reason', ellipsis: true, width: 150 },
-    { title: '来源', dataIndex: 'source', key: 'source', ellipsis: true, width: 100 },
+    { title: t('nameList.keyValue'), dataIndex: 'keyValue', key: 'keyValue', ellipsis: true, width: 180 },
+    { title: t('nameList.reason'), dataIndex: 'reason', key: 'reason', ellipsis: true, width: 150 },
+    { title: t('nameList.source'), dataIndex: 'source', key: 'source', ellipsis: true, width: 100 },
     {
-      title: '过期时间',
+      title: t('nameList.expiredAt'),
       dataIndex: 'expiredAt',
       key: 'expiredAt',
       width: 160,
       render: (val: string | null) => formatDateTime(val),
     },
     {
-      title: '创建时间',
+      title: t('common.createdAt'),
       dataIndex: 'createdAt',
       key: 'createdAt',
       width: 170,
       render: (val: string) => formatDateTime(val),
     },
     {
-      title: '操作',
+      title: t('common.actions'),
       key: 'action',
       width: 80,
       render: (_: unknown, record: NameListEntry) => (
         <Access permission="api:name-list:delete">
-          <Popconfirm title="确认删除？" onConfirm={() => handleDelete(record.id)} okText="确认" cancelText="取消">
-            <Button type="link" danger icon={<DeleteOutlined />} size="small">删除</Button>
+          <Popconfirm title={t('nameList.confirmDelete')} onConfirm={() => handleDelete(record.id)} okText={t('common.confirm')} cancelText={t('common.cancel')}>
+            <Button type="link" danger icon={<DeleteOutlined />} size="small">{t('common.delete')}</Button>
           </Popconfirm>
         </Access>
       ),
@@ -156,13 +157,13 @@ export default function NameListPage() {
 
   return (
     <div>
-      <Breadcrumb style={{ marginBottom: 16 }} items={[{ title: '名单管理' }]} />
+      <Breadcrumb style={{ marginBottom: 16 }} items={[{ title: t('nameList.pageTitle') }]} />
       <Card>
         <div className="page-header">
-          <h2 className="page-header-title">名单管理</h2>
+          <h2 className="page-header-title">{t('nameList.pageTitle')}</h2>
           <div className="page-header-actions">
             <Access permission="api:name-list:manage">
-              <Button type="primary" icon={<PlusOutlined />} onClick={handleAdd}>新增</Button>
+              <Button type="primary" icon={<PlusOutlined />} onClick={handleAdd}>{t('nameList.addButton')}</Button>
             </Access>
           </div>
         </div>
@@ -173,7 +174,7 @@ export default function NameListPage() {
 
         <Space style={{ marginBottom: 16 }} wrap>
           <Select
-            placeholder="名单 Key"
+            placeholder={t('nameList.listKeyPlaceholder')}
             allowClear
             showSearch
             style={{ width: 200 }}
@@ -183,7 +184,7 @@ export default function NameListPage() {
             filterOption={(input, option) => (option?.label as string)?.toLowerCase().includes(input.toLowerCase()) ?? false}
           />
           <Select
-            placeholder="名单类型"
+            placeholder={t('nameList.listTypePlaceholder')}
             allowClear
             style={{ width: 140 }}
             value={filterListType}
@@ -191,7 +192,7 @@ export default function NameListPage() {
             options={Object.entries(LIST_TYPE_MAP).map(([key, info]) => ({ value: key, label: info.label }))}
           />
           <Select
-            placeholder="键类型"
+            placeholder={t('nameList.keyTypePlaceholder')}
             allowClear
             style={{ width: 140 }}
             value={filterKeyType}
@@ -210,54 +211,54 @@ export default function NameListPage() {
             pageSize,
             total,
             showSizeChanger: true,
-            showTotal: (t) => `共 ${t} 条`,
+            showTotal: (t_val) => t('common.totalShort', { count: t_val }),
             onChange: (p, ps) => { setPage(p); setPageSize(ps); },
           }}
           scroll={{ x: 1200 }}
         />
 
         <Modal
-          title="新增名单条目"
+          title={t('nameList.addEntry')}
           open={modalOpen}
           onOk={handleModalOk}
           onCancel={() => setModalOpen(false)}
           confirmLoading={confirmLoading}
-          okText="确认"
-          cancelText="取消"
+          okText={t('common.confirm')}
+          cancelText={t('common.cancel')}
         >
           <Form form={form} layout="vertical">
-            <Form.Item name="listType" label="名单类型" rules={[{ required: true, message: '请选择名单类型' }]}>
+            <Form.Item name="listType" label={t('nameList.listType')} rules={[{ required: true, message: t('nameList.listTypeRequired') }]}>
               <Select
-                placeholder="选择名单类型"
+                placeholder={t('nameList.selectListTypePlaceholder')}
                 options={Object.entries(LIST_TYPE_MAP).map(([key, info]) => ({ value: key, label: info.label }))}
               />
             </Form.Item>
-            <Form.Item name="listKey" label="名单 Key">
+            <Form.Item name="listKey" label={t('nameList.listKey')}>
               <Select
-                placeholder="选择决策流（留空则全局生效）"
+                placeholder={t('nameList.selectFlowPlaceholder')}
                 allowClear
                 showSearch
                 options={flowKeyOptions}
                 filterOption={(input, option) => (option?.label as string)?.toLowerCase().includes(input.toLowerCase()) ?? false}
               />
             </Form.Item>
-            <Form.Item name="keyType" label="键类型" rules={[{ required: true, message: '请选择键类型' }]}>
+            <Form.Item name="keyType" label={t('nameList.keyType')} rules={[{ required: true, message: t('nameList.keyTypeRequired') }]}>
               <Select
-                placeholder="选择键类型"
+                placeholder={t('nameList.selectKeyTypePlaceholder')}
                 options={Object.entries(KEY_TYPE_LABELS).map(([key, label]) => ({ value: key, label }))}
               />
             </Form.Item>
-            <Form.Item name="keyValue" label="键值" rules={[{ required: true, message: '请输入键值' }]}>
-              <Input placeholder="输入键值" />
+            <Form.Item name="keyValue" label={t('nameList.keyValue')} rules={[{ required: true, message: t('nameList.keyValueRequired') }]}>
+              <Input placeholder={t('nameList.keyValuePlaceholder')} />
             </Form.Item>
-            <Form.Item name="reason" label="原因">
-              <Input.TextArea rows={2} placeholder="加入原因（可选）" />
+            <Form.Item name="reason" label={t('nameList.reason')}>
+              <Input.TextArea rows={2} placeholder={t('nameList.reasonPlaceholder')} />
             </Form.Item>
-            <Form.Item name="source" label="来源">
-              <Input placeholder="数据来源（可选）" />
+            <Form.Item name="source" label={t('nameList.source')}>
+              <Input placeholder={t('nameList.sourcePlaceholder')} />
             </Form.Item>
-            <Form.Item name="expiredAt" label="过期时间">
-              <DatePicker style={{ width: '100%' }} placeholder="过期时间（可选）" />
+            <Form.Item name="expiredAt" label={t('nameList.expiredAt')}>
+              <DatePicker style={{ width: '100%' }} placeholder={t('nameList.expiredAtPlaceholder')} />
             </Form.Item>
           </Form>
         </Modal>
