@@ -6,6 +6,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
@@ -88,6 +89,42 @@ public class SecurityAuditService {
     private static final Pattern INFINITE_LOOP_PATTERN = Pattern.compile(
         "\\bwhile\\s*\\(\\s*true\\s*\\)|\\bfor\\s*\\(\\s*;\\s*;\\s*\\)|" +
         "\\bwhile\\s*\\(\\s*1\\s*\\)"
+    );
+
+    // 危险模式：动态代码评估 eval
+    private static final Pattern EVAL_PATTERN = Pattern.compile(
+        "\\beval\\s*\\("
+    );
+
+    // 危险模式：ScriptEngine 动态脚本执行
+    private static final Pattern SCRIPT_ENGINE_PATTERN = Pattern.compile(
+        "\\bScriptEngine\\b|\\bScriptEngineManager\\b"
+    );
+
+    // 危险模式：ProcessBuilder 进程执行（作为 PROCESS_PATTERN 的补充）
+    private static final Pattern PROCESS_BUILDER_PATTERN = Pattern.compile(
+        "\\bProcessBuilder\\b"
+    );
+
+    // 危险模式：Thread 线程操作（作为 THREAD_PATTERN 的补充）
+    private static final Pattern THREAD_MANIPULATION_PATTERN = Pattern.compile(
+        "\\bThread\\.currentThread\\s*\\(\\s*\\)|\\.interrupt\\s*\\(\\s*\\)|" +
+        "\\.setDaemon\\s*\\(\\s*\\)|\\.setPriority\\s*\\(\\s*\\)"
+    );
+
+    // 危险模式：Class.forName 反射加载类（作为 REFLECTION_PATTERN 的补充）
+    private static final Pattern CLASS_FOR_NAME_PATTERN = Pattern.compile(
+        "\\bClass\\.forName\\s*\\("
+    );
+
+    // 用于匹配 Unicode 转义序列 \\uXXXX
+    private static final Pattern UNICODE_ESCAPE_PATTERN = Pattern.compile(
+        "\\\\u([0-9a-fA-F]{4})"
+    );
+
+    // 用于匹配相邻字符串字面量拼接，如 "abc" + "def" 或 'abc' + 'def'
+    private static final Pattern STRING_CONCAT_PATTERN = Pattern.compile(
+        "\"([^\"]*)\"\\s*\\+\\s*\"([^\"]*)\"|'([^']*)'\\s*\\+\\s*'([^']*)'"
     );
 
     /**
