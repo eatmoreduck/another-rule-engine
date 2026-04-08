@@ -1,0 +1,207 @@
+{
+  "app": {
+    "title": "Rule Engine",
+    "loading": "Loading..."
+  },
+
+  "menu": {
+    "rules": "Rules",
+    "decisionFlows": "Decision Flows",
+    "nameList": "Name List",
+    "grayscale": "Grayscale Release",
+    "environments": "Environments",
+    "importExport": "Import / Export",
+    "monitoring": "Monitoring",
+    "analytics": "Analytics",
+    "system": "System",
+    "userManagement": "Users",
+    "roleManagement": "Roles",
+    "auditLog": "Audit Log"
+  },
+
+  "common": {
+    "create": "Create",
+    "edit": "Edit",
+    "delete": "Delete",
+    "save": "Save",
+    "cancel": "Cancel",
+    "confirm": "Confirm",
+    "search": "Search",
+    "reset": "Reset",
+    "submit": "Submit",
+    "close": "Close",
+    "back": "Back",
+    "refresh": "Refresh",
+    "export": "Export",
+    "import": "Import",
+    "download": "Download",
+    "upload": "Upload",
+    "yes": "Yes",
+    "no": "No",
+    "status": "Status",
+    "actions": "Actions",
+    "all": "All",
+    "total": "Total {{count}} items",
+    "noData": "No data",
+    "success": "Operation successful",
+    "error": "Operation failed",
+    "required": "This field is required",
+    "detail": "Detail",
+    "name": "Name",
+    "description": "Description",
+    "type": "Type",
+    "version": "Version",
+    "createdAt": "Created At",
+    "createdBy": "Created By",
+    "updatedAt": "Updated At",
+    "selectPlaceholder": "Please select",
+    "inputPlaceholder": "Please enter"
+  },
+
+  "user": {
+    "logout": "Logout",
+    "logoutConfirm": "Are you sure you want to logout?",
+    "logoutTitle": "Confirm Logout",
+    "defaultName": "User"
+  },
+
+  "grayscale": {
+    "pageTitle": "Grayscale Release",
+    "createGrayscale": "New Grayscale",
+    "createTitle": "Create Grayscale Configuration",
+    "targetType": "Target Type",
+    "targetKey": "Target Key",
+    "currentVersion": "Current Version",
+    "grayscaleVersion": "Grayscale Version",
+    "grayscalePercentage": "Grayscale Percentage",
+    "strategyType": "Strategy Type",
+    "statusFilter": "Filter by Status",
+    "grayscaleDescription": "Description",
+    "descriptionPlaceholder": "Enter grayscale description (optional)",
+
+    "rule": "Rule",
+    "decisionFlow": "Decision Flow",
+
+    "strategy": {
+      "title": "Strategy",
+      "percentage": "Percentage",
+      "feature": "Feature Match",
+      "whitelist": "Whitelist"
+    },
+
+    "percentageLabel": "Grayscale Percentage",
+    "percentagePlaceholder": "Enter grayscale percentage",
+    "percentageExtra": "Proportion of grayscale traffic to total traffic (0-100)",
+    "percentageRequired": "Please enter grayscale percentage",
+
+    "featureRulesLabel": "Feature Match Rules",
+    "featureRulesPlaceholder": "Enter feature match rules",
+    "featureRulesExtra": "JSON format, e.g.: {{example}}",
+
+    "whitelistLabel": "Whitelist User IDs",
+    "whitelistPlaceholder": "Enter user ID and press Enter",
+    "whitelistExtra": "Separate multiple user IDs with commas",
+    "whitelistRequired": "Please enter whitelist user IDs",
+
+    "grayscaleVersionLabel": "Grayscale Version",
+    "grayscaleVersionRequired": "Please select a grayscale version",
+    "grayscaleVersionCount": "{{count}} versions available",
+    "selectTargetFirst": "Select a target first",
+
+    "ruleSelectPlaceholder": "Search and select a rule",
+    "ruleRequired": "Please select a rule",
+    "flowSelectPlaceholder": "Search and select a decision flow",
+    "flowRequired": "Please select a decision flow",
+
+    "versionComparison": "Version Comparison",
+    "sameVersionWarning": "Note: Grayscale version is the same as current version, please select a different version",
+    "changeReason": "Change Reason",
+    "rollbackSource": "Rollback Source",
+    "rollbackFrom": "Rolled back from v{{version}}",
+    "currentVersionTitle": "Current Version",
+    "grayscaleVersionTitle": "Grayscale Version",
+    "noContentToCompare": "No script content to compare",
+
+    "ruleLogicComparison": "Rule Logic Comparison",
+    "visualComparison": "Visual Comparison",
+    "groovyCodeComparison": "Groovy Code Comparison",
+    "jsonComparison": "JSON Comparison",
+
+    "startGrayscale": "Start Grayscale",
+    "pauseGrayscale": "Pause Grayscale",
+    "resumeGrayscale": "Resume Grayscale",
+    "completeGrayscale": "Complete Grayscale (Full Release)",
+    "rollbackGrayscale": "Rollback Grayscale",
+    "viewReport": "View Comparison Report",
+    "viewLogs": "View Execution Logs",
+    "viewDiff": "View Rule Comparison",
+
+    "confirmComplete": "Confirm completing grayscale? The grayscale version will be fully released.",
+    "confirmRollback": "Confirm rollback? Will revert to the current stable version.",
+
+    "reportTitle": "Grayscale Comparison Report",
+    "executionCount": "Executions",
+    "hitCount": "Hits",
+    "hitRate": "Hit Rate",
+    "avgTime": "Avg Time",
+    "errorRate": "Error Rate",
+    "errorCount": "Errors",
+    "ruleKey": "Rule Key",
+    "noReportData": "No report data available",
+
+    "executionLogTitle": "Grayscale Execution Logs",
+    "traceId": "Trace ID",
+    "versionField": "Version",
+    "hitCanary": "Canary Hit",
+    "decisionResult": "Decision Result",
+    "executionTimeMs": "Time (ms)",
+    "errorMessage": "Error Message",
+    "executionTime": "Executed At",
+    "hasError": "Error",
+    "normal": "Normal",
+    "noLogs": "No execution logs",
+    "noVersionInfo": "Version info not found",
+
+    "loadOptionsFailed": "Failed to load options",
+    "loadVersionsFailed": "Failed to load version list",
+    "loadListFailed": "Failed to load grayscale list",
+    "createSuccess": "Grayscale configuration created",
+    "createFailed": "Failed to create grayscale configuration",
+    "startSuccess": "Grayscale started",
+    "startFailed": "Failed to start grayscale",
+    "pauseSuccess": "Grayscale paused",
+    "pauseFailed": "Failed to pause grayscale",
+    "completeSuccess": "Grayscale completed, fully released",
+    "completeFailed": "Failed to complete grayscale",
+    "rollbackSuccess": "Grayscale rolled back",
+    "rollbackFailed": "Failed to rollback grayscale",
+    "loadReportFailed": "Failed to load grayscale report",
+    "loadLogsFailed": "Failed to load execution logs",
+
+    "status": {
+      "DRAFT": "Draft",
+      "RUNNING": "Running",
+      "PAUSED": "Paused",
+      "COMPLETED": "Completed",
+      "ROLLED_BACK": "Rolled Back"
+    },
+
+    "targetTypeLabel": {
+      "RULE": "Rule",
+      "DECISION_FLOW": "Decision Flow"
+    },
+
+    "strategyTypeLabel": {
+      "PERCENTAGE": "Percentage",
+      "FEATURE": "Feature Match",
+      "WHITELIST": "Whitelist"
+    },
+
+    "versionComparisonTitle": "Version Comparison"
+  },
+
+  "language": {
+    "zh": "中文",
+    "en": "English"
+  }
+}

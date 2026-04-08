@@ -1,0 +1,207 @@
+{
+  "app": {
+    "title": "规则引擎",
+    "loading": "加载中..."
+  },
+
+  "menu": {
+    "rules": "规则配置",
+    "decisionFlows": "决策流",
+    "nameList": "名单管理",
+    "grayscale": "灰度发布",
+    "environments": "多环境",
+    "importExport": "导入导出",
+    "monitoring": "监控仪表盘",
+    "analytics": "分析中心",
+    "system": "系统管理",
+    "userManagement": "用户管理",
+    "roleManagement": "角色管理",
+    "auditLog": "审计日志"
+  },
+
+  "common": {
+    "create": "新建",
+    "edit": "编辑",
+    "delete": "删除",
+    "save": "保存",
+    "cancel": "取消",
+    "confirm": "确认",
+    "search": "搜索",
+    "reset": "重置",
+    "submit": "提交",
+    "close": "关闭",
+    "back": "返回",
+    "refresh": "刷新",
+    "export": "导出",
+    "import": "导入",
+    "download": "下载",
+    "upload": "上传",
+    "yes": "是",
+    "no": "否",
+    "status": "状态",
+    "actions": "操作",
+    "all": "全部",
+    "total": "共 {{count}} 条",
+    "noData": "暂无数据",
+    "success": "操作成功",
+    "error": "操作失败",
+    "required": "此项为必填",
+    "detail": "详情",
+    "name": "名称",
+    "description": "描述",
+    "type": "类型",
+    "version": "版本",
+    "createdAt": "创建时间",
+    "createdBy": "创建人",
+    "updatedAt": "更新时间",
+    "selectPlaceholder": "请选择",
+    "inputPlaceholder": "请输入"
+  },
+
+  "user": {
+    "logout": "退出登录",
+    "logoutConfirm": "确定要退出登录吗？",
+    "logoutTitle": "确认登出",
+    "defaultName": "用户"
+  },
+
+  "grayscale": {
+    "pageTitle": "灰度发布",
+    "createGrayscale": "新建灰度",
+    "createTitle": "新建灰度配置",
+    "targetType": "目标类型",
+    "targetKey": "目标 Key",
+    "currentVersion": "当前版本",
+    "grayscaleVersion": "灰度版本",
+    "grayscalePercentage": "灰度比例",
+    "strategyType": "策略类型",
+    "statusFilter": "状态筛选",
+    "grayscaleDescription": "灰度描述",
+    "descriptionPlaceholder": "请输入灰度说明（可选）",
+
+    "rule": "规则",
+    "decisionFlow": "决策流",
+
+    "strategy": {
+      "title": "分流策略",
+      "percentage": "百分比",
+      "feature": "特征匹配",
+      "whitelist": "白名单"
+    },
+
+    "percentageLabel": "灰度百分比",
+    "percentagePlaceholder": "请输入灰度百分比",
+    "percentageExtra": "灰度流量占总流量的比例（0-100）",
+    "percentageRequired": "请输入灰度百分比",
+
+    "featureRulesLabel": "特征匹配规则",
+    "featureRulesPlaceholder": "请输入特征匹配规则",
+    "featureRulesExtra": "JSON 格式，例如: {{example}}",
+
+    "whitelistLabel": "白名单用户ID",
+    "whitelistPlaceholder": "输入用户ID后按回车添加",
+    "whitelistExtra": "多个用户ID用英文逗号分隔",
+    "whitelistRequired": "请输入白名单用户ID",
+
+    "grayscaleVersionLabel": "灰度版本号",
+    "grayscaleVersionRequired": "请选择灰度版本号",
+    "grayscaleVersionCount": "共 {{count}} 个版本可选",
+    "selectTargetFirst": "请先选择目标",
+
+    "ruleSelectPlaceholder": "请搜索选择规则",
+    "ruleRequired": "请选择规则",
+    "flowSelectPlaceholder": "请搜索选择决策流",
+    "flowRequired": "请选择决策流",
+
+    "versionComparison": "版本对比",
+    "sameVersionWarning": "注意：灰度版本与当前版本相同，请选择不同的版本进行灰度",
+    "changeReason": "变更原因",
+    "rollbackSource": "回滚来源",
+    "rollbackFrom": "从 v{{version}} 回滚",
+    "currentVersionTitle": "当前版本",
+    "grayscaleVersionTitle": "灰度版本",
+    "noContentToCompare": "无脚本内容可对比",
+
+    "ruleLogicComparison": "规则逻辑对比",
+    "visualComparison": "可视化对比",
+    "groovyCodeComparison": "Groovy 代码对比",
+    "jsonComparison": "JSON 对比",
+
+    "startGrayscale": "启动灰度",
+    "pauseGrayscale": "暂停灰度",
+    "resumeGrayscale": "恢复灰度",
+    "completeGrayscale": "完成灰度（全量发布）",
+    "rollbackGrayscale": "回滚灰度",
+    "viewReport": "查看对比报告",
+    "viewLogs": "查看执行日志",
+    "viewDiff": "查看规则对比",
+
+    "confirmComplete": "确认完成灰度？灰度版本将全量发布。",
+    "confirmRollback": "确认回滚？将恢复到当前稳定版本。",
+
+    "reportTitle": "灰度对比报告",
+    "executionCount": "执行次数",
+    "hitCount": "命中次数",
+    "hitRate": "命中率",
+    "avgTime": "平均耗时",
+    "errorRate": "错误率",
+    "errorCount": "错误数",
+    "ruleKey": "规则 Key",
+    "noReportData": "暂无报告数据",
+
+    "executionLogTitle": "灰度执行日志",
+    "traceId": "追踪ID",
+    "versionField": "版本",
+    "hitCanary": "命中灰度",
+    "decisionResult": "决策结果",
+    "executionTimeMs": "耗时(ms)",
+    "errorMessage": "错误信息",
+    "executionTime": "执行时间",
+    "hasError": "有错误",
+    "normal": "正常",
+    "noLogs": "暂无执行日志",
+    "noVersionInfo": "未找到版本信息",
+
+    "loadOptionsFailed": "加载选项失败",
+    "loadVersionsFailed": "加载版本列表失败",
+    "loadListFailed": "加载灰度列表失败",
+    "createSuccess": "灰度配置创建成功",
+    "createFailed": "创建灰度配置失败",
+    "startSuccess": "灰度已启动",
+    "startFailed": "启动灰度失败",
+    "pauseSuccess": "灰度已暂停",
+    "pauseFailed": "暂停灰度失败",
+    "completeSuccess": "灰度已完成，已全量发布",
+    "completeFailed": "完成灰度失败",
+    "rollbackSuccess": "灰度已回滚",
+    "rollbackFailed": "回滚灰度失败",
+    "loadReportFailed": "加载灰度报告失败",
+    "loadLogsFailed": "加载灰度执行日志失败",
+
+    "status": {
+      "DRAFT": "草稿",
+      "RUNNING": "进行中",
+      "PAUSED": "已暂停",
+      "COMPLETED": "已完成",
+      "ROLLED_BACK": "已回滚"
+    },
+
+    "targetTypeLabel": {
+      "RULE": "规则",
+      "DECISION_FLOW": "决策流"
+    },
+
+    "strategyTypeLabel": {
+      "PERCENTAGE": "百分比",
+      "FEATURE": "特征匹配",
+      "WHITELIST": "白名单"
+    },
+
+    "versionComparisonTitle": "版本对比"
+  },
+
+  "language": {
+    "zh": "中文",
+    "en": "English"
+  }
+}

@@ -2,9 +2,11 @@ import { useMemo, useState, useEffect } from 'react';
 import { Layout, Menu, Typography, App, Dropdown, Avatar, Space } from 'antd';
 import { SafetyOutlined, SettingOutlined, ExperimentOutlined, BarChartOutlined, DashboardOutlined, CloudServerOutlined, ImportOutlined, ApartmentOutlined, UnorderedListOutlined, UserOutlined, LogoutOutlined, FileSearchOutlined } from '@ant-design/icons';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useAuthStore } from '../stores/authStore';
 import { usePermission } from '../hooks/usePermission';
 import { getFeatureFlags, type FeatureFlags } from '../api/features';
+import LanguageSwitcher from '../components/LanguageSwitcher';
 
 const { Header, Content } = Layout;
 const { Text } = Typography;
@@ -12,7 +14,7 @@ const { Text } = Typography;
 interface MenuItemConfig {
   key: string;
   icon?: React.ReactNode;
-  label: string;
+  labelKey: string;
   permission?: string;
   feature?: keyof FeatureFlags;
   children?: MenuItemConfig[];
@@ -23,75 +25,75 @@ const allMenuItems: MenuItemConfig[] = [
   {
     key: '/rules',
     icon: <SafetyOutlined />,
-    label: '规则配置',
+    labelKey: 'menu.rules',
     permission: 'menu:rules',
   },
   {
     key: '/decision-flows',
     icon: <ApartmentOutlined />,
-    label: '决策流',
+    labelKey: 'menu.decisionFlows',
     permission: 'menu:decision-flows',
   },
   {
     key: '/name-list',
     icon: <UnorderedListOutlined />,
-    label: '名单管理',
+    labelKey: 'menu.nameList',
     permission: 'menu:name-list',
   },
   {
     key: '/grayscale',
     icon: <ExperimentOutlined />,
-    label: '灰度发布',
+    labelKey: 'menu.grayscale',
     permission: 'menu:grayscale',
   },
   {
     key: '/environments',
     icon: <CloudServerOutlined />,
-    label: '多环境',
+    labelKey: 'menu.environments',
     permission: 'menu:environments',
     feature: 'multiEnvironment',
   },
   {
     key: '/import-export',
     icon: <ImportOutlined />,
-    label: '导入导出',
+    labelKey: 'menu.importExport',
     permission: 'menu:import-export',
     feature: 'importExport',
   },
   {
     key: '/monitoring',
     icon: <DashboardOutlined />,
-    label: '监控仪表盘',
+    labelKey: 'menu.monitoring',
     permission: 'menu:monitoring',
   },
   {
     key: '/analytics',
     icon: <BarChartOutlined />,
-    label: '分析中心',
+    labelKey: 'menu.analytics',
     permission: 'menu:analytics',
   },
   {
     key: '/system',
     icon: <SettingOutlined />,
-    label: '系统管理',
+    labelKey: 'menu.system',
     permission: 'menu:settings',
     children: [
       {
         key: '/system/users',
         icon: <UserOutlined />,
-        label: '用户管理',
+        labelKey: 'menu.userManagement',
         permission: 'menu:settings',
       },
       {
         key: '/system/roles',
         icon: <SafetyOutlined />,
-        label: '角色管理',
+        labelKey: 'menu.roleManagement',
         permission: 'menu:settings',
       },
       {
         key: '/system/audit',
         icon: <FileSearchOutlined />,
-        label: '审计日志',
+        labelKey: 'menu.auditLog',
         permission: 'menu:settings',
       },
     ],
@@ -99,11 +101,11 @@ const allMenuItems: MenuItemConfig[] = [
 ];
 
 /** 将 MenuItemConfig[] 转换为 Ant Design Menu items 格式（去除 permission 字段） */
-function toAntdItems(items: MenuItemConfig[]): NonNullable<Parameters<typeof Menu>[0]['items']> {
-  return items.map(({ key, icon, label, children }) => {
-    const result: Record<string, unknown> = { key, label };
+function toAntdItems(items: MenuItemConfig[], t: (key: string) => string): NonNullable<Parameters<typeof Menu>[0]['items']> {
+  return items.map(({ key, icon, labelKey, children }) => {
+    const result: Record<string, unknown> = { key, label: t(labelKey) };
     if (icon) result.icon = icon;
-    if (children) result.children = toAntdItems(children);
+    if (children) result.children = toAntdItems(children, t);
     return result;
   });
 }
@@ -130,6 +132,7 @@ function getSelectedMenuKey(pathname: string, items: MenuItemConfig[]): string {
 export default function MainLayout() {
   const navigate = useNavigate();
   const location = useLocation();
+  const { t } = useTranslation();
   const user = useAuthStore((s) => s.user);
   const logout = useAuthStore((s) => s.logout);
   const { modal } = App.useApp();
@@ -168,7 +171,7 @@ export default function MainLayout() {
   }, [hasPermission, isSuperAdmin, features]);
 
   /** 转换为 Ant Design Menu 可用的 items 格式 */
-  const antdMenuItems = useMemo(() => toAntdItems(menuItems), [menuItems]);
+  const antdMenuItems = useMemo(() => toAntdItems(menuItems, t), [menuItems, t]);
 
   const handleMenuClick = ({ key }: { key: string }) => {
     navigate(key);
@@ -177,8 +180,8 @@ export default function MainLayout() {
 
   const handleLogout = async () => {
     modal.confirm({
-      title: '确认登出',
-      content: '确定要退出登录吗？',
+      title: t('user.logoutTitle'),
+      content: t('user.logoutConfirm'),
       onOk: async () => {
         await logout();
         navigate('/login', { replace: true });
@@ -190,7 +193,7 @@ export default function MainLayout() {
     {
       key: 'logout',
       icon: <LogoutOutlined />,
-      label: '退出登录',
+      label: t('user.logout'),
       onClick: handleLogout,
     },
   ];
@@ -215,7 +218,7 @@ export default function MainLayout() {
             whiteSpace: 'nowrap',
           }}
         >
-          规则引擎
+          {t('app.title')}
         </Text>
         <Menu
           mode="horizontal"
@@ -226,10 +229,11 @@ export default function MainLayout() {
           onClick={handleMenuClick}
           style={{ flex: 1, border: 'none' }}
         />
+        <LanguageSwitcher />
         <Dropdown menu={{ items: userMenuItems }} placement="bottomRight">
           <Space style={{ cursor: 'pointer', marginLeft: 16 }}>
             <Avatar size="small" icon={<UserOutlined />} />
-            <Text>{user?.nickname || user?.username || '用户'}</Text>
+            <Text>{user?.nickname || user?.username || t('user.defaultName')}</Text>
           </Space>
         </Dropdown>
       </Header>

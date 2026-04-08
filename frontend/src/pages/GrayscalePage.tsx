@@ -32,6 +32,7 @@ import {
   EyeOutlined,
 } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
+import { useTranslation } from 'react-i18next';
 import {
   createGrayscale,
   startGrayscale,
@@ -66,26 +67,26 @@ import DiffViewer from '../components/DiffViewer';
 import RuleRenderedDiff from '../components/RuleRenderedDiff';
 import FlowGraphDiff from '../components/FlowGraphDiff';
 
-/** 状态对应的颜色和标签 */
-const STATUS_MAP: Record<GrayscaleStatusEnum, { color: string; label: string }> = {
-  [GSEnum.DRAFT]: { color: 'default', label: '草稿' },
-  [GSEnum.RUNNING]: { color: 'processing', label: '进行中' },
-  [GSEnum.PAUSED]: { color: 'warning', label: '已暂停' },
-  [GSEnum.COMPLETED]: { color: 'success', label: '已完成' },
-  [GSEnum.ROLLED_BACK]: { color: 'error', label: '已回滚' },
+/** 状态对应的颜色（label 通过 i18n 翻译） */
+const STATUS_MAP: Record<GrayscaleStatusEnum, { color: string; labelKey: string }> = {
+  [GSEnum.DRAFT]: { color: 'default', labelKey: 'grayscale.status.DRAFT' },
+  [GSEnum.RUNNING]: { color: 'processing', labelKey: 'grayscale.status.RUNNING' },
+  [GSEnum.PAUSED]: { color: 'warning', labelKey: 'grayscale.status.PAUSED' },
+  [GSEnum.COMPLETED]: { color: 'success', labelKey: 'grayscale.status.COMPLETED' },
+  [GSEnum.ROLLED_BACK]: { color: 'error', labelKey: 'grayscale.status.ROLLED_BACK' },
 };
 
 /** 目标类型标签 */
-const TARGET_TYPE_MAP: Record<string, { color: string; label: string }> = {
-  RULE: { color: 'blue', label: '规则' },
-  DECISION_FLOW: { color: 'purple', label: '决策流' },
+const TARGET_TYPE_MAP: Record<string, { color: string; labelKey: string }> = {
+  RULE: { color: 'blue', labelKey: 'grayscale.targetTypeLabel.RULE' },
+  DECISION_FLOW: { color: 'purple', labelKey: 'grayscale.targetTypeLabel.DECISION_FLOW' },
 };
 
 /** 策略类型标签 */
-const STRATEGY_TYPE_MAP: Record<string, { color: string; label: string }> = {
-  PERCENTAGE: { color: 'green', label: '百分比' },
-  FEATURE: { color: 'orange', label: '特征匹配' },
-  WHITELIST: { color: 'cyan', label: '白名单' },
+const STRATEGY_TYPE_MAP: Record<string, { color: string; labelKey: string }> = {
+  PERCENTAGE: { color: 'green', labelKey: 'grayscale.strategyTypeLabel.PERCENTAGE' },
+  FEATURE: { color: 'orange', labelKey: 'grayscale.strategyTypeLabel.FEATURE' },
+  WHITELIST: { color: 'cyan', labelKey: 'grayscale.strategyTypeLabel.WHITELIST' },
 };
 
 /** 默认特征匹配规则模板 */
@@ -96,6 +97,7 @@ const DEFAULT_FEATURE_RULES = JSON.stringify(
 );
 
 export default function GrayscalePage() {
+  const { t } = useTranslation();
   const [data, setData] = useState<GrayscaleRecord[]>([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(false);
@@ -135,7 +137,7 @@ export default function GrayscalePage() {
         setFlowOptions(result.content.map((f) => ({ label: `${f.flowName} (${f.flowKey})`, value: f.flowKey, version: f.version ?? 0 })));
       }
     } catch {
-      message.error('加载选项失败');
+      message.error(t('grayscale.loadOptionsFailed'));
     } finally {
       setOptionsLoading(false);
     }
@@ -166,7 +168,7 @@ export default function GrayscalePage() {
         setSelectedVersion(latestVersion);
       }
     } catch {
-      message.error('加载版本列表失败');
+      message.error(t('grayscale.loadVersionsFailed'));
       setVersionOptions([]);
     } finally {
       setVersionLoading(false);
@@ -221,7 +223,7 @@ export default function GrayscalePage() {
       setData(result.content);
       setTotal(result.totalElements);
     } catch {
-      message.error('加载灰度列表失败');
+      message.error(t('grayscale.loadListFailed'));
     } finally {
       setLoading(false);
     }
@@ -265,7 +267,7 @@ export default function GrayscalePage() {
       };
 
       await createGrayscale(requestParams);
-      message.success('灰度配置创建成功');
+      message.success(t('grayscale.createSuccess'));
       setCreateModalOpen(false);
       form.resetFields();
       setCreateTargetType(GrayscaleTargetType.RULE);
@@ -275,7 +277,7 @@ export default function GrayscalePage() {
       loadData(queryParams);
     } catch (err: unknown) {
       if (err && typeof err === 'object' && 'response' in err) {
-        message.error('创建灰度配置失败');
+        message.error(t('grayscale.createFailed'));
       }
     } finally {
       setCreateLoading(false);
@@ -286,10 +288,10 @@ export default function GrayscalePage() {
   const handleStart = async (id: number) => {
     try {
       await startGrayscale(id);
-      message.success('灰度已启动');
+      message.success(t('grayscale.startSuccess'));
       loadData(queryParams);
     } catch {
-      message.error('启动灰度失败');
+      message.error(t('grayscale.startFailed'));
     }
   };
 
@@ -297,10 +299,10 @@ export default function GrayscalePage() {
   const handlePause = async (id: number) => {
     try {
       await pauseGrayscale(id);
-      message.success('灰度已暂停');
+      message.success(t('grayscale.pauseSuccess'));
       loadData(queryParams);
     } catch {
-      message.error('暂停灰度失败');
+      message.error(t('grayscale.pauseFailed'));
     }
   };
 
@@ -308,10 +310,10 @@ export default function GrayscalePage() {
   const handleComplete = async (id: number) => {
     try {
       await completeGrayscale(id);
-      message.success('灰度已完成，已全量发布');
+      message.success(t('grayscale.completeSuccess'));
       loadData(queryParams);
     } catch {
-      message.error('完成灰度失败');
+      message.error(t('grayscale.completeFailed'));
     }
   };
 
@@ -319,10 +321,10 @@ export default function GrayscalePage() {
   const handleRollback = async (id: number) => {
     try {
       await rollbackGrayscale(id);
-      message.success('灰度已回滚');
+      message.success(t('grayscale.rollbackSuccess'));
       loadData(queryParams);
     } catch {
-      message.error('回滚灰度失败');
+      message.error(t('grayscale.rollbackFailed'));
     }
   };
 
@@ -334,7 +336,7 @@ export default function GrayscalePage() {
       const report = await getGrayscaleReport(id);
       setCurrentReport(report);
     } catch {
-      message.error('加载灰度报告失败');
+      message.error(t('grayscale.loadReportFailed'));
     } finally {
       setReportLoading(false);
     }
@@ -352,7 +354,7 @@ export default function GrayscalePage() {
       });
       setLogs(result);
     } catch {
-      message.error('加载灰度执行日志失败');
+      message.error(t('grayscale.loadLogsFailed'));
     } finally {
       setLogLoading(false);
     }
@@ -365,7 +367,7 @@ export default function GrayscalePage() {
       JSON.parse(value);
       return Promise.resolve();
     } catch {
-      return Promise.reject(new Error('请输入有效的 JSON 格式'));
+      return Promise.reject(new Error(t('common.error')));
     }
   };
 
@@ -377,68 +379,68 @@ export default function GrayscalePage() {
       width: 60,
     },
     {
-      title: '目标类型',
+      title: t('grayscale.targetType'),
       dataIndex: 'targetType',
       width: 100,
       render: (val: string) => {
-        const info = TARGET_TYPE_MAP[val] || { color: 'default', label: val };
-        return <Tag color={info.color}>{info.label}</Tag>;
+        const info = TARGET_TYPE_MAP[val] || { color: 'default', labelKey: val };
+        return <Tag color={info.color}>{t(info.labelKey)}</Tag>;
       },
     },
     {
-      title: '目标 Key',
+      title: t('grayscale.targetKey'),
       dataIndex: 'targetKey',
       ellipsis: true,
       render: (val: string, record) => val || record.ruleKey,
     },
     {
-      title: '当前版本',
+      title: t('grayscale.currentVersion'),
       dataIndex: 'currentVersion',
       width: 100,
       align: 'center',
     },
     {
-      title: '灰度版本',
+      title: t('grayscale.grayscaleVersion'),
       dataIndex: 'grayscaleVersion',
       width: 100,
       align: 'center',
     },
     {
-      title: '灰度比例',
+      title: t('grayscale.grayscalePercentage'),
       dataIndex: 'grayscalePercentage',
       width: 160,
       render: (val: number) => <Progress percent={val} size="small" />,
     },
     {
-      title: '策略类型',
+      title: t('grayscale.strategyType'),
       dataIndex: 'strategyType',
       width: 110,
       render: (val: string) => {
-        const info = STRATEGY_TYPE_MAP[val] || { color: 'default', label: val };
-        return <Tag color={info.color}>{info.label}</Tag>;
+        const info = STRATEGY_TYPE_MAP[val] || { color: 'default', labelKey: val };
+        return <Tag color={info.color}>{t(info.labelKey)}</Tag>;
       },
     },
     {
-      title: '状态',
+      title: t('common.status'),
       dataIndex: 'status',
       width: 100,
       render: (status: GrayscaleStatusEnum) => {
         const info = STATUS_MAP[status];
-        return <Tag color={info.color}>{info.label}</Tag>;
+        return <Tag color={info.color}>{t(info.labelKey)}</Tag>;
       },
     },
     {
-      title: '创建人',
+      title: t('common.createdBy'),
       dataIndex: 'createdBy',
       width: 100,
     },
     {
-      title: '创建时间',
+      title: t('common.createdAt'),
       dataIndex: 'createdAt',
       width: 170,
     },
     {
-      title: '操作',
+      title: t('common.actions'),
       key: 'actions',
       width: 300,
       fixed: 'right',
@@ -446,7 +448,7 @@ export default function GrayscalePage() {
         <Space size="small">
           <Access permission="api:grayscale:manage">
             {record.status === GSEnum.DRAFT && (
-              <Tooltip title="启动灰度">
+              <Tooltip title={t('grayscale.startGrayscale')}>
                 <Button
                   type="link"
                   size="small"
@@ -456,7 +458,7 @@ export default function GrayscalePage() {
               </Tooltip>
             )}
             {record.status === GSEnum.RUNNING && (
-              <Tooltip title="暂停灰度">
+              <Tooltip title={t('grayscale.pauseGrayscale')}>
                 <Button
                   type="link"
                   size="small"
@@ -466,7 +468,7 @@ export default function GrayscalePage() {
               </Tooltip>
             )}
             {record.status === GSEnum.PAUSED && (
-              <Tooltip title="恢复灰度">
+              <Tooltip title={t('grayscale.resumeGrayscale')}>
                 <Button
                   type="link"
                   size="small"
@@ -477,24 +479,24 @@ export default function GrayscalePage() {
             )}
             {(record.status === GSEnum.RUNNING || record.status === GSEnum.PAUSED) && (
               <Popconfirm
-                title="确认完成灰度？灰度版本将全量发布。"
+                title={t('grayscale.confirmComplete')}
                 onConfirm={() => handleComplete(record.id)}
-                okText="确认"
-                cancelText="取消"
+                okText={t('common.confirm')}
+                cancelText={t('common.cancel')}
               >
-                <Tooltip title="完成灰度（全量发布）">
+                <Tooltip title={t('grayscale.completeGrayscale')}>
                   <Button type="link" size="small" icon={<CheckCircleOutlined />} />
                 </Tooltip>
               </Popconfirm>
             )}
             {(record.status === GSEnum.RUNNING || record.status === GSEnum.PAUSED) && (
               <Popconfirm
-                title="确认回滚？将恢复到当前稳定版本。"
+                title={t('grayscale.confirmRollback')}
                 onConfirm={() => handleRollback(record.id)}
-                okText="确认"
-                cancelText="取消"
+                okText={t('common.confirm')}
+                cancelText={t('common.cancel')}
               >
-                <Tooltip title="回滚灰度">
+                <Tooltip title={t('grayscale.rollbackGrayscale')}>
                   <Button type="link" size="small" danger icon={<RollbackOutlined />} />
                 </Tooltip>
               </Popconfirm>
@@ -503,7 +505,7 @@ export default function GrayscalePage() {
           {(record.status === GSEnum.RUNNING ||
             record.status === GSEnum.PAUSED ||
             record.status === GSEnum.COMPLETED) && (
-            <Tooltip title="查看对比报告">
+            <Tooltip title={t('grayscale.viewReport')}>
               <Button
                 type="link"
                 size="small"
@@ -513,7 +515,7 @@ export default function GrayscalePage() {
             </Tooltip>
           )}
           {(record.status === GSEnum.RUNNING || record.status === GSEnum.PAUSED) && (
-            <Tooltip title="查看执行日志">
+            <Tooltip title={t('grayscale.viewLogs')}>
               <Button
                 type="link"
                 size="small"
@@ -522,7 +524,7 @@ export default function GrayscalePage() {
               />
             </Tooltip>
           )}
-          <Tooltip title="查看规则对比">
+          <Tooltip title={t('grayscale.viewDiff')}>
             <Button
               type="link"
               size="small"
@@ -538,52 +540,52 @@ export default function GrayscalePage() {
   /** 灰度执行日志表格列定义 */
   const logColumns: ColumnsType<CanaryExecutionLog> = [
     {
-      title: '追踪ID',
+      title: t('grayscale.traceId'),
       dataIndex: 'traceId',
       width: 140,
       ellipsis: true,
     },
     {
-      title: '版本',
+      title: t('grayscale.versionField'),
       dataIndex: 'versionUsed',
       width: 70,
       align: 'center',
     },
     {
-      title: '命中灰度',
+      title: t('grayscale.hitCanary'),
       dataIndex: 'isCanary',
       width: 90,
       render: (val: boolean) =>
-        val ? <Tag color="orange">是</Tag> : <Tag color="blue">否</Tag>,
+        val ? <Tag color="orange">{t('common.yes')}</Tag> : <Tag color="blue">{t('common.no')}</Tag>,
     },
     {
-      title: '决策结果',
+      title: t('grayscale.decisionResult'),
       dataIndex: 'decisionResult',
       width: 100,
       ellipsis: true,
     },
     {
-      title: '耗时(ms)',
+      title: t('grayscale.executionTimeMs'),
       dataIndex: 'executionTimeMs',
       width: 90,
       align: 'right',
       render: (val: number | null) => (val != null ? val.toFixed(1) : '-'),
     },
     {
-      title: '错误信息',
+      title: t('grayscale.errorMessage'),
       dataIndex: 'errorMessage',
       ellipsis: true,
       render: (val: string | null) =>
         val ? (
           <Tooltip title={val}>
-            <Tag color="error">有错误</Tag>
+            <Tag color="error">{t('grayscale.hasError')}</Tag>
           </Tooltip>
         ) : (
-          <Tag color="success">正常</Tag>
+          <Tag color="success">{t('grayscale.normal')}</Tag>
         ),
     },
     {
-      title: '执行时间',
+      title: t('grayscale.executionTime'),
       dataIndex: 'createdAt',
       width: 170,
     },
@@ -591,20 +593,20 @@ export default function GrayscalePage() {
 
   return (
     <>
-      <Breadcrumb style={{ marginBottom: 16 }} items={[{ title: '灰度发布' }]} />
+      <Breadcrumb style={{ marginBottom: 16 }} items={[{ title: t('grayscale.pageTitle') }]} />
 
       <Card>
         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16 }}>
           <Space>
             <Select
-              placeholder="状态筛选"
+              placeholder={t('grayscale.statusFilter')}
               allowClear
               style={{ width: 150 }}
               value={statusFilter}
               onChange={handleStatusFilter}
-              options={Object.entries(STATUS_MAP).map(([value, { label }]) => ({
+              options={Object.entries(STATUS_MAP).map(([value, { labelKey }]) => ({
                 value,
-                label,
+                label: t(labelKey),
               }))}
             />
           </Space>
@@ -616,7 +618,7 @@ export default function GrayscalePage() {
                 openCreateModal();
               }}
             >
-              新建灰度
+              {t('grayscale.createGrayscale')}
             </Button>
           </Access>
         </div>
@@ -632,7 +634,7 @@ export default function GrayscalePage() {
             pageSize: queryParams.size ?? 20,
             total,
             showSizeChanger: true,
-            showTotal: (t) => `共 ${t} 条`,
+            showTotal: (total) => t('common.total', { count: total }),
             onChange: handlePageChange,
           }}
         />
@@ -640,7 +642,7 @@ export default function GrayscalePage() {
 
       {/* 创建灰度弹窗 */}
       <Modal
-        title="新建灰度配置"
+        title={t('grayscale.createTitle')}
         open={createModalOpen}
         onOk={handleCreate}
         onCancel={() => {
@@ -653,13 +655,13 @@ export default function GrayscalePage() {
           setVersionOptions([]);
         }}
         confirmLoading={createLoading}
-        okText="创建"
-        cancelText="取消"
+        okText={t('common.create')}
+        cancelText={t('common.cancel')}
         width={900}
       >
         <Form form={form} layout="vertical" style={{ marginTop: 16 }}>
           {/* 目标类型选择 */}
-          <Form.Item label="目标类型" required>
+          <Form.Item label={t('grayscale.targetType')} required>
             <Select
               value={createTargetType}
               onChange={(val) => {
@@ -669,8 +671,8 @@ export default function GrayscalePage() {
                 loadTargetOptions(val);
               }}
               options={[
-                { value: GrayscaleTargetType.RULE, label: '规则' },
-                { value: GrayscaleTargetType.DECISION_FLOW, label: '决策流' },
+                { value: GrayscaleTargetType.RULE, label: t('grayscale.rule') },
+                { value: GrayscaleTargetType.DECISION_FLOW, label: t('grayscale.decisionFlow') },
               ]}
             />
           </Form.Item>
@@ -679,13 +681,13 @@ export default function GrayscalePage() {
           {createTargetType === GrayscaleTargetType.RULE ? (
             <Form.Item
               name="ruleKey"
-              label="规则"
-              rules={[{ required: true, message: '请选择规则' }]}
+              label={t('grayscale.rule')}
+              rules={[{ required: true, message: t('grayscale.ruleRequired') }]}
             >
               <Select
                 showSearch
                 loading={optionsLoading}
-                placeholder="请搜索选择规则"
+                placeholder={t('grayscale.ruleSelectPlaceholder')}
                 optionFilterProp="label"
                 onChange={(val) => handleTargetSelect(val)}
                 options={ruleOptions}
@@ -694,13 +696,13 @@ export default function GrayscalePage() {
           ) : (
             <Form.Item
               name="flowKey"
-              label="决策流"
-              rules={[{ required: true, message: '请选择决策流' }]}
+              label={t('grayscale.decisionFlow')}
+              rules={[{ required: true, message: t('grayscale.flowRequired') }]}
             >
               <Select
                 showSearch
                 loading={optionsLoading}
-                placeholder="请搜索选择决策流"
+                placeholder={t('grayscale.flowSelectPlaceholder')}
                 optionFilterProp="label"
                 onChange={(val) => handleTargetSelect(val)}
                 options={flowOptions}
@@ -709,7 +711,7 @@ export default function GrayscalePage() {
           )}
 
           {/* 分流策略选择 */}
-          <Form.Item label="分流策略" required>
+          <Form.Item label={t('grayscale.strategy.title')} required>
             <Select
               value={createStrategyType}
               onChange={(val) => {
@@ -723,9 +725,9 @@ export default function GrayscalePage() {
                 }
               }}
               options={[
-                { value: GrayscaleStrategyType.PERCENTAGE, label: '百分比' },
-                { value: GrayscaleStrategyType.FEATURE, label: '特征匹配' },
-                { value: GrayscaleStrategyType.WHITELIST, label: '白名单' },
+                { value: GrayscaleStrategyType.PERCENTAGE, label: t('grayscale.strategy.percentage') },
+                { value: GrayscaleStrategyType.FEATURE, label: t('grayscale.strategy.feature') },
+                { value: GrayscaleStrategyType.WHITELIST, label: t('grayscale.strategy.whitelist') },
               ]}
             />
           </Form.Item>
@@ -734,15 +736,15 @@ export default function GrayscalePage() {
           {createStrategyType === GrayscaleStrategyType.PERCENTAGE && (
             <Form.Item
               name="percentage"
-              label="灰度百分比"
-              rules={[{ required: true, message: '请输入灰度百分比' }]}
-              extra="灰度流量占总流量的比例（0-100）"
+              label={t('grayscale.percentageLabel')}
+              rules={[{ required: true, message: t('grayscale.percentageRequired') }]}
+              extra={t('grayscale.percentageExtra')}
             >
               <InputNumber
                 min={0}
                 max={100}
                 style={{ width: '100%' }}
-                placeholder="请输入灰度百分比"
+                placeholder={t('grayscale.percentagePlaceholder')}
                 suffix="%"
               />
             </Form.Item>
@@ -752,14 +754,14 @@ export default function GrayscalePage() {
           {createStrategyType === GrayscaleStrategyType.FEATURE && (
             <Form.Item
               name="featureRules"
-              label="特征匹配规则"
+              label={t('grayscale.featureRulesLabel')}
               rules={[
-                { required: true, message: '请输入特征匹配规则' },
+                { required: true, message: t('grayscale.featureRulesPlaceholder') },
                 { validator: validateJson },
               ]}
               extra={
                 <span style={{ fontSize: 12, color: '#999' }}>
-                  JSON 格式，例如: {DEFAULT_FEATURE_RULES}
+                  {t('grayscale.featureRulesExtra', { example: DEFAULT_FEATURE_RULES })}
                 </span>
               }
             >
@@ -775,13 +777,13 @@ export default function GrayscalePage() {
           {createStrategyType === GrayscaleStrategyType.WHITELIST && (
             <Form.Item
               name="whitelistIds"
-              label="白名单用户ID"
-              rules={[{ required: true, message: '请输入白名单用户ID' }]}
-              extra="多个用户ID用英文逗号分隔"
+              label={t('grayscale.whitelistLabel')}
+              rules={[{ required: true, message: t('grayscale.whitelistRequired') }]}
+              extra={t('grayscale.whitelistExtra')}
             >
               <Select
                 mode="tags"
-                placeholder="输入用户ID后按回车添加"
+                placeholder={t('grayscale.whitelistPlaceholder')}
                 tokenSeparators={[',']}
                 style={{ width: '100%' }}
               />
@@ -790,13 +792,13 @@ export default function GrayscalePage() {
 
           <Form.Item
             name="grayscaleVersion"
-            label="灰度版本号"
-            rules={[{ required: true, message: '请选择灰度版本号' }]}
-            extra={versionOptions.length > 0 ? `共 ${versionOptions.length} 个版本可选` : '请先选择目标'}
+            label={t('grayscale.grayscaleVersionLabel')}
+            rules={[{ required: true, message: t('grayscale.grayscaleVersionRequired') }]}
+            extra={versionOptions.length > 0 ? t('grayscale.grayscaleVersionCount', { count: versionOptions.length }) : t('grayscale.selectTargetFirst')}
           >
             <Select
               loading={versionLoading}
-              placeholder="请选择灰度版本号"
+              placeholder={t('grayscale.grayscaleVersionRequired')}
               showSearch
               optionFilterProp="label"
               onChange={(val: number) => {
@@ -843,12 +845,12 @@ export default function GrayscalePage() {
             return (
               <Card
                 size="small"
-                title="版本对比"
+                title={t('grayscale.versionComparison')}
                 style={{ marginBottom: 16, background: '#fafafa' }}
               >
                 {isSameVersion && (
                   <div style={{ color: '#faad14', marginBottom: 8, fontSize: 12 }}>
-                    注意：灰度版本与当前版本相同，请选择不同的版本进行灰度
+                    {t('grayscale.sameVersionWarning')}
                   </div>
                 )}
 
@@ -856,7 +858,7 @@ export default function GrayscalePage() {
                 <Row gutter={16} style={{ marginBottom: 12 }}>
                   <Col span={12}>
                     <Descriptions size="small" column={1} bordered>
-                      <Descriptions.Item label="当前版本">
+                      <Descriptions.Item label={t('grayscale.currentVersion')}>
                         {currentVersion ? (
                           <Space>
                             <span>v{currentVersion.version}</span>
@@ -868,13 +870,13 @@ export default function GrayscalePage() {
                         ) : '-'}
                       </Descriptions.Item>
                       {currentVersion?.changeReason && (
-                        <Descriptions.Item label="变更原因">{currentVersion.changeReason}</Descriptions.Item>
+                        <Descriptions.Item label={t('grayscale.changeReason')}>{currentVersion.changeReason}</Descriptions.Item>
                       )}
                     </Descriptions>
                   </Col>
                   <Col span={12}>
                     <Descriptions size="small" column={1} bordered>
-                      <Descriptions.Item label="灰度版本">
+                      <Descriptions.Item label={t('grayscale.grayscaleVersion')}>
                         <Space>
                           <span>v{selectedVersion.version}</span>
                           <Tag color={selectedVersion.status === 'ACTIVE' ? 'green' : selectedVersion.status === 'CANARY' ? 'orange' : 'default'}>
@@ -884,11 +886,11 @@ export default function GrayscalePage() {
                         </Space>
                       </Descriptions.Item>
                       {selectedVersion.changeReason && (
-                        <Descriptions.Item label="变更原因">{selectedVersion.changeReason}</Descriptions.Item>
+                        <Descriptions.Item label={t('grayscale.changeReason')}>{selectedVersion.changeReason}</Descriptions.Item>
                       )}
                       {selectedVersion.isRollback && selectedVersion.rollbackFromVersion && (
-                        <Descriptions.Item label="回滚来源">
-                          从 v{selectedVersion.rollbackFromVersion} 回滚
+                        <Descriptions.Item label={t('grayscale.rollbackSource')}>
+                          {t('grayscale.rollbackFrom', { version: selectedVersion.rollbackFromVersion })}
                         </Descriptions.Item>
                       )}
                     </Descriptions>
@@ -902,36 +904,36 @@ export default function GrayscalePage() {
                     items={[
                       ...(isRule ? [{
                         key: 'rendered',
-                        label: '规则逻辑对比',
+                        label: t('grayscale.ruleLogicComparison'),
                         children: (
                           <RuleRenderedDiff
                             oldScript={currentVersion?.groovyScript}
                             newScript={selectedVersion.groovyScript}
-                            oldTitle={currentVersion ? `当前版本 v${currentVersion.version}` : '当前版本'}
-                            newTitle={`灰度版本 v${selectedVersion.version}`}
+                            oldTitle={currentVersion ? `${t('grayscale.currentVersionTitle')} v${currentVersion.version}` : t('grayscale.currentVersionTitle')}
+                            newTitle={`${t('grayscale.grayscaleVersionTitle')} v${selectedVersion.version}`}
                           />
                         ),
                       }] : [{
                         key: 'visual',
-                        label: '可视化对比',
+                        label: t('grayscale.visualComparison'),
                         children: (
                           <FlowGraphDiff
                             oldFlowGraph={currentVersion?.flowGraph ?? ''}
                             newFlowGraph={selectedVersion.flowGraph ?? ''}
-                            oldTitle={currentVersion ? `当前版本 v${currentVersion.version}` : '当前版本'}
-                            newTitle={`灰度版本 v${selectedVersion.version}`}
+                            oldTitle={currentVersion ? `${t('grayscale.currentVersionTitle')} v${currentVersion.version}` : t('grayscale.currentVersionTitle')}
+                            newTitle={`${t('grayscale.grayscaleVersionTitle')} v${selectedVersion.version}`}
                           />
                         ),
                       }]),
                       {
                         key: 'code',
-                        label: isRule ? 'Groovy 代码对比' : 'JSON 对比',
+                        label: isRule ? t('grayscale.groovyCodeComparison') : t('grayscale.jsonComparison'),
                         children: (
                           <DiffViewer
                             oldText={oldText}
                             newText={newText}
-                            oldTitle={currentVersion ? `当前版本 v${currentVersion.version}` : '当前版本'}
-                            newTitle={`灰度版本 v${selectedVersion.version}`}
+                            oldTitle={currentVersion ? `${t('grayscale.currentVersionTitle')} v${currentVersion.version}` : t('grayscale.currentVersionTitle')}
+                            newTitle={`${t('grayscale.grayscaleVersionTitle')} v${selectedVersion.version}`}
                             groovyHighlight={isRule}
                           />
                         ),
@@ -940,7 +942,7 @@ export default function GrayscalePage() {
                   />
                 )}
                 {!oldText && !newText && (
-                  <div style={{ color: '#999', textAlign: 'center', padding: 16 }}>无脚本内容可对比</div>
+                  <div style={{ color: '#999', textAlign: 'center', padding: 16 }}>{t('grayscale.noContentToCompare')}</div>
                 )}
               </Card>
             );
@@ -948,16 +950,16 @@ export default function GrayscalePage() {
 
           <Form.Item
             name="description"
-            label="灰度描述"
+            label={t('grayscale.grayscaleDescription')}
           >
-            <Input.TextArea rows={3} placeholder="请输入灰度说明（可选）" />
+            <Input.TextArea rows={3} placeholder={t('grayscale.descriptionPlaceholder')} />
           </Form.Item>
         </Form>
       </Modal>
 
       {/* 灰度对比报告弹窗 */}
       <Modal
-        title="灰度对比报告"
+        title={t('grayscale.reportTitle')}
         open={reportModalOpen}
         onCancel={() => {
           setReportModalOpen(false);
@@ -967,20 +969,20 @@ export default function GrayscalePage() {
         width={720}
       >
         {reportLoading ? (
-          <div style={{ textAlign: 'center', padding: '40px 0' }}>加载中...</div>
+          <div style={{ textAlign: 'center', padding: '40px 0' }}>{t('app.loading')}</div>
         ) : currentReport ? (
           <>
             <Descriptions bordered size="small" column={2} style={{ marginBottom: 24 }}>
-              <Descriptions.Item label="规则 Key">
+              <Descriptions.Item label={t('grayscale.ruleKey')}>
                 {currentReport.ruleKey}
               </Descriptions.Item>
-              <Descriptions.Item label="灰度比例">
+              <Descriptions.Item label={t('grayscale.grayscalePercentage')}>
                 {currentReport.grayscalePercentage}%
               </Descriptions.Item>
-              <Descriptions.Item label="当前版本">
+              <Descriptions.Item label={t('grayscale.currentVersion')}>
                 v{currentReport.currentVersion}
               </Descriptions.Item>
-              <Descriptions.Item label="灰度版本">
+              <Descriptions.Item label={t('grayscale.grayscaleVersion')}>
                 v{currentReport.grayscaleVersion}
               </Descriptions.Item>
             </Descriptions>
@@ -989,7 +991,7 @@ export default function GrayscalePage() {
               {/* 当前版本指标 */}
               <Col span={12}>
                 <Card
-                  title="当前版本"
+                  title={t('grayscale.currentVersionTitle')}
                   size="small"
                   style={{ textAlign: 'center' }}
                   headStyle={{ background: '#e6f7ff' }}
@@ -997,19 +999,19 @@ export default function GrayscalePage() {
                   <Row gutter={[16, 16]}>
                     <Col span={12}>
                       <Statistic
-                        title="执行次数"
+                        title={t('grayscale.executionCount')}
                         value={currentReport.currentVersionMetrics.executionCount ?? 0}
                       />
                     </Col>
                     <Col span={12}>
                       <Statistic
-                        title="命中次数"
+                        title={t('grayscale.hitCount')}
                         value={currentReport.currentVersionMetrics.hitCount ?? 0}
                       />
                     </Col>
                     <Col span={12}>
                       <Statistic
-                        title="命中率"
+                        title={t('grayscale.hitRate')}
                         value={currentReport.currentVersionMetrics.hitRate ?? 0}
                         suffix="%"
                         precision={2}
@@ -1017,14 +1019,14 @@ export default function GrayscalePage() {
                     </Col>
                     <Col span={12}>
                       <Statistic
-                        title="平均耗时"
+                        title={t('grayscale.avgTime')}
                         value={currentReport.currentVersionMetrics.avgExecutionTimeMs ?? 0}
                         suffix="ms"
                       />
                     </Col>
                     <Col span={12}>
                       <Statistic
-                        title="错误率"
+                        title={t('grayscale.errorRate')}
                         value={currentReport.currentVersionMetrics.errorRate ?? 0}
                         suffix="%"
                         precision={2}
@@ -1032,7 +1034,7 @@ export default function GrayscalePage() {
                     </Col>
                     <Col span={12}>
                       <Statistic
-                        title="错误数"
+                        title={t('grayscale.errorCount')}
                         value={currentReport.currentVersionMetrics.errorCount ?? 0}
                       />
                     </Col>
@@ -1043,7 +1045,7 @@ export default function GrayscalePage() {
               {/* 灰度版本指标 */}
               <Col span={12}>
                 <Card
-                  title="灰度版本"
+                  title={t('grayscale.grayscaleVersionTitle')}
                   size="small"
                   style={{ textAlign: 'center' }}
                   headStyle={{ background: '#fff7e6' }}
@@ -1051,19 +1053,19 @@ export default function GrayscalePage() {
                   <Row gutter={[16, 16]}>
                     <Col span={12}>
                       <Statistic
-                        title="执行次数"
+                        title={t('grayscale.executionCount')}
                         value={currentReport.grayscaleVersionMetrics.executionCount ?? 0}
                       />
                     </Col>
                     <Col span={12}>
                       <Statistic
-                        title="命中次数"
+                        title={t('grayscale.hitCount')}
                         value={currentReport.grayscaleVersionMetrics.hitCount ?? 0}
                       />
                     </Col>
                     <Col span={12}>
                       <Statistic
-                        title="命中率"
+                        title={t('grayscale.hitRate')}
                         value={currentReport.grayscaleVersionMetrics.hitRate ?? 0}
                         suffix="%"
                         precision={2}
@@ -1071,14 +1073,14 @@ export default function GrayscalePage() {
                     </Col>
                     <Col span={12}>
                       <Statistic
-                        title="平均耗时"
+                        title={t('grayscale.avgTime')}
                         value={currentReport.grayscaleVersionMetrics.avgExecutionTimeMs ?? 0}
                         suffix="ms"
                       />
                     </Col>
                     <Col span={12}>
                       <Statistic
-                        title="错误率"
+                        title={t('grayscale.errorRate')}
                         value={currentReport.grayscaleVersionMetrics.errorRate ?? 0}
                         suffix="%"
                         precision={2}
@@ -1086,7 +1088,7 @@ export default function GrayscalePage() {
                     </Col>
                     <Col span={12}>
                       <Statistic
-                        title="错误数"
+                        title={t('grayscale.errorCount')}
                         value={currentReport.grayscaleVersionMetrics.errorCount ?? 0}
                       />
                     </Col>
@@ -1097,14 +1099,14 @@ export default function GrayscalePage() {
           </>
         ) : (
           <div style={{ textAlign: 'center', padding: '40px 0', color: '#999' }}>
-            暂无报告数据
+            {t('grayscale.noReportData')}
           </div>
         )}
       </Modal>
 
       {/* 灰度执行日志弹窗 */}
       <Modal
-        title={`灰度执行日志 - ${logRecord?.targetKey || logRecord?.ruleKey || ''}`}
+        title={`${t('grayscale.executionLogTitle')} - ${logRecord?.targetKey || logRecord?.ruleKey || ''}`}
         open={logModalOpen}
         onCancel={() => {
           setLogModalOpen(false);
@@ -1115,26 +1117,26 @@ export default function GrayscalePage() {
         width={960}
       >
         {logLoading ? (
-          <div style={{ textAlign: 'center', padding: '40px 0' }}>加载中...</div>
+          <div style={{ textAlign: 'center', padding: '40px 0' }}>{t('app.loading')}</div>
         ) : logs.length > 0 ? (
           <Table
             rowKey="id"
             columns={logColumns}
             dataSource={logs}
             size="small"
-            pagination={{ pageSize: 10, showTotal: (t) => `共 ${t} 条` }}
+            pagination={{ pageSize: 10, showTotal: (total) => t('common.total', { count: total }) }}
             scroll={{ x: 800 }}
           />
         ) : (
           <div style={{ textAlign: 'center', padding: '40px 0', color: '#999' }}>
-            暂无执行日志
+            {t('grayscale.noLogs')}
           </div>
         )}
       </Modal>
 
       {/* 版本对比弹窗 */}
       <Modal
-        title={`版本对比 - ${diffRecord?.targetKey || ''} (当前 v${diffRecord?.currentVersion ?? '-'} vs 灰度 v${diffRecord?.grayscaleVersion ?? '-'})`}
+        title={`${t('grayscale.versionComparisonTitle')} - ${diffRecord?.targetKey || ''} (${t('grayscale.currentVersionTitle')} v${diffRecord?.currentVersion ?? '-'} vs ${t('grayscale.grayscaleVersionTitle')} v${diffRecord?.grayscaleVersion ?? '-'})`}
         open={diffModalOpen}
         onCancel={() => {
           setDiffModalOpen(false);
@@ -1158,7 +1160,7 @@ export default function GrayscalePage() {
           };
 
           if (!cv && !gv) {
-            return <div style={{ textAlign: 'center', padding: '40px 0', color: '#999' }}>未找到版本信息</div>;
+            return <div style={{ textAlign: 'center', padding: '40px 0', color: '#999' }}>{t('grayscale.noVersionInfo')}</div>;
           }
 
           return (
@@ -1166,36 +1168,36 @@ export default function GrayscalePage() {
               items={[
                 ...(isRule ? [{
                   key: 'rendered',
-                  label: '规则逻辑对比',
+                  label: t('grayscale.ruleLogicComparison'),
                   children: (
                     <RuleRenderedDiff
                       oldScript={cv?.groovyScript}
                       newScript={gv?.groovyScript}
-                      oldTitle={cv ? `当前版本 v${cv.version}` : '当前版本'}
-                      newTitle={gv ? `灰度版本 v${gv.version}` : '灰度版本'}
+                      oldTitle={cv ? `${t('grayscale.currentVersionTitle')} v${cv.version}` : t('grayscale.currentVersionTitle')}
+                      newTitle={gv ? `${t('grayscale.grayscaleVersionTitle')} v${gv.version}` : t('grayscale.grayscaleVersionTitle')}
                     />
                   ),
                 }] : [{
                   key: 'visual',
-                  label: '可视化对比',
+                  label: t('grayscale.visualComparison'),
                   children: (
                     <FlowGraphDiff
                       oldFlowGraph={cv?.flowGraph ?? ''}
                       newFlowGraph={gv?.flowGraph ?? ''}
-                      oldTitle={cv ? `当前版本 v${cv.version}` : '当前版本'}
-                      newTitle={gv ? `灰度版本 v${gv.version}` : '灰度版本'}
+                      oldTitle={cv ? `${t('grayscale.currentVersionTitle')} v${cv.version}` : t('grayscale.currentVersionTitle')}
+                      newTitle={gv ? `${t('grayscale.grayscaleVersionTitle')} v${gv.version}` : t('grayscale.grayscaleVersionTitle')}
                     />
                   ),
                 }]),
                 {
                   key: 'code',
-                  label: isRule ? 'Groovy 代码对比' : 'JSON 对比',
+                  label: isRule ? t('grayscale.groovyCodeComparison') : t('grayscale.jsonComparison'),
                   children: (
                     <DiffViewer
                       oldText={formatContent(cv)}
                       newText={formatContent(gv)}
-                      oldTitle={cv ? `当前版本 v${cv.version}` : '当前版本'}
-                      newTitle={gv ? `灰度版本 v${gv.version}` : '灰度版本'}
+                      oldTitle={cv ? `${t('grayscale.currentVersionTitle')} v${cv.version}` : t('grayscale.currentVersionTitle')}
+                      newTitle={gv ? `${t('grayscale.grayscaleVersionTitle')} v${gv.version}` : t('grayscale.grayscaleVersionTitle')}
                       groovyHighlight={isRule}
                     />
                   ),
