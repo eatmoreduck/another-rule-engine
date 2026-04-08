@@ -46,6 +46,12 @@ public class VersionManagementService {
 
         // 2. 保存当前版本到历史表
         Integer currentVersion = rule.getVersion();
+
+        // 防御性检查：确保当前版本号尚未存在于版本历史表中（防止 TOCTOU 竞态）
+        if (ruleVersionRepository.findByRuleKeyAndVersion(rule.getRuleKey(), currentVersion).isPresent()) {
+            throw new IllegalStateException("版本冲突：规则 " + ruleKey + " 的版本 " + currentVersion + " 已存在，请重试");
+        }
+
         RuleVersion historyVersion = RuleVersion.builder()
                 .ruleId(rule.getId())
                 .ruleKey(rule.getRuleKey())
@@ -136,6 +142,11 @@ public class VersionManagementService {
 
         Integer currentVersion = rule.getVersion();
 
+        // 防御性检查：确保当前版本号尚未存在于版本历史表中（防止 TOCTOU 竞态）
+        if (ruleVersionRepository.findByRuleKeyAndVersion(rule.getRuleKey(), currentVersion).isPresent()) {
+            throw new IllegalStateException("版本冲突：规则 " + ruleKey + " 的版本 " + currentVersion + " 已存在");
+        }
+
         // 2. 保存当前版本到历史表（标记为回滚）
         RuleVersion rollbackHistory = RuleVersion.builder()
                 .ruleId(rule.getId())
@@ -187,6 +198,11 @@ public class VersionManagementService {
 
         Integer currentVersion = rule.getVersion();
         Integer newVersion = currentVersion + 1;
+
+        // 防御性检查：确保新版本号尚未存在（防止 TOCTOU 竞态）
+        if (ruleVersionRepository.findByRuleKeyAndVersion(rule.getRuleKey(), newVersion).isPresent()) {
+            throw new IllegalStateException("版本冲突：规则 " + ruleKey + " 的版本 " + newVersion + " 已存在");
+        }
 
         // 创建草稿版本（不更新主表）
         RuleVersion draftVersion = RuleVersion.builder()

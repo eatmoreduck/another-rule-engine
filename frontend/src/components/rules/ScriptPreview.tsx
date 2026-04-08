@@ -3,9 +3,10 @@
  * Plan 03-04: 使用 Drawer 展示脚本，支持语法高亮、验证、复制
  */
 
-import { useState, useCallback } from 'react';
+import React, { useState, useCallback } from 'react';
 import { Drawer, Button, message, Space, Typography, Alert } from 'antd';
 import { CopyOutlined, CheckCircleOutlined, CloseCircleOutlined } from '@ant-design/icons';
+import { useTranslation } from 'react-i18next';
 import { validateScript } from '../../api/rules';
 import type { ValidateScriptResponse } from '../../types/rule';
 import '../../styles/editor.css';
@@ -18,31 +19,71 @@ interface ScriptPreviewProps {
   script: string;
 }
 
-/** 简单 Groovy 语法高亮：将脚本转为带 span 标签的 HTML */
-function highlightGroovy(code: string): string {
-  // 先转义 HTML 特殊字符
-  let html = code
+/**
+ * 将 Groovy 代码行转换为 React 节点（单行处理）
+ * 步骤：HTML 转义 -> 正则拆分 token -> 返回带颜色的 span 数组
+ */
+function highlightGroovyLineToNodes(line: string): React.ReactNode {
+  // Step 1: HTML 转义
+  const escaped = line
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;');
 
-  // 按优先级替换（注释 > 字符串 > 关键字 > 数字）
-  // 1. 单行注释
-  html = html.replace(/(\/\/.*$)/gm, '<span class="script-comment">$1</span>');
-  // 2. 字符串（单引号）
-  html = html.replace(/('(?:[^'\\]|\\.)*')/g, '<span class="script-string">$1</span>');
-  // 3. 关键字
-  html = html.replace(
-    /\b(def|if|else|return|switch|case|break|default|for|while|new|true|false|null)\b/g,
-    '<span class="script-keyword">$1</span>',
-  );
-  // 4. 数字
-  html = html.replace(/\b(\d+(?:\.\d+)?)\b/g, '<span class="script-number">$1</span>');
+  // Step 2: 定义 token 正则（匹配注释、字符串、关键字、数字）
+  const tokenRegex = /(\/\/.*$)|('(?:[^'&]|&(?:amp|lt|gt);)*')|("(?:[^"&]|&(?:amp|lt|gt);)*")|(\b(?:def|if|else|return|switch|case|break|default|for|while|new|true|false|null)\b)|(\b\d+(?:\.\d+)?\b)/gm;
 
-  return html;
+  const parts: React.ReactNode[] = [];
+  let lastIndex = 0;
+  let key = 0;
+  let match;
+
+  // Step 3: 遍历匹配结果，生成 span 元素
+  while ((match = tokenRegex.exec(escaped)) !== null) {
+    if (match.index > lastIndex) {
+      parts.push(<span key={key++}>{escaped.slice(lastIndex, match.index)}</span>);
+    }
+    const text = match[0];
+    if (match[1]) {
+      // 注释
+      parts.push(<span key={key++} style={{ color: '#6a737d' }}>{text}</span>);
+    } else if (match[2] || match[3]) {
+      // 字符串
+      parts.push(<span key={key++} style={{ color: '#032f62' }}>{text}</span>);
+    } else if (match[4]) {
+      // 关键字
+      parts.push(<span key={key++} style={{ color: '#d73a49' }}>{text}</span>);
+    } else if (match[5]) {
+      // 数字
+      parts.push(<span key={key++} style={{ color: '#005cc5' }}>{text}</span>);
+    }
+    lastIndex = match.index + text.length;
+  }
+
+  if (lastIndex < escaped.length) {
+    parts.push(<span key={key++}>{escaped.slice(lastIndex)}</span>);
+  }
+
+  return parts.length > 0 ? <>{parts}</> : escaped;
+}
+
+/** 将完整 Groovy 脚本转换为 React 节点（按行处理） */
+function highlightGroovy(code: string): React.ReactNode {
+  const lines = code.split('\n');
+  return (
+    <>
+      {lines.map((line, i) => (
+        <React.Fragment key={i}>
+          {i > 0 && '\n'}
+          {highlightGroovyLineToNodes(line)}
+        </React.Fragment>
+      ))}
+    </>
+  );
 }
 
 export default function ScriptPreview({ open, onClose, script }: ScriptPreviewProps) {
+  const { t } = useTranslation();
   const [validating, setValidating] = useState(false);
   const [validateResult, setValidateResult] = useState<ValidateScriptResponse | null>(null);
 
@@ -53,12 +94,12 @@ export default function ScriptPreview({ open, onClose, script }: ScriptPreviewPr
       const result = await validateScript(script);
       setValidateResult(result);
       if (result.valid) {
-        message.success('脚本验证通过');
+        message.success(t('scriptPreview.validatePassed'));
       } else {
-        message.error('脚本验证失败');
+        message.error(t('scriptPreview.validateFailed'));
       }
     } catch {
-      message.error('验证请求失败');
+      message.error(t('scriptPreview.validateRequestFailed'));
     } finally {
       setValidating(false);
     }
@@ -66,8 +107,8 @@ export default function ScriptPreview({ open, onClose, script }: ScriptPreviewPr
 
   const handleCopy = useCallback(() => {
     navigator.clipboard.writeText(script).then(
-      () => message.success('已复制到剪贴板'),
-      () => message.error('复制失败'),
+      () => message.success(t('common.copySuccess')),
+      () => message.error(t('common.copyFailed')),
     );
   }, [script]);
 
@@ -78,7 +119,7 @@ export default function ScriptPreview({ open, onClose, script }: ScriptPreviewPr
 
   return (
     <Drawer
-      title="Groovy 脚本预览"
+      title={t('scriptPreview.title')}
       placement="right"
       width={600}
       open={open}
@@ -93,14 +134,14 @@ export default function ScriptPreview({ open, onClose, script }: ScriptPreviewPr
             loading={validating}
             onClick={handleValidate}
           >
-            验证脚本
+            {t('scriptPreview.validateScript')}
           </Button>
           <Button
             size="small"
             icon={<CopyOutlined />}
             onClick={handleCopy}
           >
-            复制
+            {t('common.copy')}
           </Button>
         </Space>
       </div>
@@ -110,11 +151,11 @@ export default function ScriptPreview({ open, onClose, script }: ScriptPreviewPr
           type={validateResult.valid ? 'success' : 'error'}
           showIcon
           icon={validateResult.valid ? <CheckCircleOutlined /> : <CloseCircleOutlined />}
-          message={validateResult.valid ? '脚本验证通过' : '脚本验证失败'}
+          message={validateResult.valid ? t('scriptPreview.validatePassed') : t('scriptPreview.validateFailed')}
           description={
             validateResult.valid
-              ? '该 Groovy 脚本语法正确，可以安全执行。'
-              : validateResult.errorMessage || '脚本存在语法错误'
+              ? t('scriptPreview.validatePassedDesc')
+              : validateResult.errorMessage || t('scriptPreview.validateFailedDesc')
           }
           style={{ marginBottom: 12 }}
         />
@@ -129,10 +170,7 @@ export default function ScriptPreview({ open, onClose, script }: ScriptPreviewPr
         </Text>
       )}
 
-      <div
-        className="script-preview-code"
-        dangerouslySetInnerHTML={{ __html: highlightGroovy(script) }}
-      />
+      <div className="script-preview-code">{highlightGroovy(script)}</div>
     </Drawer>
   );
 }

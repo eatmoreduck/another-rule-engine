@@ -75,16 +75,10 @@ export async function validateScript(groovyScript: string): Promise<ValidateScri
 
 /** 获取规则列表供规则集节点选择器使用（编辑态可见全部未删除规则，执行态由后端判定是否可用） */
 export async function getRulesForSelect(): Promise<RuleSelectOption[]> {
-  const pageSize = 200;
-  const firstPage = await getRules({ page: 0, size: pageSize, showDeleted: false });
-  const pages = [firstPage];
-
-  for (let page = 1; page < firstPage.totalPages; page += 1) {
-    pages.push(await getRules({ page, size: pageSize, showDeleted: false }));
-  }
-
-  return pages
-    .flatMap((page) => page.content)
+  // 使用单次请求 + 大 pageSize 简化逻辑，避免 N+1 问题
+  // 如果未来规则数量超过 500，考虑后端添加轻量查询端点
+  const response = await getRules({ page: 0, size: 500, showDeleted: false });
+  return response.content
     .map((rule) => ({
       ruleKey: rule.ruleKey,
       ruleName: rule.ruleName,

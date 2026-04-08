@@ -1,5 +1,6 @@
-import { useMemo } from 'react';
+import React, { useMemo } from 'react';
 import * as Diff from 'diff';
+import { useTranslation } from 'react-i18next';
 
 interface DiffViewerProps {
   oldText: string;
@@ -7,7 +8,6 @@ interface DiffViewerProps {
   oldTitle?: string;
   newTitle?: string;
   maxLines?: number;
-  /** 启用 Groovy 语法高亮 */
   groovyHighlight?: boolean;
 }
 
@@ -86,47 +86,67 @@ const textColors = {
   added: '#22863a',
 };
 
-// ============ Groovy 语法高亮 ============
-
-/** Groovy 关键词 */
-const GROOVY_KEYWORDS = new Set([
-  'def', 'if', 'else', 'return', 'true', 'false', 'null',
-  'class', 'interface', 'extends', 'implements', 'import', 'package',
-  'new', 'this', 'super', 'void', 'int', 'long', 'double', 'float',
-  'String', 'boolean', 'Map', 'List', 'Object',
-  'static', 'final', 'public', 'private', 'protected',
-]);
-
-/** 对 Groovy 代码行做简单语法高亮（返回 HTML 字符串） */
-function highlightGroovyLine(line: string): string {
-  // 转义 HTML
-  let result = line
+/**
+ * 将 Groovy 代码行转换为 React 节点，避免使用 dangerouslySetInnerHTML
+ * 步骤：
+ * 1. HTML 转义
+ * 2. 使用正则拆分为 token 段
+ * 3. 返回带颜色的 span 元素数组
+ */
+function highlightGroovyLine(line: string): React.ReactNode {
+  // Step 1: HTML 转义
+  const escaped = line
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;');
 
-  // 字符串（单引号）
-  result = result.replace(/'([^']*)'/g, '<span style="color:#032f62">&#39;$1&#39;</span>');
+  // Step 2: 定义 token 正则（匹配注释、字符串、关键字、数字）
+  const tokenRegex = /(\/\/.*$)|('(?:[^'&]|&(?:amp|lt|gt);)*')|("(?:[^"&]|&(?:amp|lt|gt);)*")|(\b(?:def|if|else|return|true|false|null|class|interface|extends|implements|import|package|new|this|super|void|int|long|double|float|String|boolean|Map|List|Object|static|final|public|private|protected)\b)|(\b\d+(?:\.\d+)?\b)/gm;
 
-  // 字符串（双引号）
-  result = result.replace(/"([^"]*)"/g, '<span style="color:#032f62">&quot;$1&quot;</span>');
+  const parts: React.ReactNode[] = [];
+  let lastIndex = 0;
+  let key = 0;
+  let match;
 
-  // 行注释
-  result = result.replace(/(\/\/.*)$/g, '<span style="color:#6a737d">$1</span>');
+  // Step 3: 遍历匹配结果，生成 span 元素
+  while ((match = tokenRegex.exec(escaped)) !== null) {
+    // 添加匹配前的普通文本
+    if (match.index > lastIndex) {
+      parts.push(<span key={key++}>{escaped.slice(lastIndex, match.index)}</span>);
+    }
+    const text = match[0];
+    if (match[1]) {
+      // 注释
+      parts.push(<span key={key++} style={{ color: '#6a737d' }}>{text}</span>);
+    } else if (match[2] || match[3]) {
+      // 字符串
+      parts.push(<span key={key++} style={{ color: '#032f62' }}>{text}</span>);
+    } else if (match[4]) {
+      // 关键字
+      parts.push(<span key={key++} style={{ color: '#d73a49' }}>{text}</span>);
+    } else if (match[5]) {
+      // 数字
+      parts.push(<span key={key++} style={{ color: '#005cc5' }}>{text}</span>);
+    }
+    lastIndex = match.index + text.length;
+  }
 
-  // 数字
-  result = result.replace(/\b(\d+(?:\.\d+)?)\b/g, '<span style="color:#005cc5">$1</span>');
+  // 添加剩余的普通文本
+  if (lastIndex < escaped.length) {
+    parts.push(<span key={key++}>{escaped.slice(lastIndex)}</span>);
+  }
 
-  // 关键词
-  result = result.replace(/\b(def|if|else|return|true|false|null|class|interface|extends|implements|import|package|new|this|super|void|int|long|double|float|String|boolean|Map|List|Object|static|final|public|private|protected)\b/g, '<span style="color:#d73a49">$1</span>');
-
-  return result;
+  return parts.length > 0 ? <>{parts}</> : escaped;
 }
 
-export default function DiffViewer({ oldText, newText, oldTitle = '当前版本', newTitle = '灰度版本', maxLines = 200, groovyHighlight = false }: DiffViewerProps) {
+export default function DiffViewer({ oldText, newText, oldTitle, newTitle, maxLines = 200, groovyHighlight = false }: DiffViewerProps) {
+  const { t } = useTranslation();
+  const resolvedOldTitle = oldTitle ?? t('grayscale.currentVersionTitle');
+  const resolvedNewTitle = newTitle ?? t('grayscale.grayscaleVersionTitle');
+
   const diffLines = useMemo(() => {
     const changes = Diff.structuredPatch(
-      oldTitle, newTitle,
+      resolvedOldTitle, resolvedNewTitle,
       oldText, newText,
       '', '', { context: 3 },
     );
@@ -158,7 +178,7 @@ export default function DiffViewer({ oldText, newText, oldTitle = '当前版本'
     }
 
     return lines.slice(0, maxLines);
-  }, [oldText, newText, oldTitle, newTitle, maxLines]);
+  }, [oldText, newText, resolvedOldTitle, resolvedNewTitle, maxLines]);
 
   const { leftLines, rightLines } = useMemo(() => {
     const left: (DiffLine & { placeholder?: boolean })[] = [];
@@ -205,25 +225,28 @@ export default function DiffViewer({ oldText, newText, oldTitle = '当前版本'
     return { leftLines: left, rightLines: right };
   }, [diffLines]);
 
-  /** 渲染行内容：可选 Groovy 高亮 */
-  const renderContent = (text: string, prefix: string) => {
-    const fullLine = `${prefix}${text}`;
+  const renderContent = (text: string, prefix: string): React.ReactNode => {
+    const prefixChar = prefix.charAt(0);
     if (groovyHighlight && text) {
-      const highlighted = highlightGroovyLine(text);
-      return <span dangerouslySetInnerHTML={{ __html: `${prefix.charAt(0) === '-' ? '<span style="color:#b31d28">-</span> ' : prefix.charAt(0) === '+' ? '<span style="color:#22863a">+</span> ' : '  '}${highlighted}` }} />;
+      const prefixNode = prefixChar === '-'
+        ? <span style={{ color: '#b31d28' }}>-</span>
+        : prefixChar === '+'
+          ? <span style={{ color: '#22863a' }}>+</span>
+          : null;
+      return <>{prefixNode} {highlightGroovyLine(text)}</>;
     }
-    return fullLine;
+    return `${prefix}${text}`;
   };
 
   if (!oldText && !newText) {
-    return <div style={{ color: '#999', textAlign: 'center', padding: 16 }}>无内容可对比</div>;
+    return <div style={{ color: '#999', textAlign: 'center', padding: 16 }}>{t('grayscale.noContentToCompare')}</div>;
   }
 
   return (
     <div style={styles.container}>
       <div style={styles.header}>
-        <div style={{ ...styles.headerCell, borderRight: '1px solid #d9d9d9' }}>{oldTitle}</div>
-        <div style={styles.headerCell}>{newTitle}</div>
+        <div style={{ ...styles.headerCell, borderRight: '1px solid #d9d9d9' }}>{resolvedOldTitle}</div>
+        <div style={styles.headerCell}>{resolvedNewTitle}</div>
       </div>
       <div style={styles.body}>
         {leftLines.map((leftLine, idx) => {

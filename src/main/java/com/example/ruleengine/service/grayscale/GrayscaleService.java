@@ -419,6 +419,7 @@ public class GrayscaleService {
 
     /**
      * 记录灰度执行指标
+     * 使用原子 SQL 更新替代 read-modify-write 模式，防止并发更新丢失
      *
      * @param configId  灰度配置ID
      * @param version   执行的版本号
@@ -428,32 +429,13 @@ public class GrayscaleService {
     @Transactional
     public void recordMetrics(Long configId, Integer version,
                               long executionTimeMs, boolean isSuccess) {
-        Optional<GrayscaleMetric> metricOpt =
-                grayscaleMetricRepository.findByGrayscaleConfigIdAndVersion(
-                        configId, version);
+        // 使用原子更新，避免并发更新丢失
+        int updatedRows = grayscaleMetricRepository.incrementMetrics(
+                configId, version, (int) executionTimeMs, isSuccess);
 
-        if (metricOpt.isEmpty()) {
+        if (updatedRows == 0) {
             log.warn("灰度指标记录不存在: configId={}, version={}", configId, version);
-            return;
         }
-
-        GrayscaleMetric metric = metricOpt.get();
-        metric.setExecutionCount(metric.getExecutionCount() + 1);
-
-        // 计算新的平均执行时间
-        int totalExecTime = metric.getAvgExecutionTimeMs()
-                * (metric.getExecutionCount() - 1)
-                + (int) executionTimeMs;
-        metric.setAvgExecutionTimeMs(
-                totalExecTime / metric.getExecutionCount());
-
-        if (isSuccess) {
-            metric.setHitCount(metric.getHitCount() + 1);
-        } else {
-            metric.setErrorCount(metric.getErrorCount() + 1);
-        }
-
-        grayscaleMetricRepository.save(metric);
     }
 
     /**

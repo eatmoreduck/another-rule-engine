@@ -4,10 +4,11 @@ spring:
     name: rule-engine
 
   # 数据库配置（Phase 2: 数据持久化）
+  # 使用环境变量引用，带本地开发默认值
   datasource:
-    url: jdbc:postgresql://192.168.5.202:5432/yare_engine
-    username: leon
-    password: ServBay.dev
+    url: ${DB_URL:jdbc:postgresql://192.168.5.202:5432/yare_engine}
+    username: ${DB_USERNAME:leon}
+    password: ${DB_PASSWORD:ServBay.dev}
     driver-class-name: org.postgresql.Driver
     hikari:
       maximum-pool-size: 20
