@@ -1,0 +1,61 @@
+services:
+  # ─── PostgreSQL 数据库 ──────────────────────────────────
+  db:
+    image: postgres:16-alpine
+    container_name: yare-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: yare_engine
+      POSTGRES_USER: yare
+      POSTGRES_PASSWORD: yare_secret
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U yare -d yare_engine"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ─── Spring Boot 后端 ──────────────────────────────────
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: yare-backend
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DB_URL: jdbc:postgresql://db:5432/yare_engine
+      DB_USERNAME: yare
+      DB_PASSWORD: yare_secret
+      JAVA_OPTS: "-Xms256m -Xmx512m"
+      SPRING_PROFILES_ACTIVE: ""
+    ports:
+      - "8080:8080"
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8080/actuator/health"]
+      interval: 30s
+      timeout: 5s
+      start_period: 60s
+      retries: 3
+
+  # ─── React 前端 (Nginx) ──────────────────────────────
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: yare-frontend
+    restart: unless-stopped
+    depends_on:
+      backend:
+        condition: service_healthy
+    ports:
+      - "3000:80"
+
+volumes:
+  pgdata:
+    driver: local

@@ -1,0 +1,17 @@
+.git
+.gradle
+build
+node_modules
+frontend/node_modules
+frontend/dist
+*.log
+.env
+.env.*
+!.env.example
+.idea
+*.iml
+.planning
+pub_docs
+docs
+test-results
+*.class

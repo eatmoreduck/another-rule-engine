@@ -148,7 +148,49 @@
 
 ## 🚀 快速开始
 
-### 前置条件
+### 方式一：Docker Compose 一键启动（推荐）
+
+> 前置条件：[Docker](https://docs.docker.com/get-docker/) + [Docker Compose](https://docs.docker.com/compose/install/)
+
+```bash
+# 克隆项目
+git clone https://github.com/your-org/another-rule-engine.git
+cd another-rule-engine
+
+# 一键启动（PostgreSQL + 后端 + 前端）
+docker compose up -d
+
+# 查看日志
+docker compose logs -f backend
+```
+
+启动完成后访问：
+- **前端界面**: [http://localhost:3000](http://localhost:3000)
+- **后端 API**: [http://localhost:8080](http://localhost:8080)
+- **健康检查**: [http://localhost:8080/actuator/health](http://localhost:8080/actuator/health)
+
+**自定义配置**（可选）：
+
+```bash
+# 修改数据库密码等环境变量
+cp .env.example .env
+# 编辑 .env 文件，然后重新启动
+docker compose up -d
+```
+
+**常用命令**：
+
+```bash
+docker compose up -d          # 后台启动
+docker compose down            # 停止并删除容器
+docker compose down -v         # 停止并删除容器 + 数据卷（清除数据库数据）
+docker compose logs -f backend # 查看后端日志
+docker compose build --no-cache # 重新构建镜像
+```
+
+### 方式二：本地开发模式
+
+#### 前置条件
 
 | 依赖 | 最低版本 | 说明 |
 |------|---------|------|
@@ -157,14 +199,14 @@
 | Node.js | 18+ | 前端开发 |
 | npm | 9+ | 前端包管理 |
 
-### 1. 克隆项目
+#### 1. 克隆项目
 
 ```bash
 git clone https://github.com/your-org/another-rule-engine.git
 cd another-rule-engine
 ```
 
-### 2. 配置数据库
+#### 2. 配置数据库
 
 创建 PostgreSQL 数据库：
 
@@ -184,7 +226,7 @@ spring:
 
 Flyway 会在应用启动时自动执行数据库迁移脚本。
 
-### 3. 启动后端
+#### 3. 启动后端
 
 ```bash
 # 编译项目
@@ -194,7 +236,7 @@ Flyway 会在应用启动时自动执行数据库迁移脚本。
 ./gradlew bootRun
 ```
 
-### 4. 启动前端
+#### 4. 启动前端
 
 ```bash
 cd frontend
@@ -206,7 +248,7 @@ npm install
 npm run dev
 ```
 
-### 5. 访问应用
+#### 5. 访问应用
 
 打开浏览器访问 [http://localhost:3000](http://localhost:3000)，使用默认账号登录。
 
@@ -421,6 +463,9 @@ another-rule-engine/
 │   ├── multi-environment.md            # 多环境功能文档
 │   └── import-export.md                # 导入导出功能文档
 │
+├── Dockerfile                          # 后端 Docker 镜像（多阶段构建）
+├── docker-compose.yml                  # 一键部署（PostgreSQL + 后端 + 前端）
+├── .dockerignore                       # Docker 构建排除
 ├── build.gradle                        # Gradle 构建配置
 ├── settings.gradle                     # Gradle 设置
 └── CLAUDE.md                           # AI 辅助开发上下文

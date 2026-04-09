@@ -186,40 +186,58 @@ public class SecurityAuditService {
             return AuditResult.unsafe(warnings, errors);
         }
 
-        // 2. 检查系统操作
-        checkPattern(scriptId, script, SYSTEM_CALL_PATTERN, "System 调用", errors);
+        // 2. 预处理脚本：去除注释、合并字符串拼接、解析 Unicode 转义、归一化空白
+        String normalized = normalize(script);
 
-        // 3. 检查 Runtime 操作
-        checkPattern(scriptId, script, RUNTIME_CALL_PATTERN, "Runtime 调用", errors);
+        // 3. 检查系统操作
+        checkPattern(scriptId, normalized, SYSTEM_CALL_PATTERN, "System 调用", errors);
 
-        // 4. 检查进程创建
-        checkPattern(scriptId, script, PROCESS_PATTERN, "进程创建", errors);
+        // 4. 检查 Runtime 操作
+        checkPattern(scriptId, normalized, RUNTIME_CALL_PATTERN, "Runtime 调用", errors);
 
-        // 5. 检查文件操作
-        checkPattern(scriptId, script, FILE_OPERATION_PATTERN, "文件操作", errors);
+        // 5. 检查进程创建
+        checkPattern(scriptId, normalized, PROCESS_PATTERN, "进程创建", errors);
 
-        // 6. 检查网络操作
-        checkPattern(scriptId, script, NETWORK_PATTERN, "网络操作", errors);
+        // 6. 检查文件操作
+        checkPattern(scriptId, normalized, FILE_OPERATION_PATTERN, "文件操作", errors);
 
-        // 7. 检查反射操作
-        checkPattern(scriptId, script, REFLECTION_PATTERN, "反射操作", errors);
+        // 7. 检查网络操作
+        checkPattern(scriptId, normalized, NETWORK_PATTERN, "网络操作", errors);
 
-        // 8. 检查线程操作
-        checkPattern(scriptId, script, THREAD_PATTERN, "线程操作", errors);
+        // 8. 检查反射操作
+        checkPattern(scriptId, normalized, REFLECTION_PATTERN, "反射操作", errors);
 
-        // 9. 检查 ClassLoader 操作
-        checkPattern(scriptId, script, CLASSLOADER_PATTERN, "ClassLoader 操作", errors);
+        // 9. 检查线程操作
+        checkPattern(scriptId, normalized, THREAD_PATTERN, "线程操作", errors);
 
-        // 10. 检查 Groovy 内部调用
-        checkPattern(scriptId, script, GROOVY_INTERNAL_PATTERN, "Groovy 内部调用", errors);
+        // 10. 检查 ClassLoader 操作
+        checkPattern(scriptId, normalized, CLASSLOADER_PATTERN, "ClassLoader 操作", errors);
 
-        // 11. 检查无限循环（警告级别）
-        if (INFINITE_LOOP_PATTERN.matcher(script).find()) {
+        // 11. 检查 Groovy 内部调用
+        checkPattern(scriptId, normalized, GROOVY_INTERNAL_PATTERN, "Groovy 内部调用", errors);
+
+        // 12. 检查 eval 动态代码评估
+        checkPattern(scriptId, normalized, EVAL_PATTERN, "eval 动态代码评估", errors);
+
+        // 13. 检查 ScriptEngine 动态脚本执行
+        checkPattern(scriptId, normalized, SCRIPT_ENGINE_PATTERN, "ScriptEngine 动态脚本执行", errors);
+
+        // 14. 检查 ProcessBuilder 进程执行
+        checkPattern(scriptId, normalized, PROCESS_BUILDER_PATTERN, "ProcessBuilder 进程执行", errors);
+
+        // 15. 检查 Thread 线程操控
+        checkPattern(scriptId, normalized, THREAD_MANIPULATION_PATTERN, "Thread 线程操控", errors);
+
+        // 16. 检查 Class.forName 反射加载类
+        checkPattern(scriptId, normalized, CLASS_FOR_NAME_PATTERN, "Class.forName 反射加载类", errors);
+
+        // 17. 检查无限循环（警告级别）
+        if (INFINITE_LOOP_PATTERN.matcher(normalized).find()) {
             warnings.add("检测到可能的无限循环模式");
             auditLogger.info("[SECURITY_AUDIT] scriptId={}, warning=可能的无限循环", scriptId);
         }
 
-        // 12. 检查嵌套深度
+        // 18. 检查嵌套深度
         checkNestingDepth(scriptId, script, warnings);
 
         // 记录审计结果
@@ -267,5 +285,73 @@ public class SecurityAuditService {
             warnings.add(String.format("嵌套深度 %d 超过建议阈值 %d", maxDepth, MAX_NESTING_DEPTH));
             auditLogger.info("[SECURITY_AUDIT] scriptId={}, warning=嵌套深度过深, depth={}", scriptId, maxDepth);
         }
+    }
+
+    /**
+     * 预处理脚本内容，消除常见的正则绕过手段。
+     * <p>
+     * 处理步骤：
+     * 1. 解析 Unicode 转义序列（如 \u0053 → S）
+     * 2. 移除单行注释（// ... 至行尾）
+     * 3. 移除多行注释（/* ... *​/）
+     * 4. 合并相邻字符串字面量拼接（如 "abc"+"def" → abcdef）
+     * 5. 归一化空白字符（连续空白压缩为单个空格）
+     *
+     * @param script 原始脚本内容
+     * @return 归一化后的脚本内容
+     */
+    private String normalize(String script) {
+        String result = script;
+
+        // 1. 解析 Unicode 转义序列: \\uXXXX 形式转为对应字符
+        Matcher unicodeMatcher = UNICODE_ESCAPE_PATTERN.matcher(result);
+        StringBuilder sb = new StringBuilder();
+        while (unicodeMatcher.find()) {
+            String hexStr = unicodeMatcher.group(1);
+            try {
+                int codePoint = Integer.parseInt(hexStr, 16);
+                // 仅解析 ASCII 可打印字符范围（0x20 - 0x7E）和基本控制字符，
+                // 避免将非预期字符引入脚本
+                if (codePoint >= 0x20 && codePoint <= 0x7E) {
+                    unicodeMatcher.appendReplacement(sb, String.valueOf((char) codePoint));
+                } else {
+                    // 非可打印 ASCII 保留原始形式不转换
+                    unicodeMatcher.appendReplacement(sb, unicodeMatcher.group(0));
+                }
+            } catch (NumberFormatException e) {
+                unicodeMatcher.appendReplacement(sb, unicodeMatcher.group(0));
+            }
+        }
+        unicodeMatcher.appendTail(sb);
+        result = sb.toString();
+
+        // 2. 移除单行注释：// ... 至行尾
+        result = result.replaceAll("//[^\\n]*", " ");
+
+        // 3. 移除多行注释：/* ... */
+        result = result.replaceAll("/\\*.*?\\*/", " ");
+
+        // 4. 合并相邻字符串字面量拼接：重复直到无法再合并
+        //    例如 "Sys"+"tem.exit()" → System.exit()
+        String previous;
+        do {
+            previous = result;
+            result = STRING_CONCAT_PATTERN.matcher(result).replaceAll(mr -> {
+                // 双引号拼接："abc"+"def"
+                if (mr.group(1) != null && mr.group(2) != null) {
+                    return mr.group(1) + mr.group(2);
+                }
+                // 单引号拼接：'abc'+'def'
+                if (mr.group(3) != null && mr.group(4) != null) {
+                    return mr.group(3) + mr.group(4);
+                }
+                return mr.group(0);
+            });
+        } while (!result.equals(previous));
+
+        // 5. 归一化空白：将连续空白字符（空格、制表符等）压缩为单个空格
+        result = result.replaceAll("\\s+", " ");
+
+        return result.trim();
     }
 }

@@ -123,6 +123,8 @@ progress:
 | 260403-guw | 规则详情/编辑页添加测试功能 | 2026-04-03 | c1c17d01 | [260403-guw-rule-test-feature](./quick/260403-guw-rule-test-feature/) |
 | 260403-vg8 | scopeKey 重命名为 listKey + 名单选择功能 | 2026-04-03 | 17bbf70e | [260403-vg8-scopekey-listkey](./quick/260403-vg8-scopekey-listkey/) |
 | 260408-q01 | 修复分析报告高优先级问题 (B1+B2+B3+F1+F2+F3) | 2026-04-08 | 2c5e7b54 | [260408-q01-fix-analysis-issues](./quick/260408-q01-fix-analysis-issues/) |
+| 260408-whb | 安全校验加固 + DecisionFlow 核心测试 (30+ tests) | 2026-04-08 | 8ba62fcc | [260408-whb-fix-security-validator-audit-tests](./quick/260408-whb-fix-security-validator-audit-tests/) |
+| 260409-lpr | Docker 容器化部署 (Dockerfile + compose + README) | 2026-04-09 | pending | [260409-lpr-docker-containerization](./quick/260409-lpr-docker-containerization/) |
 
 ### Known Risks
 
@@ -144,4 +146,4 @@ v1.0 里程碑已完成，可选方向:
 
 ---
 **State initialized:** 2025-03-26
-**Last updated:** 2026-04-08 - Completed quick task 260408-q01: 修复分析报告高优先级问题 (6 issues fixed)
+**Last updated:** 2026-04-09 - Completed quick task 260409-lpr: Docker 容器化部署
