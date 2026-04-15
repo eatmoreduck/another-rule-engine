@@ -8,13 +8,13 @@ RUN gradle dependencies --no-daemon || true
 RUN gradle bootJar --no-daemon -x test
 
 # ---- Stage 2: Runtime ----
-FROM eclipse-temurin:17-jre-alpine
+FROM eclipse-temurin:17-jre-jammy
 LABEL maintainer="another-rule-engine"
 
 WORKDIR /app
 
 # 创建非 root 用户
-RUN addgroup -S app && adduser -S app -G app
+RUN groupadd -r app && useradd -r -g app app
 
 # 从 builder 阶段复制 JAR
 COPY --from=builder /app/build/libs/*.jar app.jar

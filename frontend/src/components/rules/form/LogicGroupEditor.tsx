@@ -4,7 +4,7 @@
  */
 
 import { useCallback } from 'react';
-import { Button, Segmented, Space } from 'antd';
+import { Button, Segmented } from 'antd';
 import { PlusOutlined, DeleteOutlined, GroupOutlined } from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
 import type {
