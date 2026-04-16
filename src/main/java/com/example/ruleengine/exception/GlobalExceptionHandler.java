@@ -14,6 +14,7 @@ import org.springframework.web.bind.MissingRequestValueException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.servlet.NoHandlerFoundException;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 import java.util.Map;
 
@@ -117,6 +118,18 @@ public class GlobalExceptionHandler {
                         "code", 400,
                         "message", "请求体解析失败: " + e.getMostSpecificCause().getMessage(),
                         "error", "Bad Request"
+                ));
+    }
+
+    @ExceptionHandler({NoResourceFoundException.class, NoHandlerFoundException.class})
+    public ResponseEntity<Map<String, Object>> handleNotFound(Exception e) {
+        log.warn("资源不存在: {}", e.getMessage());
+        return ResponseEntity
+                .status(HttpStatus.NOT_FOUND)
+                .body(Map.of(
+                        "code", 404,
+                        "message", "请求的资源不存在",
+                        "error", "Not Found"
                 ));
     }
 
