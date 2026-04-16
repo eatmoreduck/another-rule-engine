@@ -161,8 +161,8 @@ export default function AuditLogPage() {
     if (dateStrings && dateStrings[0] && dateStrings[1]) {
       setFilters(prev => ({
         ...prev,
-        startTime: new Date(dateStrings[0]).toISOString(),
-        endTime: new Date(dateStrings[1]).toISOString(),
+        startTime: new Date(dateStrings[0]!).toISOString(),
+        endTime: new Date(dateStrings[1]!).toISOString(),
       }));
     } else {
       setFilters(prev => {

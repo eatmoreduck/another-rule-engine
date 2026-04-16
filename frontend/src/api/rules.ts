@@ -84,6 +84,7 @@ export async function getRulesForSelect(): Promise<RuleSelectOption[]> {
       ruleName: rule.ruleName,
       enabled: rule.enabled,
       deleted: rule.deleted,
+      version: rule.version,
     }))
     .sort((left, right) => {
       if (left.enabled !== right.enabled) {

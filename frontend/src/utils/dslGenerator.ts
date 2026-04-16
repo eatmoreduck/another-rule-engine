@@ -7,7 +7,6 @@ import type {
   FormRuleConfig,
   ConditionActionRule,
   ConditionTreeNode,
-  ConditionNode,
   LogicGroup,
   Operator,
   SingleRuleConfig,

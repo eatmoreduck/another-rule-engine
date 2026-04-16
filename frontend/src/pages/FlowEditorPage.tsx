@@ -28,6 +28,7 @@ import type { Rule } from '../types/rule';
 import type {
   FlowNode, FlowEdge,
   ConditionNodeData, ActionNodeData, EndNodeData, RuleSetNodeData,
+  BlacklistNodeData, WhitelistNodeData,
 } from '../types/flowConfig';
 import { createInitialNodes, createInitialEdges } from '../types/flowConfig';
 import { generateGroovyFromFlow } from '../utils/flowDslGenerator';
@@ -113,7 +114,7 @@ function FlowEditorInner() {
 
   // 更新节点属性（来自 NodeConfigPanel）
   const handleNodeDataUpdate = useCallback(
-    (nodeId: string, updates: Partial<ConditionNodeData | ActionNodeData | EndNodeData | RuleSetNodeData>) => {
+    (nodeId: string, updates: Partial<ConditionNodeData | ActionNodeData | EndNodeData | RuleSetNodeData | BlacklistNodeData | WhitelistNodeData>) => {
       setNodes((nds) =>
         nds.map((n) => {
           if (n.id === nodeId) {
