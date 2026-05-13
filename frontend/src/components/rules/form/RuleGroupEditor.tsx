@@ -5,7 +5,7 @@
  */
 
 import { useCallback } from 'react';
-import { Input, Select, Button, Space } from 'antd';
+import { Input, Select, Button } from 'antd';
 import { DeleteOutlined } from '@ant-design/icons';
 import type {
   RuleGroup,

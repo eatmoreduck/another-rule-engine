@@ -20,6 +20,7 @@ export interface RuleSelectOption {
   enabled: boolean;
   deleted: boolean;
   unavailable?: boolean;
+  version?: number;
 }
 
 export interface PageResponse<T> {

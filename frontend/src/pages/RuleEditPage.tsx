@@ -39,7 +39,7 @@ export default function RuleEditPage() {
   const justSavedRef = useRef(false);
   const modalShownRef = useRef(false);
   const [existingRule, setExistingRule] = useState<Rule | null>(null);
-  const [references, setReferences] = useState<RuleReference[]>([]);
+  const [_references, setReferences] = useState<RuleReference[]>([]);
 
   // 单规则配置
   const [ruleConfig, setRuleConfig] = useState<SingleRuleConfig>(createDefaultSingleRule());

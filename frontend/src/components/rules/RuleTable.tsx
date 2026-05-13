@@ -1,4 +1,4 @@
-import { Table, Switch, Popconfirm, Button, Space, Tooltip, Tag } from 'antd';
+import { Table, Switch, Popconfirm, Button, Space, Tooltip } from 'antd';
 import { DeleteOutlined, EyeOutlined, EditOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';

@@ -103,10 +103,10 @@ const allMenuItems: MenuItemConfig[] = [
 /** 将 MenuItemConfig[] 转换为 Ant Design Menu items 格式（去除 permission 字段） */
 function toAntdItems(items: MenuItemConfig[], t: (key: string) => string): NonNullable<Parameters<typeof Menu>[0]['items']> {
   return items.map(({ key, icon, labelKey, children }) => {
-    const result: Record<string, unknown> = { key, label: t(labelKey) };
-    if (icon) result.icon = icon;
-    if (children) result.children = toAntdItems(children, t);
-    return result;
+    if (children) {
+      return { key, label: t(labelKey), ...(icon ? { icon } : {}), children: toAntdItems(children, t) };
+    }
+    return { key, label: t(labelKey), ...(icon ? { icon } : {}) };
   });
 }
 

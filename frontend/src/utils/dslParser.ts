@@ -10,8 +10,6 @@ import type {
   FormRuleConfigV2,
   ConditionActionRule,
   ConditionTreeNode,
-  ConditionNode,
-  LogicGroup,
   Action,
   Operator,
   SingleRuleConfig,
@@ -20,8 +18,6 @@ import {
   createConditionNode,
   createLogicGroup,
   createRuleGroup,
-  convertV1ToV2,
-  genNodeId,
 } from '../types/ruleConfig';
 import { createDefaultSingleRule } from '../types/ruleConfig';
 
@@ -403,7 +399,7 @@ function extractIfReturnPairs(script: string): {
  * V2: 将 Groovy 脚本解析为 FormRuleConfigV2（条件树格式）
  */
 export function parseGroovyToConfigV2(script: string): FormRuleConfigV2 {
-  const v1 = parseGroovyToConfig(script);
+  parseGroovyToConfig(script);
 
   // 如果只有单条件规则，直接映射
   const { rules: ifReturnRules, defaultAction, defaultReason } = extractIfReturnPairs(script);

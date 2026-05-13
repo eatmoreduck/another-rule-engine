@@ -3,13 +3,12 @@
  * 两侧 React Flow 画布并排展示，用颜色高亮标识新增/删除/修改的节点和边
  */
 
-import { useMemo, useState, useEffect, useCallback } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { Tag, Space } from 'antd';
 import { ReactFlowProvider, ReactFlow, Controls, Background, BackgroundVariant, type NodeTypes } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import { useTranslation } from 'react-i18next';
 import type { FlowNode, FlowEdge } from '../types/flowConfig';
-import { createInitialNodes, createInitialEdges } from '../types/flowConfig';
 import StartNodeComponent from './flow/nodes/StartNode';
 import EndNodeComponent from './flow/nodes/EndNode';
 import ConditionNodeComponent from './flow/nodes/ConditionNode';
@@ -39,21 +38,6 @@ interface FlowGraphDiffProps {
 }
 
 type DiffStatus = 'added' | 'removed' | 'modified' | 'unchanged';
-
-interface DiffSummary {
-  addedNodes: number;
-  removedNodes: number;
-  modifiedNodes: number;
-  addedEdges: number;
-  removedEdges: number;
-  modifiedEdges: number;
-}
-
-const IGNORED_NODE_KEYS = new Set([
-  'position', 'selected', 'dragging', 'width', 'height',
-  'measured', 'positionAbsoluteX', 'positionAbsoluteY',
-  'origin', 'expandParent', 'parentId',
-]);
 
 function parseFlowGraph(json: string): { nodes: FlowNode[]; edges: FlowEdge[] } {
   try {
@@ -140,11 +124,11 @@ function computeDiff(oldGraph: string, newGraph: string) {
 
   const oldNodes = oldParsed.nodes.map((n) => {
     const status = nodeStatus.get(n.id) ?? 'unchanged';
-    return { ...n, style: NODE_STYLES[status], data: { ...n.data, _diffStatus: status } };
+    return { ...n, style: NODE_STYLES[status], data: { ...n.data, _diffStatus: status } } as FlowNode;
   });
   const newNodes = newParsed.nodes.map((n) => {
     const status = nodeStatus.get(n.id) ?? 'unchanged';
-    return { ...n, style: NODE_STYLES[status], data: { ...n.data, _diffStatus: status } };
+    return { ...n, style: NODE_STYLES[status], data: { ...n.data, _diffStatus: status } } as FlowNode;
   });
 
   const oldEdges = oldParsed.edges.map((e) => {
