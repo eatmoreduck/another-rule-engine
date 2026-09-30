@@ -1,19 +1,72 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Card, Button, Space, Breadcrumb, message, Spin, Typography, Input } from 'antd';
+import { Card, Button, Space, Breadcrumb, message, Spin, Typography, Input, Modal } from 'antd';
 import { SaveOutlined } from '@ant-design/icons';
 import { ReactFlowProvider, addEdge, useNodesState, useEdgesState, type Connection, type Node } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import { useNavigate, useParams, useBlocker } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { getDecisionFlow, createDecisionFlow, updateDecisionFlow } from '../api/decisionFlows';
+import { validateFeatureDefinitions } from '../api/featureCatalog';
 import type { DecisionFlow } from '../types/decisionFlow';
 import type { FlowNode, FlowEdge, ConditionNodeData, ActionNodeData, EndNodeData, RuleSetNodeData, BlacklistNodeData, WhitelistNodeData, MergeNodeData } from '../types/flowConfig';
+import type { FeatureValidationResponse } from '../types/featureCatalog';
 import { createInitialNodes, createInitialEdges } from '../types/flowConfig';
 import FlowCanvas from '../components/flow/FlowCanvas';
 import NodePalette from '../components/flow/NodePalette';
 import NodeConfigPanel from '../components/flow/NodeConfigPanel';
 
 const { Title } = Typography;
+
+function collectFlowFeatureItems(nodes: FlowNode[]) {
+  return nodes
+    .filter((node) => node.data?.nodeType === 'condition')
+    .map((node) => ({
+      fieldName: String(node.data?.fieldName ?? '').trim(),
+      operator: String(node.data?.operator ?? ''),
+      threshold: node.data?.threshold,
+    }))
+    .filter((item) => item.fieldName.length > 0);
+}
+
+function confirmFeatureWarnings(
+  validation: FeatureValidationResponse,
+  title: string,
+  unknownFieldsLabel: string,
+  warningsLabel: string,
+  okText: string,
+  cancelText: string,
+): Promise<boolean> {
+  return new Promise((resolve) => {
+    Modal.confirm({
+      title,
+      width: 560,
+      content: (
+        <div>
+          {validation.unknownFields.length > 0 && (
+            <div style={{ marginBottom: 12 }}>
+              <div style={{ fontWeight: 600, marginBottom: 6 }}>{unknownFieldsLabel}</div>
+              <div>{validation.unknownFields.join(', ')}</div>
+            </div>
+          )}
+          {validation.warnings.length > 0 && (
+            <div>
+              <div style={{ fontWeight: 600, marginBottom: 6 }}>{warningsLabel}</div>
+              <ul style={{ margin: 0, paddingLeft: 18 }}>
+                {validation.warnings.slice(0, 6).map((warning) => (
+                  <li key={warning}>{warning}</li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </div>
+      ),
+      okText,
+      cancelText,
+      onOk: () => resolve(true),
+      onCancel: () => resolve(false),
+    });
+  });
+}
 
 function FlowEditorInner() {
   const { flowKey } = useParams<{ flowKey: string }>();
@@ -104,6 +157,24 @@ function FlowEditorInner() {
     setSaving(true);
     const flowGraph = JSON.stringify({ nodes, edges });
     try {
+      const validationItems = collectFlowFeatureItems(nodes);
+      if (validationItems.length > 0) {
+        const validation = await validateFeatureDefinitions(validationItems);
+        if (validation.warnings.length > 0 || validation.unknownFields.length > 0 || !validation.valid) {
+          const shouldContinue = await confirmFeatureWarnings(
+            validation,
+            t('featureCatalog.validationWarningTitle'),
+            t('featureCatalog.unknownFieldsLabel'),
+            t('featureCatalog.warningsLabel'),
+            t('featureCatalog.continueSave'),
+            t('featureCatalog.backEdit'),
+          );
+          if (!shouldContinue) {
+            return;
+          }
+        }
+      }
+
       if (isNew) {
         const created = await createDecisionFlow({
           flowKey: flowKeyInput,
@@ -130,7 +201,7 @@ function FlowEditorInner() {
     } finally {
       setSaving(false);
     }
-  }, [isNew, flowKey, flowKeyInput, flowName, flowDescription, nodes, edges, navigate]);
+  }, [edges, flowDescription, flowKey, flowKeyInput, flowName, isNew, navigate, nodes, t]);
 
   if (loading) {
     return <div style={{ textAlign: 'center', padding: 48 }}><Spin size="large" /></div>;

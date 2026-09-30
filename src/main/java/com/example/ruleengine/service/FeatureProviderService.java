@@ -1,16 +1,29 @@
 package com.example.ruleengine.service;
 
+import com.example.ruleengine.domain.FeatureAlias;
+import com.example.ruleengine.domain.FeatureDefinition;
 import com.example.ruleengine.model.FeatureRequest;
 import com.example.ruleengine.model.FeatureResponse;
+import com.example.ruleengine.repository.FeatureAliasRepository;
+import com.example.ruleengine.repository.FeatureDefinitionRepository;
 import com.github.benmanes.caffeine.cache.Cache;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
@@ -22,6 +35,7 @@ import java.util.stream.Collectors;
  * 1. D-14: 三级策略（入参 → 外部 → 默认值）
  * 2. D-15: 超时控制和降级
  * 3. PERF-02: 特征预加载和批量获取
+ * 4. Phase 9: canonical code + alias fallback 兼容
  */
 @Service
 public class FeatureProviderService {
@@ -31,13 +45,29 @@ public class FeatureProviderService {
     private final Cache<String, Object> featureCache;
     private final RestTemplate restTemplate;
     private final Map<String, Object> defaultFeatures;
+    private final FeatureAliasRepository featureAliasRepository;
+    private final FeatureDefinitionRepository featureDefinitionRepository;
+    private final Map<String, String> resolvedCodeCache = new ConcurrentHashMap<>();
+    private final Map<String, List<String>> aliasListCache = new ConcurrentHashMap<>();
 
     public FeatureProviderService(
         @Qualifier("featureCache") Cache<String, Object> featureCache,
         RestTemplate restTemplate
     ) {
+        this(featureCache, restTemplate, null, null);
+    }
+
+    @Autowired
+    public FeatureProviderService(
+        @Qualifier("featureCache") Cache<String, Object> featureCache,
+        RestTemplate restTemplate,
+        @Nullable FeatureAliasRepository featureAliasRepository,
+        @Nullable FeatureDefinitionRepository featureDefinitionRepository
+    ) {
         this.featureCache = featureCache;
         this.restTemplate = restTemplate;
+        this.featureAliasRepository = featureAliasRepository;
+        this.featureDefinitionRepository = featureDefinitionRepository;
         this.defaultFeatures = loadDefaultFeatures();
     }
 
@@ -47,49 +77,73 @@ public class FeatureProviderService {
      */
     public FeatureResponse getFeatures(FeatureRequest request) {
         long startTime = System.currentTimeMillis();
-        Map<String, Object> result = new HashMap<>(request.getInputFeatures());
+        Map<String, Object> inputFeatures = request.getInputFeatures() != null
+            ? new HashMap<>(request.getInputFeatures())
+            : new HashMap<>();
+        Map<String, Object> result = new HashMap<>(inputFeatures);
         boolean fallbackToDefault = false;
 
-        // 找出缺失的特征
-        List<String> requiredFeatures = request.getRequiredFeatures();
-        List<String> missingFeatures = (requiredFeatures != null && !requiredFeatures.isEmpty())
-            ? requiredFeatures.stream()
-                .filter(feature -> !request.getInputFeatures().containsKey(feature))
-                .collect(Collectors.toList())
+        mirrorKnownAliases(inputFeatures, result);
+
+        List<String> requiredFeatures = request.getRequiredFeatures() != null
+            ? request.getRequiredFeatures().stream().map(this::normalizeKey).filter(key -> !key.isEmpty()).toList()
             : Collections.emptyList();
 
-        if (!missingFeatures.isEmpty()) {
-            // 从缓存获取
-            Map<String, Object> cachedFeatures = getFeaturesFromCache(missingFeatures);
-            result.putAll(cachedFeatures);
+        Map<String, String> requestedToCanonical = new LinkedHashMap<>();
+        List<String> canonicalMissingFeatures = new ArrayList<>();
+        for (String requested : requiredFeatures) {
+            if (result.containsKey(requested)) {
+                continue;
+            }
+            String canonical = resolveCanonicalCode(requested);
+            requestedToCanonical.put(requested, canonical);
+            if (!result.containsKey(canonical)) {
+                canonicalMissingFeatures.add(canonical);
+            }
+        }
 
-            // 仍然缺失的特征
-            List<String> stillMissing = missingFeatures.stream()
-                .filter(feature -> !cachedFeatures.containsKey(feature))
-                .collect(Collectors.toList());
+        List<String> uniqueCanonicalMissing = canonicalMissingFeatures.stream()
+            .distinct()
+            .toList();
+
+        if (!uniqueCanonicalMissing.isEmpty()) {
+            Map<String, Object> cachedFeatures = getFeaturesFromCache(uniqueCanonicalMissing);
+            cachedFeatures.forEach((key, value) -> putResolvedFeatureValue(result, key, value, false));
+
+            List<String> stillMissing = uniqueCanonicalMissing.stream()
+                .filter(feature -> !result.containsKey(feature))
+                .toList();
 
             if (!stillMissing.isEmpty()) {
-                // D-15: 从外部特征平台获取（带超时控制）
                 Map<String, Object> externalFeatures = fetchExternalFeaturesWithTimeout(
                     stillMissing,
                     request.getTimeoutMs()
                 );
-                result.putAll(externalFeatures);
+                externalFeatures.forEach((key, value) -> putResolvedFeatureValue(result, key, value, true));
 
-                // 仍然缺失的特征，使用默认值
                 List<String> finalMissing = stillMissing.stream()
-                    .filter(feature -> !externalFeatures.containsKey(feature))
-                    .collect(Collectors.toList());
+                    .filter(feature -> !result.containsKey(feature))
+                    .toList();
 
                 if (!finalMissing.isEmpty()) {
-                    finalMissing.forEach(feature ->
-                        result.put(feature, defaultFeatures.getOrDefault(feature, null))
-                    );
+                    finalMissing.forEach(feature -> {
+                        if (defaultFeatures.containsKey(feature)) {
+                            putResolvedFeatureValue(result, feature, defaultFeatures.get(feature), true);
+                        } else {
+                            result.putIfAbsent(feature, null);
+                        }
+                    });
                     fallbackToDefault = true;
                     logger.debug("Used default values for features: {}", finalMissing);
                 }
             }
         }
+
+        requestedToCanonical.forEach((requested, canonical) -> {
+            if (!result.containsKey(requested) && result.containsKey(canonical)) {
+                result.put(requested, result.get(canonical));
+            }
+        });
 
         long fetchTime = System.currentTimeMillis() - startTime;
 
@@ -129,17 +183,12 @@ public class FeatureProviderService {
             CompletableFuture<Map<String, Object>> externalFuture =
                 CompletableFuture.supplyAsync(() -> fetchExternalFeatures(featureKeys));
 
-            // 超时控制
             Map<String, Object> result = externalFuture.get(timeoutMs, TimeUnit.MILLISECONDS);
-
-            // 将获取到的特征放入缓存
-            result.forEach((key, value) -> featureCache.put(key, value));
-
-            return result;
+            return result != null ? result : Collections.emptyMap();
 
         } catch (Exception e) {
             logger.warn("Failed to fetch external features: {}", featureKeys, e);
-            return Collections.emptyMap();  // 失败返回空，触发默认值降级
+            return Collections.emptyMap();
         }
     }
 
@@ -148,13 +197,12 @@ public class FeatureProviderService {
      */
     private Map<String, Object> fetchExternalFeatures(List<String> featureKeys) {
         try {
-            // TODO: 实现实际的 HTTP 调用
-            // 当前返回模拟数据
-            return restTemplate.postForObject(
+            Map<String, Object> response = restTemplate.postForObject(
                 "http://feature-platform/api/features",
                 featureKeys,
                 Map.class
             );
+            return response != null ? response : Collections.emptyMap();
         } catch (Exception e) {
             logger.error("Failed to call external feature platform", e);
             return Collections.emptyMap();
@@ -169,7 +217,7 @@ public class FeatureProviderService {
 
         CompletableFuture.runAsync(() -> {
             Map<String, Object> features = fetchExternalFeatures(featureKeys);
-            features.forEach((key, value) -> featureCache.put(key, value));
+            features.forEach((key, value) -> putResolvedFeatureValue(new HashMap<>(), key, value, true));
             logger.info("Preloaded {} features", features.size());
         });
     }
@@ -178,7 +226,77 @@ public class FeatureProviderService {
      * PERF-02: 批量获取特征
      */
     public Map<String, Object> batchGetFeatures(List<String> featureKeys, long timeoutMs) {
-        return fetchExternalFeaturesWithTimeout(featureKeys, timeoutMs);
+        FeatureRequest request = new FeatureRequest(Collections.emptyMap(), featureKeys);
+        request.setTimeoutMs(timeoutMs);
+        return getFeatures(request).getFeatures();
+    }
+
+    private void mirrorKnownAliases(Map<String, Object> inputFeatures, Map<String, Object> result) {
+        inputFeatures.forEach((key, value) -> putResolvedFeatureValue(result, key, value, false));
+    }
+
+    private void putResolvedFeatureValue(Map<String, Object> result, String featureCode, Object value, boolean populateCache) {
+        String normalizedCode = normalizeKey(featureCode);
+        if (normalizedCode.isEmpty()) {
+            return;
+        }
+        String canonical = resolveCanonicalCode(normalizedCode);
+        result.put(normalizedCode, value);
+        result.put(canonical, value);
+
+        if (populateCache && value != null) {
+            featureCache.put(canonical, value);
+            featureCache.put(normalizedCode, value);
+        }
+
+        for (String alias : listAliasesForCanonical(canonical)) {
+            result.putIfAbsent(alias, value);
+            if (populateCache && value != null) {
+                featureCache.put(alias, value);
+            }
+        }
+    }
+
+    private String resolveCanonicalCode(String featureCode) {
+        String normalizedCode = normalizeKey(featureCode);
+        if (normalizedCode.isEmpty()) {
+            return normalizedCode;
+        }
+        return resolvedCodeCache.computeIfAbsent(normalizedCode, key -> {
+            if (featureDefinitionRepository != null) {
+                Optional<FeatureDefinition> definition = featureDefinitionRepository.findByCodeIgnoreCase(key);
+                if (definition.isPresent()) {
+                    listAliasesForCanonical(definition.get().getCode());
+                    return definition.get().getCode();
+                }
+            }
+            if (featureAliasRepository != null) {
+                Optional<FeatureAlias> alias = featureAliasRepository.findByAliasCodeIgnoreCase(key);
+                if (alias.isPresent()) {
+                    listAliasesForCanonical(alias.get().getCanonicalCode());
+                    return alias.get().getCanonicalCode();
+                }
+            }
+            return key;
+        });
+    }
+
+    private List<String> listAliasesForCanonical(String canonicalCode) {
+        String normalizedCode = normalizeKey(canonicalCode);
+        if (normalizedCode.isEmpty() || featureAliasRepository == null) {
+            return List.of();
+        }
+        return aliasListCache.computeIfAbsent(normalizedCode, key -> featureAliasRepository
+            .findByCanonicalCodeOrderByAliasCodeAsc(key)
+            .stream()
+            .map(FeatureAlias::getAliasCode)
+            .map(this::normalizeKey)
+            .filter(alias -> !alias.equals(key))
+            .collect(Collectors.toList()));
+    }
+
+    private String normalizeKey(String featureCode) {
+        return featureCode == null ? "" : featureCode.trim();
     }
 
     /**
@@ -190,7 +308,6 @@ public class FeatureProviderService {
         defaults.put("user_level", "NORMAL");
         defaults.put("order_amount", 0.0);
         defaults.put("risk_score", 0.5);
-        // TODO: 从配置文件读取默认值
         return defaults;
     }
 }

@@ -1,22 +1,22 @@
 ---
 gsd_state_version: 1.0
-milestone: v1.0
-milestone_name: milestone
-current_phase: All phases complete (v1.0 milestone done)
-status: completed
-last_updated: "2026-03-31T08:26:50.066Z"
+milestone: v1.1
+milestone_name: 风控运营闭环
+current_phase: Phase 9 execution
+status: executing
+last_updated: "2026-04-10T16:58:00+08:00"
 progress:
-  total_phases: 7
-  completed_phases: 1
-  total_plans: 9
-  completed_plans: 12
+  total_phases: 6
+  completed_phases: 0
+  total_plans: 16
+  completed_plans: 1
 ---
 
 # 项目状态: 低代码风控规则引擎
 
 **Started:** 2025-03-26
-**Current Phase:** All phases complete (v1.0 milestone done)
-**Overall Progress:** 100% (7/7 phases complete)
+**Current Phase:** Phase 9 execution
+**Overall Progress:** v1.1 planning started
 
 ## Project Reference
 
@@ -25,65 +25,26 @@ progress:
 **What This Is:**
 一个面向电商反欺诈场景的低代码规则引擎，支持通过可视化和表单配置定义业务规则，通过同步/异步混合模式执行规则决策，并提供完整的版本管理、灰度发布和回滚能力。
 
-**All Phases Complete ✅** (2025-03-30)
-
-- Phase 1: 核心规则执行引擎 ✅
-- Phase 2: 数据持久化与版本管理 ✅
-- Phase 3: 规则配置界面 ✅
-- Phase 4: 监控与安全增强 ✅
-- Phase 5: 灰度发布与异步执行 ✅
-- Phase 6: 测试验证与分析 ✅
-- Phase 7: 高级功能与扩展 ✅
-
 ## Current Position
 
-**Status:** v1.0 milestone complete
-**Progress Bar:** [████████████████████] 100% (7/7 phases)
+**Milestone:** v1.1 风控运营闭环
+**Status:** Phase 9 plan 09-01 delivered, plan 09-02 ready
+**Progress Bar:** [###-----------------] 8% (0/6 phases, 1 plan delivered)
+**Last activity:** 2026-04-10 — Delivered Phase 9 plan 09-01 feature catalog foundation
 
-### Phase Completion Summary
+### Next Execution Target
 
-**Phase 1: 核心规则执行引擎 ✅** (2025-03-26)
+**Phase 9: 特征字典与规则兼容底座**
 
-- 5 个计划全部完成
-- Groovy 脚本引擎、特征获取、规则执行、决策 API
+- 建立特征字典数据模型、别名兼容和治理 API
+- 将规则表单、流程图节点接入特征选择器
+- 为后续审核、回放、模板和分析提供统一特征口径
 
-**Phase 2: 数据持久化与版本管理 ✅** (2025-03-26)
+### Recommended Next Actions
 
-- 5 个计划全部完成
-- PostgreSQL + JPA、版本管理、审计日志、生命周期、缓存
-
-**Phase 3: 规则配置界面 ✅** (2025-03-30)
-
-- 3/4 个计划完成 (03-02 未执行但代码已实现)
-- React 19 + Ant Design 前端、规则列表、流程图编辑器、DSL 统一
-
-**Phase 4: 监控与安全增强 ✅** (2025-03-30)
-
-- 1 个计划完成
-- 执行日志、Prometheus 指标、安全审计、沙箱测试
-
-**Phase 5: 灰度发布与异步执行 ✅** (2025-03-30)
-
-- 1 个计划完成
-- 灰度引擎、异步执行、降级服务、熔断器
-
-**Phase 6: 测试验证与分析 ✅** (2025-03-30)
-
-- 1 个计划完成
-- 测试执行、冲突检测、规则分析、依赖分析
-
-**Phase 7: 高级功能与扩展 ✅** (2025-03-30)
-
-- 1 个计划完成
-- 决策表、多环境、导入导出、规则模板
-
-## Codebase Stats
-
-- **Controllers:** 16 个
-- **Services:** 15+ 个包
-- **Domain Entities:** 9 个
-- **DB Migrations:** 8 个 (V1-V8)
-- **Frontend Pages:** 规则列表、规则编辑、流程图、灰度管理、测试、分析
+1. 执行 `09-02-PLAN.md`：规则/流程图编辑器深度接入特征选择器
+2. 基于特征字典推进 Phase 10 审核闭环
+3. 补充特征引用统计与敏感字段治理细节
 
 ## Accumulated Context
 
@@ -103,47 +64,35 @@ progress:
 - 特征获取三级策略
 - 灰度发布自动扩量+回滚
 - 多环境数据库隔离
+- 权限控制已完成，后续运营能力均需接入 RBAC
 
 ### Critical Success Factors
 
-1. ✅ Groovy 内存泄漏 — 脚本缓存机制
-2. ✅ 沙箱绕过漏洞 — 安全隔离机制
-3. ✅ 规则执行超时 — 超时熔断保护
-4. ✅ 特征获取性能 — 多级缓存
-5. ✅ 灰度验证 — 完整灰度流程
+1. 在线规则执行主链路不能被运营闭环能力拖慢
+2. 新能力必须兼容历史规则 DSL 和现有已发布规则
+3. 误杀率 / 欺诈率等业务指标必须建立在可追踪标签之上
+4. 发布治理必须绑定证据包，避免“裸发布”
+5. 模板库必须复用前序能力，而不是重复造概念
 
 ### Current Blockers
 
 无
 
-### Quick Tasks Completed
-
-| # | Description | Date | Commit | Directory |
-|---|-------------|------|--------|-----------|
-| 260403-guw | 规则详情/编辑页添加测试功能 | 2026-04-03 | c1c17d01 | [260403-guw-rule-test-feature](./quick/260403-guw-rule-test-feature/) |
-| 260403-vg8 | scopeKey 重命名为 listKey + 名单选择功能 | 2026-04-03 | 17bbf70e | [260403-vg8-scopekey-listkey](./quick/260403-vg8-scopekey-listkey/) |
-| 260408-q01 | 修复分析报告高优先级问题 (B1+B2+B3+F1+F2+F3) | 2026-04-08 | 2c5e7b54 | [260408-q01-fix-analysis-issues](./quick/260408-q01-fix-analysis-issues/) |
-| 260408-whb | 安全校验加固 + DecisionFlow 核心测试 (30+ tests) | 2026-04-08 | 8ba62fcc | [260408-whb-fix-security-validator-audit-tests](./quick/260408-whb-fix-security-validator-audit-tests/) |
-| 260409-lpr | Docker 容器化部署 (Dockerfile + compose + README) | 2026-04-09 | pending | [260409-lpr-docker-containerization](./quick/260409-lpr-docker-containerization/) |
-
 ### Known Risks
 
-1. 50ms 性能目标 — 需要压测验证
-2. Groovy 5.x 生产稳定性 — 当前使用 4.0.22
-3. 虚拟线程实际性能提升 — 待验证
-4. 规则冲突检测准确性 — 需实际验证
+1. 现有执行日志缺少业务事实字段，回放和经营分析前需要补数据模型
+2. `MANUAL_REVIEW` 尚未形成工单系统，人工审核 Phase 存在较多领域建模工作
+3. 文档与实际实现有一定偏差，开发时需顺手修正文档口径
+4. 模板库与决策表在旧规划中出现过，但当前代码未落地，需避免重复承诺
 
 ## Session Continuity
 
 ### Next Steps
 
-v1.0 里程碑已完成，可选方向:
-
-1. `/gsd:complete-milestone` — 归档当前里程碑
-2. 性能压测 — 验证 50ms 目标
-3. 集成测试 — 补充端到端测试
-4. `/gsd:new-milestone` — 规划下一个里程碑
+1. 先执行 Phase 9，打好特征字典底座
+2. 再推进 Phase 10，补齐审核反馈和标签
+3. 基于 Phase 9 + 10 进入回放仿真与发布治理
 
 ---
 **State initialized:** 2025-03-26
-**Last updated:** 2026-04-09 - Completed quick task 260409-lpr: Docker 容器化部署
+**Last updated:** 2026-04-10 - Delivered Phase 9 plan 09-01 feature catalog foundation

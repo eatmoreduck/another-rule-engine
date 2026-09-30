@@ -159,10 +159,11 @@ export default function AuditLogPage() {
 
   const handleDateRangeChange = (_: any, dateStrings: [string | null, string | null] | null) => {
     if (dateStrings && dateStrings[0] && dateStrings[1]) {
+      const [start, end] = dateStrings;
       setFilters(prev => ({
         ...prev,
-        startTime: new Date(dateStrings[0]).toISOString(),
-        endTime: new Date(dateStrings[1]).toISOString(),
+        startTime: new Date(start).toISOString(),
+        endTime: new Date(end).toISOString(),
       }));
     } else {
       setFilters(prev => {

@@ -1,6 +1,7 @@
 import { useMemo, useState, useEffect } from 'react';
 import { Layout, Menu, Typography, App, Dropdown, Avatar, Space } from 'antd';
-import { SafetyOutlined, SettingOutlined, ExperimentOutlined, BarChartOutlined, DashboardOutlined, CloudServerOutlined, ImportOutlined, ApartmentOutlined, UnorderedListOutlined, UserOutlined, LogoutOutlined, FileSearchOutlined } from '@ant-design/icons';
+import { SafetyOutlined, SettingOutlined, ExperimentOutlined, BarChartOutlined, DashboardOutlined, CloudServerOutlined, ImportOutlined, ApartmentOutlined, UnorderedListOutlined, UserOutlined, LogoutOutlined, FileSearchOutlined, DatabaseOutlined } from '@ant-design/icons';
+import type { ItemType, MenuItemType } from 'antd/es/menu/interface';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuthStore } from '../stores/authStore';
@@ -39,6 +40,12 @@ const allMenuItems: MenuItemConfig[] = [
     icon: <UnorderedListOutlined />,
     labelKey: 'menu.nameList',
     permission: 'menu:name-list',
+  },
+  {
+    key: '/feature-catalog',
+    icon: <DatabaseOutlined />,
+    labelKey: 'menu.featureCatalog',
+    permission: 'menu:feature-catalog',
   },
   {
     key: '/grayscale',
@@ -101,9 +108,14 @@ const allMenuItems: MenuItemConfig[] = [
 ];
 
 /** 将 MenuItemConfig[] 转换为 Ant Design Menu items 格式（去除 permission 字段） */
-function toAntdItems(items: MenuItemConfig[], t: (key: string) => string): NonNullable<Parameters<typeof Menu>[0]['items']> {
+function toAntdItems(items: MenuItemConfig[], t: (key: string) => string): ItemType<MenuItemType>[] {
   return items.map(({ key, icon, labelKey, children }) => {
-    const result: Record<string, unknown> = { key, label: t(labelKey) };
+    const result: {
+      key: string;
+      label: string;
+      icon?: React.ReactNode;
+      children?: ItemType<MenuItemType>[];
+    } = { key, label: t(labelKey) };
     if (icon) result.icon = icon;
     if (children) result.children = toAntdItems(children, t);
     return result;

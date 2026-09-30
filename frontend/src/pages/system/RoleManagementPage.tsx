@@ -1,13 +1,13 @@
 import { useEffect, useState } from 'react';
 import {
-  Card, Breadcrumb, List, Typography, Checkbox, Button, Space, Spin, App, Tag,
+  Card, Breadcrumb, List, Typography, Checkbox, Button, Spin, App, Tag,
 } from 'antd';
 import { SaveOutlined } from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
 import * as systemApi from '../../api/system';
 import type { RoleDTO, PermissionDTO } from '../../api/system';
 
-const { Text, Title } = Typography;
+const { Text } = Typography;
 
 /**
  * 按模块分组的权限树结构

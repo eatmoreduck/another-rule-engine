@@ -4,7 +4,7 @@
  */
 
 import { useCallback, useState, useEffect } from 'react';
-import { Select, Input, Divider, Typography, Tag, message } from 'antd';
+import { Select, Input, Divider, Typography, Tag, message, Alert } from 'antd';
 import { useTranslation } from 'react-i18next';
 import type {
   FlowNode,
@@ -20,12 +20,45 @@ import { OPERATOR_LABELS, ACTION_LABELS, type Operator, type Action } from '../.
 import { getRulesForSelect } from '../../api/rules';
 import { getListKeys } from '../../api/nameList';
 import type { RuleSelectOption } from '../../types/rule';
+import type { FeatureResolvedInfo } from '../../types/featureCatalog';
+import FeatureFieldInput from '../feature/FeatureFieldInput';
 
 const { Text } = Typography;
 
 interface NodeConfigPanelProps {
   node: FlowNode;
   onUpdate: (nodeId: string, newData: Partial<ConditionNodeData | ActionNodeData | EndNodeData | RuleSetNodeData | BlacklistNodeData | WhitelistNodeData>) => void;
+}
+
+const NUMERIC_OPERATORS: Operator[] = ['EQ', 'NE', 'GT', 'GE', 'LT', 'LE'];
+const BOOLEAN_OPERATORS: Operator[] = ['EQ', 'NE'];
+const STRING_OPERATORS: Operator[] = ['EQ', 'NE', 'CONTAINS', 'NOT_CONTAINS', 'IN', 'NOT_IN'];
+
+function isNumericDataType(dataType: string): boolean {
+  return ['NUMBER', 'INTEGER', 'LONG', 'DOUBLE', 'DECIMAL'].includes(dataType);
+}
+
+function isBooleanDataType(dataType: string): boolean {
+  return dataType === 'BOOLEAN';
+}
+
+function getRecommendedOperators(dataType?: string): Operator[] | null {
+  if (!dataType) {
+    return null;
+  }
+  if (isNumericDataType(dataType)) {
+    return NUMERIC_OPERATORS;
+  }
+  if (isBooleanDataType(dataType)) {
+    return BOOLEAN_OPERATORS;
+  }
+  return STRING_OPERATORS;
+}
+
+function getSensitivityColor(sensitivity: string): string {
+  if (sensitivity === 'HIGHLY_SENSITIVE') return 'red';
+  if (sensitivity === 'SENSITIVE') return 'orange';
+  return 'green';
 }
 
 /** 条件节点配置表单 */
@@ -37,6 +70,31 @@ function ConditionConfig({
   onUpdate: (updates: Partial<ConditionNodeData>) => void;
 }) {
   const { t } = useTranslation();
+  const [resolvedFeature, setResolvedFeature] = useState<FeatureResolvedInfo | null>(null);
+  const [resolvingFeature, setResolvingFeature] = useState(false);
+
+  const recommendedOperators = getRecommendedOperators(resolvedFeature?.feature.dataType);
+  const isOperatorCompatible = !recommendedOperators || recommendedOperators.includes(data.operator);
+
+  const operatorOptions = Object.entries(OPERATOR_LABELS).map(([key, label]) => {
+    const operatorKey = key as Operator;
+    const disabled = !!recommendedOperators && !recommendedOperators.includes(operatorKey);
+    const suffix = disabled ? ` (${t('nodeConfig.operatorNotRecommended')})` : '';
+    return {
+      value: key,
+      label: `${label}${suffix}`,
+      disabled,
+    };
+  });
+
+  const thresholdPlaceholder = (() => {
+    const dataType = resolvedFeature?.feature.dataType;
+    if (!dataType) return t('nodeConfig.thresholdPlaceholder');
+    if (isNumericDataType(dataType)) return t('nodeConfig.thresholdNumberHint');
+    if (isBooleanDataType(dataType)) return t('nodeConfig.thresholdBooleanHint');
+    return t('nodeConfig.thresholdTextHint');
+  })();
+
   return (
     <>
       <div style={{ marginBottom: 12 }}>
@@ -51,14 +109,60 @@ function ConditionConfig({
       <Divider style={{ margin: '8px 0' }} />
       <div style={{ marginBottom: 12 }}>
         <Text type="secondary" style={{ fontSize: 12 }}>{t('nodeConfig.featureField')}</Text>
-        <Input
+        <FeatureFieldInput
           value={data.fieldName}
-          onChange={(e) => onUpdate({ fieldName: e.target.value })}
+          onChange={(value) => onUpdate({ fieldName: value })}
+          onFeatureResolved={setResolvedFeature}
+          onResolvingChange={setResolvingFeature}
           placeholder={t('nodeConfig.featureFieldPlaceholder')}
-          size="small"
           style={{ marginTop: 4 }}
         />
       </div>
+      {resolvingFeature && (
+        <div style={{ marginBottom: 12, fontSize: 12, color: '#8c8c8c' }}>
+          {t('nodeConfig.resolvingFeature')}
+        </div>
+      )}
+      {!resolvingFeature && data.fieldName.trim() && !resolvedFeature && (
+        <Alert
+          style={{ marginBottom: 12 }}
+          type="warning"
+          showIcon
+          message={t('nodeConfig.featureNotRegistered')}
+          description={t('nodeConfig.featureNotRegisteredDesc')}
+        />
+      )}
+      {resolvedFeature && (
+        <div style={{ marginBottom: 12, padding: '8px 10px', background: '#fafafa', border: '1px solid #f0f0f0', borderRadius: 6 }}>
+          <div style={{ fontSize: 12, fontWeight: 600, marginBottom: 6 }}>{t('nodeConfig.featureMetadata')}</div>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 6 }}>
+            <Tag color="blue" style={{ marginInlineEnd: 0 }}>{resolvedFeature.feature.dataType}</Tag>
+            <Tag style={{ marginInlineEnd: 0 }}>{resolvedFeature.feature.sourceType}</Tag>
+            <Tag color={getSensitivityColor(resolvedFeature.feature.sensitivity)} style={{ marginInlineEnd: 0 }}>
+              {resolvedFeature.feature.sensitivity}
+            </Tag>
+            <Tag style={{ marginInlineEnd: 0 }}>{resolvedFeature.feature.status}</Tag>
+          </div>
+          {resolvedFeature.matchedByAlias && (
+            <div style={{ fontSize: 12, color: '#ad6800', marginBottom: 4 }}>
+              {t('nodeConfig.aliasMappedHint', {
+                alias: resolvedFeature.matchedAlias ?? data.fieldName,
+                canonical: resolvedFeature.feature.code,
+              })}
+            </div>
+          )}
+          {resolvedFeature.feature.exampleValue && (
+            <div style={{ fontSize: 12, color: '#8c8c8c', marginBottom: 4 }}>
+              {t('nodeConfig.exampleValueHint')}: {resolvedFeature.feature.exampleValue}
+            </div>
+          )}
+          {resolvedFeature.feature.description && (
+            <div style={{ fontSize: 12, color: '#8c8c8c' }}>
+              {resolvedFeature.feature.description}
+            </div>
+          )}
+        </div>
+      )}
       <div style={{ marginBottom: 12 }}>
         <Text type="secondary" style={{ fontSize: 12 }}>{t('nodeConfig.comparisonOperator')}</Text>
         <Select
@@ -66,18 +170,20 @@ function ConditionConfig({
           onChange={(v: Operator) => onUpdate({ operator: v })}
           size="small"
           style={{ width: '100%', marginTop: 4 }}
-          options={Object.entries(OPERATOR_LABELS).map(([key, label]) => ({
-            value: key,
-            label,
-          }))}
+          options={operatorOptions}
         />
       </div>
+      {resolvedFeature && !isOperatorCompatible && (
+        <div style={{ marginBottom: 10, fontSize: 12, color: '#ad6800' }}>
+          {t('nodeConfig.operatorMismatchHint', { dataType: resolvedFeature.feature.dataType })}
+        </div>
+      )}
       <div style={{ marginBottom: 12 }}>
         <Text type="secondary" style={{ fontSize: 12 }}>{t('nodeConfig.threshold')}</Text>
         <Input
           value={String(data.threshold)}
           onChange={(e) => onUpdate({ threshold: e.target.value })}
-          placeholder={t('nodeConfig.thresholdPlaceholder')}
+          placeholder={thresholdPlaceholder}
           size="small"
           style={{ marginTop: 4 }}
         />

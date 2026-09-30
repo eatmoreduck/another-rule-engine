@@ -13,9 +13,11 @@ import { SaveOutlined, ThunderboltOutlined } from '@ant-design/icons';
 import { useNavigate, useParams, useBlocker } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { getRule, createRule, updateRule, getRuleReferences } from '../api/rules';
+import { validateFeatureDefinitions } from '../api/featureCatalog';
 import type { Rule } from '../types/rule';
 import type { RuleReference } from '../types/rule';
 import type { SingleRuleConfig } from '../types/ruleConfig';
+import type { FeatureValidationResponse } from '../types/featureCatalog';
 import { generateGroovyFromSingleRule } from '../utils/dslGenerator';
 import { parseGroovyToSingleRule } from '../utils/dslParser';
 import { createDefaultSingleRule } from '../types/ruleConfig';
@@ -24,6 +26,89 @@ import RuleTestModal from '../components/rules/RuleTestModal';
 import '../styles/editor.css';
 
 const { Title, Text } = Typography;
+
+function collectFeatureValidationItems(node: SingleRuleConfig['condition']): Array<{ fieldName: string; operator?: string; threshold?: unknown }> {
+  if (node.type === 'condition') {
+    if (!node.fieldName.trim()) {
+      return [];
+    }
+    return [{
+      fieldName: node.fieldName.trim(),
+      operator: node.operator,
+      threshold: node.threshold,
+    }];
+  }
+  return node.children.flatMap((child) => collectFeatureValidationItems(child));
+}
+
+function confirmFeatureWarnings(
+  validation: FeatureValidationResponse,
+  title: string,
+  unknownFieldsLabel: string,
+  warningsLabel: string,
+  aliasMappingsLabel: string,
+  itemWarningsLabel: string,
+  okText: string,
+  cancelText: string,
+): Promise<boolean> {
+  const aliasMappings = validation.items.filter((item) => item.matchedByAlias && item.canonicalCode);
+  const itemWarnings = validation.items.filter((item) => item.warnings.length > 0);
+
+  return new Promise((resolve) => {
+    Modal.confirm({
+      title,
+      width: 560,
+      content: (
+        <div>
+          {validation.unknownFields.length > 0 && (
+            <div style={{ marginBottom: 12 }}>
+              <div style={{ fontWeight: 600, marginBottom: 6 }}>{unknownFieldsLabel}</div>
+              <div>{validation.unknownFields.join(', ')}</div>
+            </div>
+          )}
+          {validation.warnings.length > 0 && (
+            <div>
+              <div style={{ fontWeight: 600, marginBottom: 6 }}>{warningsLabel}</div>
+              <ul style={{ margin: 0, paddingLeft: 18 }}>
+                {validation.warnings.slice(0, 6).map((warning) => (
+                  <li key={warning}>{warning}</li>
+                ))}
+              </ul>
+            </div>
+          )}
+          {aliasMappings.length > 0 && (
+            <div style={{ marginTop: 12 }}>
+              <div style={{ fontWeight: 600, marginBottom: 6 }}>{aliasMappingsLabel}</div>
+              <ul style={{ margin: 0, paddingLeft: 18 }}>
+                {aliasMappings.slice(0, 6).map((item) => (
+                  <li key={`${item.fieldName}-${item.canonicalCode}`}>
+                    {item.fieldName} → {item.canonicalCode}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+          {itemWarnings.length > 0 && (
+            <div style={{ marginTop: 12 }}>
+              <div style={{ fontWeight: 600, marginBottom: 6 }}>{itemWarningsLabel}</div>
+              <ul style={{ margin: 0, paddingLeft: 18 }}>
+                {itemWarnings.slice(0, 6).map((item) => (
+                  <li key={`warn-${item.fieldName}`}>
+                    {item.fieldName}: {item.warnings[0]}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </div>
+      ),
+      okText,
+      cancelText,
+      onOk: () => resolve(true),
+      onCancel: () => resolve(false),
+    });
+  });
+}
 
 export default function RuleEditPage() {
   const { ruleKey } = useParams<{ ruleKey: string }>();
@@ -39,7 +124,6 @@ export default function RuleEditPage() {
   const justSavedRef = useRef(false);
   const modalShownRef = useRef(false);
   const [existingRule, setExistingRule] = useState<Rule | null>(null);
-  const [references, setReferences] = useState<RuleReference[]>([]);
 
   // 单规则配置
   const [ruleConfig, setRuleConfig] = useState<SingleRuleConfig>(createDefaultSingleRule());
@@ -64,7 +148,6 @@ export default function RuleEditPage() {
         })
         .then((refs) => {
           if (refs && refs.length > 0) {
-            setReferences(refs);
             if (!modalShownRef.current) {
               modalShownRef.current = true;
               Modal.warning({
@@ -126,6 +209,25 @@ export default function RuleEditPage() {
   const handleSave = useCallback(async () => {
     try {
       const values = await form.validateFields();
+      const validationItems = collectFeatureValidationItems(ruleConfig.condition);
+      if (validationItems.length > 0) {
+        const validation = await validateFeatureDefinitions(validationItems);
+        if (validation.warnings.length > 0 || validation.unknownFields.length > 0 || !validation.valid) {
+          const shouldContinue = await confirmFeatureWarnings(
+            validation,
+            t('featureCatalog.validationWarningTitle'),
+            t('featureCatalog.unknownFieldsLabel'),
+            t('featureCatalog.warningsLabel'),
+            t('featureCatalog.aliasMappingsLabel'),
+            t('featureCatalog.itemWarningsLabel'),
+            t('featureCatalog.continueSave'),
+            t('featureCatalog.backEdit'),
+          );
+          if (!shouldContinue) {
+            return;
+          }
+        }
+      }
       setSaving(true);
 
       if (isNew) {
@@ -155,7 +257,7 @@ export default function RuleEditPage() {
     } finally {
       setSaving(false);
     }
-  }, [isNew, ruleKey, form, generatedScript, navigate]);
+  }, [form, generatedScript, isNew, navigate, ruleConfig.condition, ruleKey, t]);
 
   if (loading) {
     return (

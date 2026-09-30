@@ -15,6 +15,7 @@ import AnalyticsPage from './pages/AnalyticsPage';
 import EnvironmentPage from './pages/EnvironmentPage';
 import ImportExportPage from './pages/ImportExportPage';
 import NameListPage from './pages/NameListPage';
+import FeatureCatalogPage from './pages/FeatureCatalogPage';
 import UserManagementPage from './pages/system/UserManagementPage';
 import RoleManagementPage from './pages/system/RoleManagementPage';
 import AuditLogPage from './pages/system/AuditLogPage';
@@ -46,6 +47,7 @@ const router = createBrowserRouter([
       { path: '/import-export', element: <ImportExportPage /> },
       { path: '/analytics', element: <AnalyticsPage /> },
       { path: '/name-list', element: <PermissionGuard permission="menu:name-list"><NameListPage /></PermissionGuard> },
+      { path: '/feature-catalog', element: <PermissionGuard permission="menu:feature-catalog"><FeatureCatalogPage /></PermissionGuard> },
       { path: '/system/users', element: <PermissionGuard permission="menu:settings"><UserManagementPage /></PermissionGuard> },
       { path: '/system/roles', element: <PermissionGuard permission="menu:settings"><RoleManagementPage /></PermissionGuard> },
       { path: '/system/audit', element: <PermissionGuard permission="menu:settings"><AuditLogPage /></PermissionGuard> },

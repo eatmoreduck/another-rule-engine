@@ -7,8 +7,6 @@ import type {
   FormRuleConfig,
   ConditionActionRule,
   ConditionTreeNode,
-  ConditionNode,
-  LogicGroup,
   Operator,
   SingleRuleConfig,
 } from '../types/ruleConfig';
@@ -119,17 +117,15 @@ function conditionTreeToExpression(node: ConditionTreeNode): string {
     return buildConditionExpression(node.fieldName, node.operator, node.threshold);
   }
 
-  // group
-  const group = node as LogicGroup;
-  const joiner = group.logic === 'AND' ? ' && ' : ' || ';
-  const childExprs = group.children.map((child) => conditionTreeToExpression(child));
+  const joiner = node.logic === 'AND' ? ' && ' : ' || ';
+  const childExprs = node.children.map((child) => conditionTreeToExpression(child));
 
   if (childExprs.length === 0) return 'true';
   if (childExprs.length === 1) return childExprs[0];
 
   // 如果子节点中有 group 类型，需要加括号
   const wrapped = childExprs.map((expr, i) => {
-    const child = group.children[i];
+    const child = node.children[i];
     if (child.type === 'group') {
       return `(${expr})`;
     }
@@ -146,12 +142,7 @@ function isEmptyCondition(node: ConditionTreeNode): boolean {
   if (node.type === 'condition') {
     return !node.fieldName || node.fieldName.trim() === '';
   }
-  // group: 如果所有子节点都是空的
-  if (node.type === 'group') {
-    const group = node as LogicGroup;
-    return group.children.length === 0 || group.children.every((child) => isEmptyCondition(child));
-  }
-  return false;
+  return node.children.length === 0 || node.children.every((child) => isEmptyCondition(child));
 }
 
 // ============ 单规则生成 ============

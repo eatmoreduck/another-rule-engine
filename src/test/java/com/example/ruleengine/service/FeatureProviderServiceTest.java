@@ -1,7 +1,11 @@
 package com.example.ruleengine.service;
 
+import com.example.ruleengine.domain.FeatureAlias;
+import com.example.ruleengine.domain.FeatureDefinition;
 import com.example.ruleengine.model.FeatureRequest;
 import com.example.ruleengine.model.FeatureResponse;
+import com.example.ruleengine.repository.FeatureAliasRepository;
+import com.example.ruleengine.repository.FeatureDefinitionRepository;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import org.junit.jupiter.api.BeforeEach;
@@ -37,6 +41,12 @@ class FeatureProviderServiceTest {
     @Mock
     private RestTemplate restTemplate;
 
+    @Mock
+    private FeatureAliasRepository featureAliasRepository;
+
+    @Mock
+    private FeatureDefinitionRepository featureDefinitionRepository;
+
     private Cache<String, Object> featureCache;
     private FeatureProviderService featureProvider;
 
@@ -46,7 +56,12 @@ class FeatureProviderServiceTest {
             .maximumSize(100)
             .expireAfterWrite(30, TimeUnit.MINUTES)
             .build();
-        featureProvider = new FeatureProviderService(featureCache, restTemplate);
+        featureProvider = new FeatureProviderService(
+            featureCache,
+            restTemplate,
+            featureAliasRepository,
+            featureDefinitionRepository
+        );
     }
 
     // ==================== 三级策略测试 ====================
@@ -159,6 +174,31 @@ class FeatureProviderServiceTest {
                 // 缓存命中时不应该调用外部服务
                 verify(restTemplate, never()).postForObject(any(), any(), any());
         }
+
+        @Test
+        @DisplayName("别名请求命中 canonical 缓存时应返回 alias 和 canonical")
+        void shouldResolveAliasFromCanonicalCache() {
+            featureCache.put("order_amount", 199.5);
+            when(featureAliasRepository.findByAliasCodeIgnoreCase("amount"))
+                .thenReturn(Optional.of(FeatureAlias.builder()
+                    .aliasCode("amount")
+                    .canonicalCode("order_amount")
+                    .build()));
+            when(featureAliasRepository.findByCanonicalCodeOrderByAliasCodeAsc("order_amount"))
+                .thenReturn(List.of(FeatureAlias.builder()
+                    .aliasCode("amount")
+                    .canonicalCode("order_amount")
+                    .build()));
+
+            FeatureRequest request = new FeatureRequest(Collections.emptyMap(), List.of("amount"));
+            request.setTimeoutMs(1000);
+
+            FeatureResponse response = featureProvider.getFeatures(request);
+
+            assertEquals(199.5, response.getFeatures().get("amount"));
+            assertEquals(199.5, response.getFeatures().get("order_amount"));
+            verify(restTemplate, never()).postForObject(any(), any(), any());
+        }
     }
 
     // ==================== 超时降级测试 ====================
@@ -240,6 +280,33 @@ class FeatureProviderServiceTest {
             assertTrue(response.isFallbackToDefault());
             // 验证使用了默认值
             assertEquals(0, response.getFeatures().get("user_age")); // 默认值
+        }
+
+        @Test
+        @DisplayName("入参提供 canonical 时应自动补齐 alias")
+        void shouldMirrorAliasWhenInputContainsCanonical() {
+            when(featureDefinitionRepository.findByCodeIgnoreCase("order_amount"))
+                .thenReturn(Optional.of(FeatureDefinition.builder()
+                    .code("order_amount")
+                    .name("订单金额")
+                    .dataType("NUMBER")
+                    .sourceType("INPUT")
+                    .build()));
+            when(featureAliasRepository.findByCanonicalCodeOrderByAliasCodeAsc("order_amount"))
+                .thenReturn(List.of(FeatureAlias.builder()
+                    .aliasCode("amount")
+                    .canonicalCode("order_amount")
+                    .build()));
+
+            FeatureRequest request = new FeatureRequest(
+                Map.of("order_amount", 88.0),
+                List.of("amount")
+            );
+
+            FeatureResponse response = featureProvider.getFeatures(request);
+
+            assertEquals(88.0, response.getFeatures().get("order_amount"));
+            assertEquals(88.0, response.getFeatures().get("amount"));
         }
 
     }

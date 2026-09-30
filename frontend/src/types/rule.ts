@@ -19,6 +19,7 @@ export interface RuleSelectOption {
   ruleName: string;
   enabled: boolean;
   deleted: boolean;
+  version?: number;
   unavailable?: boolean;
 }
 

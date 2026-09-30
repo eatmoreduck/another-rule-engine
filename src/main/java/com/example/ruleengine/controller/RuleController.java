@@ -5,6 +5,7 @@ import cn.dev33.satoken.annotation.SaCheckPermission;
 import com.example.ruleengine.domain.DecisionFlow;
 import com.example.ruleengine.domain.Rule;
 import com.example.ruleengine.model.dto.CreateRuleRequest;
+import com.example.ruleengine.model.dto.FeatureValidationResponse;
 import com.example.ruleengine.model.dto.RuleQuery;
 import com.example.ruleengine.model.dto.RuleReference;
 import com.example.ruleengine.model.dto.UpdateRuleRequest;
@@ -13,6 +14,7 @@ import com.example.ruleengine.model.dto.ValidateScriptResponse;
 import com.example.ruleengine.model.flow.FlowGraph;
 import com.example.ruleengine.model.flow.FlowNodeDef;
 import com.example.ruleengine.repository.DecisionFlowRepository;
+import com.example.ruleengine.service.feature.FeatureCatalogService;
 import com.example.ruleengine.service.lifecycle.RuleLifecycleService;
 import com.example.ruleengine.validator.GroovyScriptValidator;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -43,6 +45,7 @@ public class RuleController {
     private final GroovyScriptValidator scriptValidator;
     private final DecisionFlowRepository decisionFlowRepository;
     private final ObjectMapper objectMapper;
+    private final FeatureCatalogService featureCatalogService;
 
     /**
      * 创建规则
@@ -54,6 +57,7 @@ public class RuleController {
             @Valid @RequestBody CreateRuleRequest request,
             @RequestHeader(value = "X-Operator", defaultValue = "system") String operator) {
         log.info("创建规则: ruleKey={}, operator={}", request.getRuleKey(), operator);
+        logFeatureValidationResult(request.getRuleKey(), featureCatalogService.validateGroovyScript(request.getGroovyScript()));
         Rule rule = ruleLifecycleService.createRule(request, operator);
         return ResponseEntity.ok(rule);
     }
@@ -69,6 +73,9 @@ public class RuleController {
             @Valid @RequestBody UpdateRuleRequest request,
             @RequestHeader(value = "X-Operator", defaultValue = "system") String operator) {
         log.info("更新规则: ruleKey={}, operator={}", ruleKey, operator);
+        if (request.getGroovyScript() != null) {
+            logFeatureValidationResult(ruleKey, featureCatalogService.validateGroovyScript(request.getGroovyScript()));
+        }
         Rule rule = ruleLifecycleService.updateRule(ruleKey, request, operator);
         return ResponseEntity.ok(rule);
     }
@@ -219,5 +226,15 @@ public class RuleController {
                     validation.getErrorMessage()
             ));
         }
+    }
+
+    private void logFeatureValidationResult(String ruleKey, FeatureValidationResponse validation) {
+        if (validation.getWarnings() == null || validation.getWarnings().isEmpty()) {
+            return;
+        }
+        log.warn("规则特征校验告警: ruleKey={}, unknownFields={}, warnings={}",
+                ruleKey,
+                validation.getUnknownFields(),
+                validation.getWarnings());
     }
 }
