@@ -9,6 +9,8 @@ groovy = "5.1.3"
 exposed = "1.5.0"
 spotless = "8.9.0"
 ktlint = "1.8.0"
+caffeine = "3.3.0"
+jackson = "3.2.3" # Jackson 3（tools.jackson 命名空间），与 Boot 4.1 BOM（jackson-bom 3.1.5）同大版本
 
 [libraries]
 # Kotlin 协程（决策链路并发取特征、异步日志）
@@ -24,6 +26,13 @@ exposed-core = { module = "org.jetbrains.exposed:exposed-core", version.ref = "e
 exposed-jdbc = { module = "org.jetbrains.exposed:exposed-jdbc", version.ref = "exposed" }
 exposed-spring = { module = "org.jetbrains.exposed:exposed-spring", version.ref = "exposed" }
 exposed-java-time = { module = "org.jetbrains.exposed:exposed-java-time", version.ref = "exposed" }
+
+# 本地缓存（脚本编译缓存）
+caffeine = { module = "com.github.ben-manes.caffeine:caffeine", version.ref = "caffeine" }
+
+# Jackson 3（注意：tools.jackson 命名空间，非 2.x 的 com.fasterxml）
+jackson-databind = { module = "tools.jackson.core:jackson-databind", version.ref = "jackson" }
+jackson-module-kotlin = { module = "tools.jackson.module:jackson-module-kotlin", version.ref = "jackson" }
 
 # Spring Boot（版本由 BOM 统一管理，此处不声明版本）
 spring-boot-dependencies = { module = "org.springframework.boot:spring-boot-dependencies", version.ref = "springBoot" }
@@ -41,6 +50,7 @@ spotless-gradlePlugin = { module = "com.diffplug.spotless:spotless-plugin-gradle
 [bundles]
 groovy = ["groovy", "groovy-json"]
 exposed = ["exposed-core", "exposed-jdbc", "exposed-java-time"]
+jackson = ["jackson-databind", "jackson-module-kotlin"]
 
 [plugins]
 kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }

@@ -5,4 +5,6 @@ plugins {
 
 dependencies {
     implementation(libs.bundles.groovy)
+    // 编译缓存（key = SHA-256(沙箱配置版本 + 脚本文本)，命中不重复编译）
+    implementation(libs.caffeine)
 }

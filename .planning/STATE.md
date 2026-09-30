@@ -1,21 +1,27 @@
 ---
 gsd_state_version: 1.0
-milestone: v1.1
-milestone_name: 风控运营闭环
-current_phase: Phase 9 execution
+milestone: kotlin-rewrite
+milestone_name: Kotlin 云原生重写
+current_phase: Phase 1 done
 status: executing
-last_updated: "2026-04-10T16:58:00+08:00"
+last_updated: "2026-09-30T16:10:00+08:00"
 progress:
   total_phases: 6
-  completed_phases: 0
+  completed_phases: 1
   total_plans: 16
   completed_plans: 1
 ---
 
+> **⚠️ 2026-09-30 路线转向**：项目推倒重写为 Kotlin + JDK 25 + Spring Boot 4 云原生多模块架构，
+> 旧 Java 单机版已冻结在 tag `legacy/single-machine-java17`。
+> **下方旧内容（v1.1 / Phase 9）描述的是旧 Java 代码路线，仅作历史参考，不再执行。**
+> 当前进度以 CLAUDE.md「实施路线」表为准：阶段 0（脚手架）✅、阶段 1（domain/dsl/engine 三模块 + 208 测试）✅，
+> 下一阶段：阶段 2（storage + admin-api，Exposed 建模 + 契约对齐旧 API）。
+
 # 项目状态: 低代码风控规则引擎
 
 **Started:** 2025-03-26
-**Current Phase:** Phase 9 execution
+**Current Phase:** Phase 9 execution（已冻结，见上方转向说明）
 **Overall Progress:** v1.1 planning started
 
 ## Project Reference
