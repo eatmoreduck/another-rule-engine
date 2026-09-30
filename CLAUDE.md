@@ -79,9 +79,16 @@ export JAVA_HOME=~/.sdkman/candidates/java/25.0.1-graalce
 | 2b | admin-api 核心：认证 + 规则 + 版本 + 灰度 + 特征目录（53 测试，契约对齐旧 API） | ✅ |
 | 2c | admin-api 外围：决策流管理、黑白名单、审计查询、环境管理 | ✅ |
 | 3 | decision-api：决策链路 + 协程并发取特征 + 灰度分流（p50≈1ms，SLA 余量 50 倍） | ✅ |
-| 4 | Kafka + log-consumer + 旧数据回填迁移（Kafka 切换点：ExecutionLogBuffer.flush 闭包） | |
-| 5 | Redis：会话/缓存失效广播/分布式锁 | |
-| 6 | K8s 部署 + 可观测 + 压测（50ms SLA） | |
+| 4 | 最小化：V26 旧数据回填 + JSON 日志（Logstash 采集）；log-consumer 延后、Kafka 仅留 ExecutionLogBuffer.flush 切换点 | ✅ |
+| 5 | Redis：Sa-Token 跨服务会话（断级降级+熔断）+ 缓存失效广播（AFTER_COMMIT 发布） | ✅ |
+| 6 | deploy/：三镜像 + K8s manifests + compose 全栈 + Prometheus/Grafana/Logstash + K6（端到端 warm p95=18.3ms） | ✅ |
+
+### 收尾尾巴（后续批次候选）
+- log-consumer + Kafka 日志流（切换点已预留）/ ES 日志检索
+- ImportExport、TestExecution、Cache/System/Analytics/Metrics 接口、审计写入侧（AOP 埋点）
+- DSL JSON 载荷的决策执行（当前 `{` 开头的表单 DSL 在决策侧 fail-safe REJECT，主流数据面是 Groovy 文本）
+- K8s 集群级验证（当前仅 client 端结构自检）、prometheus-adapter/KEDA 按决策 QPS 扩缩
+- 环境隔离的 schema 级方案（rule_key 全局唯一约束使环境克隆形同跳过）
 
 ### Boot 4 关键坑位记录（新部署物必读）
 - **webmvc starter 不含事务自动装配**：部署物必须显式依赖 `org.springframework.boot:spring-boot-transaction`，否则 `@Transactional` 静默失效（Exposed 报 "No transaction in context"）
