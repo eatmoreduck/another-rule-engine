@@ -1,0 +1,12 @@
+# =============================================================================
+# 命名空间：rule-engine
+# 部署顺序（apply 顺序即文件序号）：
+#   00-namespace -> 01-configmaps -> 02-secrets（先填真实凭据！）
+#   -> 10/11-deployments -> 20-services -> 30-ingress -> 40-hpa
+# =============================================================================
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: rule-engine
+  labels:
+    app.kubernetes.io/part-of: rule-engine

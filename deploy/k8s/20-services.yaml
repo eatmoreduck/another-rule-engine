@@ -1,0 +1,55 @@
+# =============================================================================
+# Service：集群内服务发现（ClusterIP）
+# =============================================================================
+apiVersion: v1
+kind: Service
+metadata:
+  name: decision-api
+  namespace: rule-engine
+  labels:
+    app.kubernetes.io/name: decision-api
+    app.kubernetes.io/part-of: rule-engine
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: decision-api
+  ports:
+    - name: http
+      port: 8081
+      targetPort: http
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: admin-api
+  namespace: rule-engine
+  labels:
+    app.kubernetes.io/name: admin-api
+    app.kubernetes.io/part-of: rule-engine
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: admin-api
+  ports:
+    - name: http
+      port: 8080
+      targetPort: http
+---
+# 前端静态站点（由 frontend 镜像内 nginx 提供同款分流，双入口互为冗余：
+# 经 Ingress 直达 frontend 或经 frontend Service 均可）
+apiVersion: v1
+kind: Service
+metadata:
+  name: frontend
+  namespace: rule-engine
+  labels:
+    app.kubernetes.io/name: frontend
+    app.kubernetes.io/part-of: rule-engine
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: frontend
+  ports:
+    - name: http
+      port: 80
+      targetPort: http

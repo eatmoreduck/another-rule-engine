@@ -1,0 +1,84 @@
+# =============================================================================
+# Deployment：decision-api（决策服务，无状态，HPA 扩缩主角）
+# 镜像需先构建并推送到集群可达的 registry（本仓库默认本地 tag，见 deploy/README.md）
+# =============================================================================
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: decision-api
+  namespace: rule-engine
+  labels:
+    app.kubernetes.io/name: decision-api
+    app.kubernetes.io/part-of: rule-engine
+spec:
+  # HPA min 副本数与之保持一致（2 副本起步，滚动更新期间不中断决策）
+  replicas: 2
+  revisionHistoryLimit: 3
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0 # 决策链路不可断流
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: decision-api
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: decision-api
+        app.kubernetes.io/part-of: rule-engine
+    spec:
+      securityContext:
+        runAsNonRoot: true # 镜像内 app 用户（uid 由 useradd -r 分配，<1000 系统段）
+      containers:
+        - name: decision-api
+          # ⚠️ 部署前替换为实际 registry 地址（如 registry.example.com/rule-engine/decision-api:v1）
+          image: rule-engine/decision-api:dev
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 8081
+          envFrom:
+            - configMapRef:
+                name: decision-api-config
+            - secretRef:
+                name: rule-engine-secrets
+          env:
+            # 决策服务测试/压测场景可整体关闭 Sa-Token 拦截（生产删除本条）
+            - name: SA_TOKEN_AUTH_ENABLED
+              value: "false"
+          resources:
+            requests:
+              cpu: 500m
+              memory: 512Mi
+            limits:
+              # JVM_OPTS MaxRAMPercentage=75 → 堆约 768Mi，余量给元空间/直接内存/GC
+              cpu: "1500m"
+              memory: 1Gi
+          livenessProbe:
+            httpGet:
+              path: /actuator/health/liveness
+              port: http
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            failureThreshold: 6
+          readinessProbe:
+            httpGet:
+              path: /actuator/health/readiness
+              port: http
+            initialDelaySeconds: 15
+            periodSeconds: 5
+            failureThreshold: 6
+          # 平滑下线：等 Tomcat 处理完存量请求
+          lifecycle:
+            preStop:
+              exec:
+                command: ["sh", "-c", "sleep 5"]
+          volumeMounts:
+            - name: logs
+              mountPath: /app/logs
+      volumes:
+        # JSON 滚动日志落 emptyDir，节点侧采集（DaemonSet filebeat/fluent-bit 或 Logstash）
+        - name: logs
+          emptyDir: {}
+      terminationGracePeriodSeconds: 30

@@ -1,0 +1,43 @@
+# =============================================================================
+# ConfigMap：两个服务的非敏感运行时配置（JVM 参数、指标、日志 profile）
+# 敏感项（DB/Redis 凭据）在 02-secrets.yaml，需先填真实值再 apply
+# =============================================================================
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: decision-api-config
+  namespace: rule-engine
+  labels:
+    app.kubernetes.io/name: decision-api
+    app.kubernetes.io/part-of: rule-engine
+data:
+  # JVM：压缩对象头 + ZGC + 容器内存 75% 堆上限（配合 Deployment 的 memory limit）
+  JVM_OPTS: "-XX:+UseCompactObjectHeaders -XX:+UseZGC -XX:MaxRAMPercentage=75"
+  # 结构化 JSON 日志（Logstash 采集 stdout）
+  SPRING_PROFILES_ACTIVE: "json"
+  SERVER_PORT: "8081"
+  TZ: "Asia/Shanghai"
+  # Micrometer：decision.duration 发布 p50/p95/p99 分位数 gauge
+  # （默认 summary 只有 count/sum/max；HPA 多副本下分位数不可跨副本聚合，
+  #  Dashboard 按单副本分位数展示，跨副本用 avg = sum_rate/rate 聚合）
+  MANAGEMENT_METRICS_DISTRIBUTION_PERCENTILES_DECISION_DURATION: "0.5,0.95,0.99"
+  # 健康探针分组（Boot 在 K8s 上会自动启用，此处显式声明便于本地 kubelet 外调试）
+  MANAGEMENT_ENDPOINT_HEALTH_PROBES_ENABLED: "true"
+  # 决策链路预算（与 application.yml 默认一致，按环境调优时在此覆盖）
+  RULEENGINE_DECISION_EXECUTION_TIMEOUT_MS: "200"
+  RULEENGINE_DECISION_FEATURE_TIMEOUT_MS: "20"
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: admin-api-config
+  namespace: rule-engine
+  labels:
+    app.kubernetes.io/name: admin-api
+    app.kubernetes.io/part-of: rule-engine
+data:
+  JVM_OPTS: "-XX:+UseCompactObjectHeaders -XX:+UseZGC -XX:MaxRAMPercentage=75"
+  SPRING_PROFILES_ACTIVE: "json"
+  SERVER_PORT: "8080"
+  TZ: "Asia/Shanghai"
+  MANAGEMENT_ENDPOINT_HEALTH_PROBES_ENABLED: "true"

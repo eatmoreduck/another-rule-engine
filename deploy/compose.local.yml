@@ -1,0 +1,207 @@
+# =============================================================================
+# 本地全栈编排（阶段 6）
+#
+# 用法（在仓库根目录执行）：
+#   docker compose -f deploy/compose.local.yml up -d --build     # 起全栈
+#   docker compose -f deploy/compose.local.yml --profile loadtest run --rm k6   # 压测
+#   docker compose -f deploy/compose.local.yml down -v           # 销毁
+#
+# 端口约定（避开本机已占用的 5432/8080/8081）：
+#   PostgreSQL 15432 / Redis 16379 / admin-api 18080 / decision-api 18081
+#   frontend 13000 / Grafana 13001 / Prometheus 13002 / Logstash 监控 15000
+#
+# 与旧根目录 docker-compose.yml 的关系：旧文件属 legacy 单体（Java 17 monolith），
+# 已弃用，勿再使用；本文件为 Kotlin 重写后的本地全栈。
+# =============================================================================
+name: rule-engine
+
+services:
+  # ─── PostgreSQL 16（规则元数据唯一事实源）────────────────
+  postgres:
+    image: postgres:16
+    container_name: re-local-postgres
+    environment:
+      POSTGRES_DB: yare_engine
+      POSTGRES_USER: yare
+      POSTGRES_PASSWORD: yare_secret # 仅本地 compose 凭据，生产用 K8s Secret
+      TZ: Asia/Shanghai
+    ports:
+      - "15432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U yare -d yare_engine"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+
+  # ─── Redis 7（阶段 5：会话共享 + 缓存失效广播）────────────
+  redis:
+    image: redis:7
+    container_name: re-local-redis
+    command: ["redis-server", "--appendonly", "yes"]
+    ports:
+      - "16379:6379"
+    volumes:
+      - redisdata:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+
+  # ─── admin-api（管理服务，容器内 8080）────────────────────
+  admin-api:
+    build:
+      context: ..
+      dockerfile: deploy/docker/admin-api.Dockerfile
+    image: rule-engine/admin-api:dev
+    container_name: re-local-admin-api
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      SPRING_PROFILES_ACTIVE: json # Logstash JSON 结构化日志
+      DB_URL: jdbc:postgresql://postgres:5432/yare_engine
+      DB_USERNAME: yare
+      DB_PASSWORD: yare_secret
+      # Redis（阶段 5：会话共享 + 失效事件发布；同 decision-api 说明）
+      REDIS_URL: redis://redis:6379
+      JVM_OPTS: "-XX:+UseCompactObjectHeaders -XX:+UseZGC -XX:MaxRAMPercentage=75"
+      TZ: Asia/Shanghai
+    ports:
+      - "18080:8080"
+    volumes:
+      - app-logs:/app/logs
+    restart: unless-stopped
+
+  # ─── decision-api（决策服务，容器内 8081，50ms SLA）────────
+  decision-api:
+    build:
+      context: ..
+      dockerfile: deploy/docker/decision-api.Dockerfile
+    image: rule-engine/decision-api:dev
+    container_name: re-local-decision-api
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      SPRING_PROFILES_ACTIVE: json
+      DB_URL: jdbc:postgresql://postgres:5432/yare_engine?stringtype=unspecified
+      DB_USERNAME: yare
+      DB_PASSWORD: yare_secret
+      # Redis（阶段 5：会话共享 + 缓存失效广播；REDIS_URL 覆盖 spring.data.redis.url）
+      REDIS_URL: redis://redis:6379
+      # 压测/本地联调关闭决策侧认证（生产必须开启，经网关注入 token）
+      SA_TOKEN_AUTH_ENABLED: "false"
+      JVM_OPTS: "-XX:+UseCompactObjectHeaders -XX:+UseZGC -XX:MaxRAMPercentage=75"
+      # Micrometer 分位数：decision.duration p50/p95/p99（压测 SLA 数据源）
+      MANAGEMENT_METRICS_DISTRIBUTION_PERCENTILES_DECISION_DURATION: "0.5,0.95,0.99"
+      MANAGEMENT_METRICS_DISTRIBUTION_PERCENTILES_HTTP_SERVER_REQUESTS: "0.95,0.99"
+      TZ: Asia/Shanghai
+    ports:
+      - "18081:8081"
+    volumes:
+      - app-logs:/app/logs
+    restart: unless-stopped
+
+  # ─── frontend（nginx 静态站点 + API 分流，容器内 80）──────
+  frontend:
+    build:
+      context: ..
+      dockerfile: deploy/docker/frontend.Dockerfile
+    image: rule-engine/frontend:dev
+    container_name: re-local-frontend
+    depends_on:
+      admin-api:
+        condition: service_started
+      decision-api:
+        condition: service_started
+    ports:
+      - "13000:80"
+    restart: unless-stopped
+
+  # ─── Prometheus（指标抓取，容器内 9090）───────────────────
+  prometheus:
+    image: prom/prometheus:v3.13.4
+    container_name: re-local-prometheus
+    depends_on:
+      admin-api:
+        condition: service_started
+      decision-api:
+        condition: service_started
+    volumes:
+      - ./observability/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus-data:/prometheus
+    ports:
+      - "13002:9090"
+    restart: unless-stopped
+
+  # ─── Grafana（仪表盘，容器内 3000）────────────────────────
+  grafana:
+    image: grafana/grafana:13.0
+    container_name: re-local-grafana
+    depends_on:
+      prometheus:
+        condition: service_started
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: admin # 仅本地
+      GF_USERS_ALLOW_SIGN_UP: "false"
+    volumes:
+      - ./observability/grafana/provisioning:/etc/grafana/provisioning:ro
+      # 仪表盘 JSON：provider（provisioning/dashboards/dashboards.yml）从这里装载
+      - ./observability/grafana/dashboards:/var/lib/grafana/dashboards:ro
+      - grafana-data:/var/lib/grafana
+    ports:
+      - "13001:3000"
+    restart: unless-stopped
+
+  # ─── Logstash（采集挂载卷里的 JSON 日志到 stdout；ES 为占位）──
+  logstash:
+    image: logstash:8.19.22
+    container_name: re-local-logstash
+    depends_on:
+      admin-api:
+        condition: service_started
+      decision-api:
+        condition: service_started
+    environment:
+      LS_JAVA_OPTS: "-Xms256m -Xmx256m"
+      # 监控 API（宿主机 15000 可查 node stats）；pipeline 本身无输入端口
+      XPACK_MONITORING_ENABLED: "false"
+    volumes:
+      - ./observability/logstash/pipeline:/usr/share/logstash/pipeline:ro
+      - app-logs:/logs:ro
+    ports:
+      - "15000:9600"
+    restart: unless-stopped
+
+  # ─── K6 压测（按需：--profile loadtest）──────────────────
+  k6:
+    image: grafana/k6:latest
+    container_name: re-local-k6
+    profiles: ["loadtest"] # 默认 up 不启动，压测时显式启用
+    depends_on:
+      decision-api:
+        condition: service_started
+    environment:
+      BASE_URL: http://decision-api:8081 # 容器网络内直达决策服务
+      RULE_KEY: ${RULE_KEY:-}
+      TOKEN: ${TOKEN:-}
+      COLD_VUS: ${COLD_VUS:-5}
+      WARM_VUS: ${WARM_VUS:-20}
+      DURATION: ${DURATION:-2m}
+    volumes:
+      - ./k6:/scripts:ro
+    # 入口命令见 deploy/README.md 压测章节
+
+volumes:
+  pgdata:
+  redisdata:
+  prometheus-data:
+  grafana-data:
+  # 两个服务共享的 JSON 日志卷：服务写 /app/logs，Logstash 读 /logs
+  app-logs:

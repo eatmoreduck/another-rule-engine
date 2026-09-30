@@ -1,0 +1,14 @@
+# Grafana 数据源自动配置：Prometheus（compose 内服务名直连）
+apiVersion: 1
+
+datasources:
+  - name: Prometheus
+    uid: rule-engine-prom
+    type: prometheus
+    access: proxy
+    url: http://prometheus:9090
+    isDefault: true
+    editable: false
+    jsonData:
+      timeInterval: 15s # 对齐 Prometheus scrape_interval
+      httpMethod: POST

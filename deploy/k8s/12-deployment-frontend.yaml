@@ -1,0 +1,56 @@
+# =============================================================================
+# Deployment：frontend（React 静态站点，镜像内 nginx 托管 + 同款 API 分流）
+# =============================================================================
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: frontend
+  namespace: rule-engine
+  labels:
+    app.kubernetes.io/name: frontend
+    app.kubernetes.io/part-of: rule-engine
+spec:
+  replicas: 1
+  revisionHistoryLimit: 3
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: frontend
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: frontend
+        app.kubernetes.io/part-of: rule-engine
+    spec:
+      # 注意：nginx:stable 镜像 master 进程默认以 root 启动（绑定 80 端口，worker 为 nginx 用户），
+      # 故此处不设 runAsNonRoot；若集群 Pod Security 强制 non-root，
+      # 改用 nginxinc/nginx-unprivileged 基础镜像（监听 8080）并同步调整 Service targetPort
+      containers:
+        - name: frontend
+          # ⚠️ 部署前替换为实际 registry 地址
+          # 注意：基础镜像 nginx:stable 默认 80 端口需 root 绑定（<1024）。
+          # 若集群强制 runAsNonRoot，请改用 nginxinc/nginx-unprivileged 基础镜像
+          # （监听 8080）并同步调整 Service targetPort，见 deploy/README.md 遗留风险。
+          image: rule-engine/frontend:dev
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 80
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              cpu: 200m
+              memory: 128Mi
+          readinessProbe:
+            httpGet:
+              path: /
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 20

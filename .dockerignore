@@ -15,3 +15,20 @@ pub_docs
 docs
 test-results
 *.class
+
+# ── 阶段 6：deploy/ 下的 Dockerfile 以仓库根为构建上下文，以下为上下文瘦身追加项 ──
+# 递归排除所有 Gradle 构建产物（镜像内重新构建，避免把本地产物带进 context）
+**/build
+**/.gradle
+**/.kotlin
+**/test-results
+**/performance-report-*.txt
+# 旧单体遗留与本地工具目录（不参与镜像构建）
+bin
+scripts
+src
+.serena
+.claude
+.playwright-mcp
+.playwright*
+.k8s-verify
