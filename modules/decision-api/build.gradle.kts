@@ -19,6 +19,18 @@ dependencies {
     // 认证：Sa-Token（官方 Boot 4 starter，与 admin-api 同一套 sys_* 权限数据）
     implementation(libs.sa.token.spring.boot4.starter)
 
+    // 阶段 5：Redis 集成——
+    // - spring-boot-starter-data-redis：Lettuce 连接 + StringRedisTemplate（缓存失效广播订阅）
+    // - sa-token-redis-jackson（聚合依赖，实际生效的是其携带的 sa-token-redis-template）：
+    //   官方 SaTokenDaoForRedisTemplate 自动装配，会话落 Redis 实现跨服务共享。
+    //   ⚠️ 排除 sa-token-jackson（Jackson 2 SPI 插件）：Boot 4 的 Jackson 3 插件
+    //   （sa-token-jackson3，Boot4 starter 自带）与其共存时插件装载顺序不确定，
+    //   Jackson 2 插件先装会因 tools.jackson 类路径缺 Jackson 2 命名空间而崩溃（探针结论）
+    implementation(libs.spring.boot.starter.data.redis)
+    implementation(libs.sa.token.redis.jackson) {
+        exclude(group = "cn.dev33", module = "sa-token-jackson")
+    }
+
     // Web 层 JSON：Jackson 3（tools.jackson 命名空间）+ Kotlin 模块（data class 绑定）
     implementation(libs.bundles.jackson)
 

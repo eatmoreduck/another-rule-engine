@@ -276,4 +276,59 @@ class GrayscaleRouter(
         val key: String,
         val version: Int,
     )
+
+    // ---------- 缓存失效入口（阶段 5：Redis pub/sub 订阅侧调用，替代 TTL 兜底的最长 30s 延迟） ----------
+
+    /**
+     * 失效规则相关缓存：主行 + 版本载荷两层。
+     * [ruleKey] 为 null 时整层失效（全量兜底口径）；否则按键精确失效。
+     */
+    fun invalidateRule(ruleKey: String?) {
+        if (ruleKey == null) {
+            ruleMainCache.invalidateAll()
+            ruleVersionCache.invalidateAll()
+        } else {
+            ruleMainCache.invalidate(ruleKey)
+            ruleVersionCache.asMap().keys.removeIf { it.key == ruleKey }
+        }
+    }
+
+    /** 失效决策流相关缓存：主行 + 流图载荷两层（口径同 [invalidateRule]） */
+    fun invalidateFlow(flowKey: String?) {
+        if (flowKey == null) {
+            flowMainCache.invalidateAll()
+            flowGraphCache.invalidateAll()
+        } else {
+            flowMainCache.invalidate(flowKey)
+            flowGraphCache.asMap().keys.removeIf { it.key == flowKey }
+        }
+    }
+
+    /**
+     * 失效运行中灰度配置缓存（含 Optional 负缓存条目，防止"已停止灰度"的旧值滞留）。
+     * [targetKey] 为 null 时整层失效；灰度键在规则与决策流两类目标间共享 key 空间，按 key 匹配即可。
+     */
+    fun invalidateGrayscale(targetKey: String?) {
+        if (targetKey == null) {
+            grayscaleCache.invalidateAll()
+        } else {
+            grayscaleCache.asMap().keys.removeIf { it.key == targetKey }
+        }
+    }
+
+    /** 各层缓存条目数快照（可观测性 + 失效链路测试断言；先 cleanUp 强制结算挂起写入，读数确定） */
+    fun cacheEntryCounts(): Map<String, Long> {
+        ruleMainCache.cleanUp()
+        ruleVersionCache.cleanUp()
+        grayscaleCache.cleanUp()
+        flowMainCache.cleanUp()
+        flowGraphCache.cleanUp()
+        return mapOf(
+            "ruleMain" to ruleMainCache.estimatedSize(),
+            "ruleVersion" to ruleVersionCache.estimatedSize(),
+            "grayscale" to grayscaleCache.estimatedSize(),
+            "flowMain" to flowMainCache.estimatedSize(),
+            "flowGraph" to flowGraphCache.estimatedSize(),
+        )
+    }
 }

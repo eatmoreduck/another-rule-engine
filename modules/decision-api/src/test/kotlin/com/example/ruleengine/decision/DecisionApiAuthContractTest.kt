@@ -23,8 +23,8 @@ import org.testcontainers.junit.jupiter.Testcontainers
  * 决策端点认证契约（auth-enabled=true 完整拦截链）：未登录访问受保护端点 →
  * 401 旧契约三字段结构（{code:401, message:"未登录或登录已过期", error:"Unauthorized"}）。
  *
- * 登录会话建立在 admin-api（部署物 2）；决策侧现阶段持独立内存会话，跨服务 token 共享
- * 由阶段 5 的 Redis 会话解决——故本类只覆盖未登录/拦截面，正向 token 流由
+ * 登录会话建立在 admin-api（部署物 2）；阶段 5 起会话经 Redis 共享（admin 颁发的 token
+ * 在决策侧有效，Redis 不可用时回退各自内存），本类只覆盖未登录/拦截面，正向 token 流由
  * [DecisionApiContractTest]（auth-enabled=false）承担业务链路。
  */
 @Testcontainers(disabledWithoutDocker = true)

@@ -5,6 +5,15 @@ spring:
   application:
     name: admin-api
 
+  # 阶段 5：Redis（跨服务 Sa-Token 会话 + 缓存失效事件发布）。
+  # 优雅降级：Redis 不可用时服务照常启动运行——会话回退本机内存（token 不跨服务但功能正常），
+  # 失效事件发布失败只记日志；断线重连由 Lettuce 自理（REDIS_URL env 可覆盖，默认本地开发实例）
+  data:
+    redis:
+      url: ${REDIS_URL:redis://localhost:6379}
+      connect-timeout: 2s
+      timeout: 2s
+
 # 持久化：PostgreSQL + Hikari（默认值对齐旧 monolith 的本地开发配置）
 ruleengine:
   storage:
@@ -17,6 +26,9 @@ ruleengine:
     flyway-locations: classpath:db/migration
 
 # Sa-Token 配置（与旧后端逐项一致：token 从 Authorization 头裸读，无 Bearer 前缀）
+# 阶段 5 起会话经 Redis 共享：本服务登录颁发的 token 在 decision-api 同样有效；
+# Redis 不可用时自动回退本机内存会话（token 仅本实例有效，功能不受影响）
+# 注意：两服务的 Redis 地址必须指向同一实例/库，且 sa-token 会话参数保持逐项一致
 # sa-token.auth-enabled=false 可整体关闭登录拦截（测试环境用）
 sa-token:
   token-name: Authorization
@@ -35,6 +47,11 @@ management:
       exposure:
         include: health,info,metrics,prometheus
       base-path: /actuator
+  health:
+    redis:
+      # Redis 在本架构中是可选增强（会话共享 + 即时失效，均有降级路径）：
+      # 不纳入健康探针，避免 Redis 抖动放大为 admin 服务整体不可用
+      enabled: false
   metrics:
     tags:
       application: ${spring.application.name}

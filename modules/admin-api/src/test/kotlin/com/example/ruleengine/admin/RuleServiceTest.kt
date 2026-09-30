@@ -8,6 +8,8 @@ import com.example.ruleengine.admin.rules.RuleService
 import com.example.ruleengine.domain.RuleStatus
 import com.example.ruleengine.domain.VersionStatus
 import com.example.ruleengine.engine.GroovyScriptEngine
+import com.example.ruleengine.shared.cache.CacheInvalidationEvent
+import com.example.ruleengine.shared.cache.CacheInvalidationType
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNotNull
@@ -26,6 +28,7 @@ import java.time.Instant
 class RuleServiceTest {
     private lateinit var ruleRepository: FakeRuleRepository
     private lateinit var versionRepository: FakeRuleVersionRepository
+    private lateinit var eventPublisher: RecordingEventPublisher
     private lateinit var service: RuleService
 
     private val script =
@@ -39,6 +42,7 @@ class RuleServiceTest {
         ruleRepository = FakeRuleRepository()
         versionRepository = FakeRuleVersionRepository()
         val payloadValidator = RulePayloadValidator(GroovyScriptEngine())
+        eventPublisher = RecordingEventPublisher()
         service =
             RuleService(
                 ruleRepository = ruleRepository,
@@ -46,6 +50,7 @@ class RuleServiceTest {
                 payloadValidator = payloadValidator,
                 assembler = RuleAssembler(),
                 decisionFlowSupportRepository = FakeDecisionFlowSupportRepository(),
+                eventPublisher = eventPublisher,
             )
     }
 
@@ -67,6 +72,12 @@ class RuleServiceTest {
 
         val version = versionRepository.findByRuleKeyAndVersion("rule_create", 1)!!
         assertEquals(VersionStatus.ACTIVE, version.status)
+
+        // 阶段 5：成功变更分支发布决策侧缓存失效事件
+        val invalidation = eventPublisher.published<CacheInvalidationEvent>().single()
+        assertEquals(CacheInvalidationType.RULE, invalidation.type)
+        assertEquals("rule_create", invalidation.key)
+        assertEquals("admin-api", invalidation.source)
     }
 
     @Test

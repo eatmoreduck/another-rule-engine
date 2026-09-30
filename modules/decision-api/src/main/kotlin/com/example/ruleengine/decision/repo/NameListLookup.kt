@@ -42,6 +42,13 @@ interface NameListLookup {
         keyType: String,
         keyValue: String,
     ): Boolean
+
+    /**
+     * 整层失效查询缓存（阶段 5 失效广播入口；名单变更面向 listKey 粒度，
+     * 但缓存键为 (listKey, listType, keyType, keyValue) 四元组，无法按 listKey 精确圈定，
+     * 统一整体失效）。默认空实现：单测桩实现无需感知失效链路。
+     */
+    fun invalidateAll() {}
 }
 
 /**
@@ -68,6 +75,11 @@ class ExposedNameListLookup(
         keyType: String,
         keyValue: String,
     ): Boolean = cache.get(NameListKey(listKey, listType, keyType, keyValue)) { key -> lookup(key) } ?: false
+
+    /** 名单变更广播到达时整层失效（含负缓存条目，防止"已删除名单仍命中"的旧值滞留） */
+    override fun invalidateAll() {
+        cache.invalidateAll()
+    }
 
     /** 真实查询（事务上下文内）；名单键空白等价旧实现的空查询（恒不命中） */
     private fun lookup(key: NameListKey): Boolean =

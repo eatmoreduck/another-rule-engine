@@ -1,5 +1,6 @@
 package com.example.ruleengine.admin.flows
 
+import com.example.ruleengine.admin.cache.publishInvalidation
 import com.example.ruleengine.admin.dto.CreateDecisionFlowRequest
 import com.example.ruleengine.admin.dto.CreateFlowVersionRequest
 import com.example.ruleengine.admin.dto.DecisionFlowQuery
@@ -8,10 +9,12 @@ import com.example.ruleengine.admin.dto.DecisionFlowVersionResponse
 import com.example.ruleengine.admin.dto.FlowRollbackRequest
 import com.example.ruleengine.admin.dto.PageResponse
 import com.example.ruleengine.admin.dto.UpdateDecisionFlowRequest
+import com.example.ruleengine.shared.cache.CacheInvalidationType
 import com.example.ruleengine.storage.repository.DecisionFlowMain
 import com.example.ruleengine.storage.repository.DecisionFlowRepository
 import com.example.ruleengine.storage.repository.DecisionFlowVersion
 import org.slf4j.LoggerFactory
+import org.springframework.context.ApplicationEventPublisher
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.time.Instant
@@ -37,6 +40,7 @@ import java.time.ZoneId
 class DecisionFlowService(
     private val flowRepository: DecisionFlowRepository,
     private val graphValidator: FlowGraphPayloadValidator,
+    private val eventPublisher: ApplicationEventPublisher,
 ) {
     // ---------- 生命周期 ----------
 
@@ -88,6 +92,7 @@ class DecisionFlowService(
             ),
         )
         log.info("创建决策流: flowKey={}, operator={}", request.flowKey, operator)
+        eventPublisher.publishInvalidation(CacheInvalidationType.FLOW, request.flowKey)
         return toResponse(saved)
     }
 
@@ -136,6 +141,8 @@ class DecisionFlowService(
         } else {
             log.info("更新决策流元数据: flowKey={}, operator={}", flowKey, operator)
         }
+        // 图变更（版本指针推进）与元数据变更统一广播：决策侧流主行/流图缓存整键失效
+        eventPublisher.publishInvalidation(CacheInvalidationType.FLOW, flowKey)
         return toResponse(flowRepository.findMain(flowKey) ?: main)
     }
 
@@ -151,6 +158,7 @@ class DecisionFlowService(
         flowRepository.updateMainStatus(flowKey, FLOW_STATUS_DELETED, operator)
         flowRepository.setMainEnabled(flowKey, false, operator)
         log.info("删除决策流: flowKey={}, operator={}", flowKey, main.flowKey)
+        eventPublisher.publishInvalidation(CacheInvalidationType.FLOW, flowKey)
     }
 
     /** 启用决策流（status=ACTIVE + enabled=true，照旧） */
@@ -162,6 +170,7 @@ class DecisionFlowService(
         flowRepository.findMain(flowKey) ?: throw IllegalArgumentException("决策流不存在: $flowKey")
         flowRepository.updateMainStatus(flowKey, FLOW_STATUS_ACTIVE, operator)
         flowRepository.setMainEnabled(flowKey, true, operator)
+        eventPublisher.publishInvalidation(CacheInvalidationType.FLOW, flowKey)
         return toResponse(flowRepository.findMain(flowKey)!!)
     }
 
@@ -173,6 +182,7 @@ class DecisionFlowService(
     ): DecisionFlowResponse {
         flowRepository.findMain(flowKey) ?: throw IllegalArgumentException("决策流不存在: $flowKey")
         flowRepository.setMainEnabled(flowKey, false, operator)
+        eventPublisher.publishInvalidation(CacheInvalidationType.FLOW, flowKey)
         return toResponse(flowRepository.findMain(flowKey)!!)
     }
 
@@ -283,6 +293,8 @@ class DecisionFlowService(
         // 推进主表内容版本号，生效指针与流程图保持不动（DRAFT 不生效）
         flowRepository.updateMainPointer(flowKey, newVersion, main.activeVersion, main.flowGraph, operator)
         log.info("创建决策流草稿版本: flowKey={}, version={}, operator={}", flowKey, newVersion, operator)
+        // DRAFT 不影响决策缓存，仍随流键广播（与其他变更路径保持一致口径）
+        eventPublisher.publishInvalidation(CacheInvalidationType.FLOW, flowKey)
         return toVersionResponse(draft)
     }
 
@@ -311,6 +323,8 @@ class DecisionFlowService(
         flowRepository.updateVersionStatus(flowKey, version, VERSION_STATUS_ACTIVE)
         flowRepository.updateMainPointer(flowKey, version, version, target.flowGraph, operator)
         log.info("发布决策流版本: flowKey={}, version={}, operator={}", flowKey, version, operator)
+        // 生效指针推进：决策侧流图载荷缓存需立即失效
+        eventPublisher.publishInvalidation(CacheInvalidationType.FLOW, flowKey)
         return toVersionResponse(flowRepository.findVersion(flowKey, version) ?: target)
     }
 
@@ -362,6 +376,8 @@ class DecisionFlowService(
             newVersion,
             operator,
         )
+        // 回滚即生效：决策侧流图载荷缓存需立即失效
+        eventPublisher.publishInvalidation(CacheInvalidationType.FLOW, flowKey)
         return toVersionResponse(rollbackVersion)
     }
 

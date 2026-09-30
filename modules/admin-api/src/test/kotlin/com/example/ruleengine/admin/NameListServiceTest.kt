@@ -2,6 +2,8 @@ package com.example.ruleengine.admin
 
 import com.example.ruleengine.admin.dto.CreateNameListEntryRequest
 import com.example.ruleengine.admin.namelist.NameListService
+import com.example.ruleengine.shared.cache.CacheInvalidationEvent
+import com.example.ruleengine.shared.cache.CacheInvalidationType
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -19,12 +21,14 @@ import java.time.Instant
 @DisplayName("黑白名单服务")
 class NameListServiceTest {
     private lateinit var repository: FakeNameListRepository
+    private lateinit var eventPublisher: RecordingEventPublisher
     private lateinit var service: NameListService
 
     @BeforeEach
     fun setUp() {
         repository = FakeNameListRepository()
-        service = NameListService(repository)
+        eventPublisher = RecordingEventPublisher()
+        service = NameListService(repository, eventPublisher)
     }
 
     private fun request(
@@ -138,5 +142,10 @@ class NameListServiceTest {
         assertNull(service.getEntry(created.id))
         // 删除不存在条目静默成功（JPA deleteById 行为）
         service.deleteEntry(999L)
+
+        // 阶段 5：新增与删除各广播一则名单失效事件（删除不存在条目不广播）
+        val invalidations = eventPublisher.published<CacheInvalidationEvent>()
+        assertEquals(2, invalidations.size)
+        assertTrue(invalidations.all { it.type == CacheInvalidationType.NAME_LIST && it.key == "GLOBAL" })
     }
 }

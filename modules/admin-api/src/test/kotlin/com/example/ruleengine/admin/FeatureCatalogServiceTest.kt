@@ -29,13 +29,16 @@ class FeatureCatalogServiceTest {
     private lateinit var flowSupport: FakeDecisionFlowSupportRepository
     private lateinit var service: FeatureCatalogService
 
+    /** 缓存失效广播观测桩（构造服务必须项，当前用例不做事件断言） */
+    private val eventPublisher = RecordingEventPublisher()
+
     @BeforeEach
     fun setUp() {
         featureRepository = FakeFeatureCatalogRepository()
         ruleRepository = FakeRuleRepository()
         versionRepository = FakeRuleVersionRepository()
         flowSupport = FakeDecisionFlowSupportRepository()
-        service = FeatureCatalogService(featureRepository, ruleRepository, versionRepository, flowSupport)
+        service = FeatureCatalogService(featureRepository, ruleRepository, versionRepository, flowSupport, eventPublisher)
     }
 
     private fun createRequest(
@@ -183,7 +186,14 @@ class FeatureCatalogServiceTest {
     fun `引用扫描覆盖规则脚本与决策流条件节点并按类型排序`() {
         service.createDefinition(createRequest())
         val ruleService =
-            RuleService(ruleRepository, versionRepository, RulePayloadValidator(GroovyScriptEngine()), RuleAssembler(), flowSupport)
+            RuleService(
+                ruleRepository,
+                versionRepository,
+                RulePayloadValidator(GroovyScriptEngine()),
+                RuleAssembler(),
+                flowSupport,
+                RecordingEventPublisher(),
+            )
         ruleService.createRule(
             com.example.ruleengine.admin.dto.CreateRuleRequest(
                 ruleKey = "amount_rule",

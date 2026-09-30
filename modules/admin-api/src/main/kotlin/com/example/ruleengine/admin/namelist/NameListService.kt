@@ -1,10 +1,13 @@
 package com.example.ruleengine.admin.namelist
 
+import com.example.ruleengine.admin.cache.publishInvalidation
 import com.example.ruleengine.admin.dto.CreateNameListEntryRequest
 import com.example.ruleengine.admin.dto.NameListEntryResponse
 import com.example.ruleengine.admin.dto.NameListImportResult
 import com.example.ruleengine.admin.dto.PageResponse
+import com.example.ruleengine.shared.cache.CacheInvalidationType
 import org.slf4j.LoggerFactory
+import org.springframework.context.ApplicationEventPublisher
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.time.Instant
@@ -28,6 +31,7 @@ import java.time.format.DateTimeParseException
 @Service
 class NameListService(
     private val repository: NameListRepository,
+    private val eventPublisher: ApplicationEventPublisher,
 ) {
     /** 单条创建（解析语义照旧：listKey 默认 GLOBAL、expiredAt ISO 解析） */
     @Transactional
@@ -61,6 +65,8 @@ class NameListService(
                 ),
             )
         log.info("添加名单条目: listKey={}, {} {} {}", saved.listKey, saved.listType, saved.keyType, saved.keyValue)
+        // 名单增删影响决策侧存在性缓存（含负缓存），广播失效（批量导入逐条复用本发布点）
+        eventPublisher.publishInvalidation(CacheInvalidationType.NAME_LIST, saved.listKey)
         return toResponse(saved)
     }
 
@@ -114,8 +120,11 @@ class NameListService(
     /** 删除条目（物理删除，照旧；目标不存在时静默成功，与 JPA deleteById 行为一致） */
     @Transactional
     fun deleteEntry(id: Long) {
+        // 先取业务键再删除：失效广播需要 listKey（缓存键为四元组，决策侧统一整层失效）
+        val listKey = repository.findById(id)?.listKey
         repository.deleteById(id)
         log.info("删除名单条目: id={}", id)
+        listKey?.let { eventPublisher.publishInvalidation(CacheInvalidationType.NAME_LIST, it) }
     }
 
     // ---------- 私有辅助 ----------

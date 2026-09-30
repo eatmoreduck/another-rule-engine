@@ -1,5 +1,6 @@
 package com.example.ruleengine.admin.feature
 
+import com.example.ruleengine.admin.cache.publishInvalidation
 import com.example.ruleengine.admin.dto.FeatureDefinitionRequest
 import com.example.ruleengine.admin.dto.FeatureDefinitionResponse
 import com.example.ruleengine.admin.dto.FeatureValidationRequest
@@ -10,6 +11,7 @@ import com.example.ruleengine.admin.grayscale.DecisionFlowSupportRepository
 import com.example.ruleengine.dsl.ConditionNodeData
 import com.example.ruleengine.dsl.DslParser
 import com.example.ruleengine.dsl.ParseResult
+import com.example.ruleengine.shared.cache.CacheInvalidationType
 import com.example.ruleengine.storage.feature.FeatureAlias
 import com.example.ruleengine.storage.feature.FeatureDefinition
 import com.example.ruleengine.storage.repository.FeatureCatalogRepository
@@ -18,6 +20,7 @@ import com.example.ruleengine.storage.repository.RuleRepository
 import com.example.ruleengine.storage.repository.RuleSearchQuery
 import com.example.ruleengine.storage.repository.RuleVersionRepository
 import org.slf4j.LoggerFactory
+import org.springframework.context.ApplicationEventPublisher
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.time.Instant
@@ -40,6 +43,7 @@ class FeatureCatalogService(
     private val ruleRepository: RuleRepository,
     private val versionRepository: RuleVersionRepository,
     private val decisionFlowSupportRepository: DecisionFlowSupportRepository,
+    private val eventPublisher: ApplicationEventPublisher,
 ) {
     @Transactional(readOnly = true)
     fun searchDefinitions(
@@ -106,6 +110,8 @@ class FeatureCatalogService(
                 ),
             )
         replaceAliases(saved.code, request.aliases, now)
+        // 特征目录/别名变更影响决策侧特征解析缓存（别名 → 规范编码 → 值镜像），广播失效
+        eventPublisher.publishInvalidation(CacheInvalidationType.FEATURE, saved.code)
         return toResponse(saved, listAliases(saved.code))
     }
 
@@ -138,6 +144,7 @@ class FeatureCatalogService(
                 ),
             )
         replaceAliases(saved.code, request.aliases, updatedAt)
+        eventPublisher.publishInvalidation(CacheInvalidationType.FEATURE, saved.code)
         return toResponse(saved, listAliases(saved.code))
     }
 

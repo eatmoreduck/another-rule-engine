@@ -1,5 +1,6 @@
 package com.example.ruleengine.admin.rules
 
+import com.example.ruleengine.admin.cache.publishInvalidation
 import com.example.ruleengine.admin.dto.CreateRuleRequest
 import com.example.ruleengine.admin.dto.PageResponse
 import com.example.ruleengine.admin.dto.RuleQuery
@@ -16,10 +17,12 @@ import com.example.ruleengine.dsl.DslParser
 import com.example.ruleengine.dsl.FlowGraph
 import com.example.ruleengine.dsl.ParseResult
 import com.example.ruleengine.dsl.RuleSetNodeData
+import com.example.ruleengine.shared.cache.CacheInvalidationType
 import com.example.ruleengine.storage.repository.RuleRepository
 import com.example.ruleengine.storage.repository.RuleSearchQuery
 import com.example.ruleengine.storage.repository.RuleVersionRepository
 import org.slf4j.LoggerFactory
+import org.springframework.context.ApplicationEventPublisher
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.time.Instant
@@ -43,6 +46,7 @@ class RuleService(
     private val payloadValidator: RulePayloadValidator,
     private val assembler: RuleAssembler,
     private val decisionFlowSupportRepository: DecisionFlowSupportRepository,
+    private val eventPublisher: ApplicationEventPublisher,
 ) {
     /**
      * 创建规则。
@@ -85,6 +89,7 @@ class RuleService(
             ),
         )
         log.info("创建规则: ruleKey={}, operator={}", request.ruleKey, operator)
+        eventPublisher.publishInvalidation(CacheInvalidationType.RULE, request.ruleKey)
         return assembler.toRuleResponse(saved, request.groovyScript)
     }
 
@@ -111,6 +116,7 @@ class RuleService(
             val renamed = applyMetadata(rule, request, operator)
             ruleRepository.save(renamed)
             log.info("更新规则元数据: ruleKey={}, operator={}", ruleKey, operator)
+            eventPublisher.publishInvalidation(CacheInvalidationType.RULE, ruleKey)
             return assembler.toRuleResponse(renamed, currentPayload)
         }
 
@@ -134,6 +140,7 @@ class RuleService(
         val bumped = rule.bumpCurrentVersion(operator, now)
         val saved = ruleRepository.save(applyMetadata(bumped, request, operator))
         log.info("更新规则并创建新版本: ruleKey={}, newVersion={}, operator={}", ruleKey, newVersionNumber, operator)
+        eventPublisher.publishInvalidation(CacheInvalidationType.RULE, ruleKey)
         return assembler.toRuleResponse(saved, request.groovyScript)
     }
 
@@ -153,6 +160,7 @@ class RuleService(
         }
         ruleRepository.save(rule.softDelete(operator, Instant.now()))
         log.info("删除规则: ruleKey={}, operator={}", ruleKey, operator)
+        eventPublisher.publishInvalidation(CacheInvalidationType.RULE, ruleKey)
     }
 
     /** 启用规则（幂等：已启用直接返回） */
@@ -175,6 +183,7 @@ class RuleService(
             }
         val saved = ruleRepository.save(enabled)
         log.info("启用规则: ruleKey={}, operator={}", ruleKey, operator)
+        eventPublisher.publishInvalidation(CacheInvalidationType.RULE, ruleKey)
         return assembler.toRuleResponse(saved, currentPayload(ruleKey))
     }
 
@@ -198,6 +207,7 @@ class RuleService(
             }
         val saved = ruleRepository.save(disabled)
         log.info("禁用规则: ruleKey={}, operator={}", ruleKey, operator)
+        eventPublisher.publishInvalidation(CacheInvalidationType.RULE, ruleKey)
         return assembler.toRuleResponse(saved, currentPayload(ruleKey))
     }
 

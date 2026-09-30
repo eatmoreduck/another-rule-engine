@@ -1,14 +1,17 @@
 package com.example.ruleengine.admin.rules
 
+import com.example.ruleengine.admin.cache.publishInvalidation
 import com.example.ruleengine.admin.dto.CreateVersionRequest
 import com.example.ruleengine.admin.dto.RollbackRequest
 import com.example.ruleengine.admin.dto.VersionDiffResponse
 import com.example.ruleengine.admin.dto.VersionResponse
 import com.example.ruleengine.domain.RuleVersion
 import com.example.ruleengine.domain.VersionStatus
+import com.example.ruleengine.shared.cache.CacheInvalidationType
 import com.example.ruleengine.storage.repository.RuleRepository
 import com.example.ruleengine.storage.repository.RuleVersionRepository
 import org.slf4j.LoggerFactory
+import org.springframework.context.ApplicationEventPublisher
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.time.Instant
@@ -30,6 +33,7 @@ class VersionService(
     private val versionRepository: RuleVersionRepository,
     private val payloadValidator: RulePayloadValidator,
     private val assembler: RuleAssembler,
+    private val eventPublisher: ApplicationEventPublisher,
 ) {
     /** 版本列表（版本号降序；与旧实现一致，不校验规则存在性，未知规则返回空列表） */
     @Transactional(readOnly = true)
@@ -151,6 +155,9 @@ class VersionService(
             newVersionNumber,
             operator,
         )
+        // 回滚即发布生效：主表生效版本指针已推进，决策侧需立即失效旧载荷缓存
+        // （createVersion 落 DRAFT 不影响决策缓存，不发布）
+        eventPublisher.publishInvalidation(CacheInvalidationType.RULE, ruleKey)
         return assembler.toVersionResponse(published)
     }
 

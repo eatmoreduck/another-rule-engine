@@ -35,8 +35,15 @@ class VersionServiceTest {
         versionRepository = FakeRuleVersionRepository()
         val payloadValidator = RulePayloadValidator(GroovyScriptEngine())
         ruleService =
-            RuleService(ruleRepository, versionRepository, payloadValidator, RuleAssembler(), FakeDecisionFlowSupportRepository())
-        versionService = VersionService(ruleRepository, versionRepository, payloadValidator, RuleAssembler())
+            RuleService(
+                ruleRepository,
+                versionRepository,
+                payloadValidator,
+                RuleAssembler(),
+                FakeDecisionFlowSupportRepository(),
+                RecordingEventPublisher(),
+            )
+        versionService = VersionService(ruleRepository, versionRepository, payloadValidator, RuleAssembler(), RecordingEventPublisher())
 
         ruleService.createRule(
             com.example.ruleengine.admin.dto.CreateRuleRequest(

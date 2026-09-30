@@ -5,6 +5,16 @@ spring:
   application:
     name: decision-api
 
+  # 阶段 5：Redis（跨服务 Sa-Token 会话 + 缓存失效广播订阅）。
+  # 优雅降级：Redis 不可用时服务照常启动运行——会话回退本机内存（token 不跨服务但功能正常），
+  # 缓存回退 TTL 兜底（最长 30s 延迟）；断线重连由 Lettuce 自理，超时收紧为 2s 防止
+  # 网络分区拖垮决策热路径（REDIS_URL env 可覆盖，默认本地开发实例）
+  data:
+    redis:
+      url: ${REDIS_URL:redis://localhost:6379}
+      connect-timeout: 2s
+      timeout: 2s
+
 # 持久化：PostgreSQL + Hikari（默认值对齐 admin-api 的本地开发配置）
 # 注意 URL 携带 stringtype=unspecified：执行日志的 JSONB 列以文本写入，由 PG 服务端隐式转换
 # （见 storage 的 ExecutionLogTables 注释；Testcontainers 契约测试侧同样拼接该参数）
@@ -50,8 +60,9 @@ ruleengine:
     async-cleanup-interval-seconds: 60
 
 # Sa-Token 配置（与 admin-api 逐项一致：token 从 Authorization 头裸读，无 Bearer 前缀）
-# 注意：拆分部署后两服务的 token 会话存储各自独立（阶段 5 引入 Redis 会话后跨服务共享），
-# 当前形态下客户端需直接向决策服务建立会话，或经网关注入
+# 阶段 5 起会话经 Redis 共享：admin-api 登录颁发的 token 在决策侧同样有效；
+# Redis 不可用时自动回退本机内存会话（token 仅本实例有效，功能不受影响）
+# 注意：两服务的 Redis 地址必须指向同一实例/库，且 sa-token 会话参数保持逐项一致
 sa-token:
   token-name: Authorization
   timeout: 86400
@@ -73,6 +84,11 @@ management:
     health:
       probes:
         enabled: true # K8s liveness / readiness 探针
+  health:
+    redis:
+      # Redis 在本架构中是可选增强（会话共享 + 即时失效，均有降级路径）：
+      # 不纳入健康探针，避免 Redis 抖动经 readiness 放大为决策服务整体摘流
+      enabled: false
   metrics:
     tags:
       application: ${spring.application.name}

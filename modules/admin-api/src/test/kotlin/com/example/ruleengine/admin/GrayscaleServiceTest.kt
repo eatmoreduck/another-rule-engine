@@ -12,6 +12,8 @@ import com.example.ruleengine.domain.GrayscalePolicy
 import com.example.ruleengine.domain.GrayscaleStatus
 import com.example.ruleengine.domain.VersionStatus
 import com.example.ruleengine.engine.GroovyScriptEngine
+import com.example.ruleengine.shared.cache.CacheInvalidationEvent
+import com.example.ruleengine.shared.cache.CacheInvalidationType
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertNull
@@ -34,6 +36,7 @@ class GrayscaleServiceTest {
     private lateinit var flowSupport: FakeDecisionFlowSupportRepository
     private lateinit var metricsRepository: FakeGrayscaleMetricsRepository
     private lateinit var grayscaleService: GrayscaleService
+    private lateinit var eventPublisher: RecordingEventPublisher
     private lateinit var versionCreateService: com.example.ruleengine.admin.rules.VersionService
 
     private val ruleKey = "gray_rule"
@@ -46,12 +49,22 @@ class GrayscaleServiceTest {
         flowSupport = FakeDecisionFlowSupportRepository()
         metricsRepository = FakeGrayscaleMetricsRepository()
         val payloadValidator = RulePayloadValidator(GroovyScriptEngine())
-        val ruleService = RuleService(ruleRepository, versionRepository, payloadValidator, RuleAssembler(), flowSupport)
+        val ruleService =
+            RuleService(ruleRepository, versionRepository, payloadValidator, RuleAssembler(), flowSupport, RecordingEventPublisher())
         versionCreateService =
             com.example.ruleengine.admin.rules
-                .VersionService(ruleRepository, versionRepository, payloadValidator, RuleAssembler())
+                .VersionService(ruleRepository, versionRepository, payloadValidator, RuleAssembler(), RecordingEventPublisher())
+        eventPublisher = RecordingEventPublisher()
         grayscaleService =
-            GrayscaleService(releaseRepository, ruleRepository, versionRepository, flowSupport, metricsRepository, GrayscaleAssembler())
+            GrayscaleService(
+                releaseRepository,
+                ruleRepository,
+                versionRepository,
+                flowSupport,
+                metricsRepository,
+                GrayscaleAssembler(),
+                eventPublisher,
+            )
 
         // 准备：v1 ACTIVE（创建即生效）+ v2 DRAFT（灰度候选）
         ruleService.createRule(CreateRuleRequest(ruleKey = ruleKey, ruleName = "灰度规则", groovyScript = "return 'PASS'"), "tester")
@@ -164,6 +177,11 @@ class GrayscaleServiceTest {
             VersionStatus.CANARY,
             versionRepository.findByRuleKeyAndVersion(ruleKey, 2)!!.status,
         )
+
+        // 阶段 5：灰度状态变更广播决策侧失效（创建 + 启动各一则 GRAYSCALE 事件）
+        val invalidations = eventPublisher.published<CacheInvalidationEvent>()
+        assertEquals(2, invalidations.size)
+        assertTrue(invalidations.all { it.type == CacheInvalidationType.GRAYSCALE && it.key == ruleKey })
 
         // 幂等保护：再次启动被守卫拒绝
         val error =

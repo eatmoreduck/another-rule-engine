@@ -48,7 +48,7 @@ class DecisionFlowServiceTest {
     @BeforeEach
     fun setUp() {
         repository = FakeDecisionFlowRepository()
-        service = DecisionFlowService(repository, FlowGraphPayloadValidator())
+        service = DecisionFlowService(repository, FlowGraphPayloadValidator(), RecordingEventPublisher())
     }
 
     private fun createFlow(

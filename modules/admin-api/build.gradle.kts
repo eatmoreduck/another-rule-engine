@@ -20,6 +20,18 @@ dependencies {
     implementation(libs.sa.token.spring.boot4.starter)
     implementation("org.springframework.security:spring-security-crypto")
 
+    // 阶段 5：Redis 集成——
+    // - spring-boot-starter-data-redis：Lettuce 连接 + StringRedisTemplate（缓存失效事件发布）
+    // - sa-token-redis-jackson（聚合依赖，实际生效的是其携带的 sa-token-redis-template）：
+    //   官方 SaTokenDaoForRedisTemplate 自动装配，会话落 Redis 实现跨服务共享。
+    //   ⚠️ 排除 sa-token-jackson（Jackson 2 SPI 插件）：Boot 4 的 Jackson 3 插件
+    //   （sa-token-jackson3，Boot4 starter 自带）与其共存时插件装载顺序不确定，
+    //   Jackson 2 插件先装会因 tools.jackson 类路径缺 Jackson 2 命名空间而崩溃（探针结论）
+    implementation(libs.spring.boot.starter.data.redis)
+    implementation(libs.sa.token.redis.jackson) {
+        exclude(group = "cn.dev33", module = "sa-token-jackson")
+    }
+
     // 登录失败锁定缓存（旧 AuthService 的 Caffeine 语义）
     implementation(libs.caffeine)
 

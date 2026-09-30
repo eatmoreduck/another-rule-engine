@@ -22,6 +22,7 @@ import com.example.ruleengine.storage.repository.GrayscaleReleaseRepository
 import com.example.ruleengine.storage.repository.RuleRepository
 import com.example.ruleengine.storage.repository.RuleSearchQuery
 import com.example.ruleengine.storage.repository.RuleVersionRepository
+import org.springframework.context.ApplicationEventPublisher
 import java.time.Instant
 import java.util.concurrent.atomic.AtomicLong
 
@@ -272,4 +273,19 @@ class FakeGrayscaleMetricsRepository : GrayscaleMetricsRepository {
 
     override fun findByConfigId(configId: Long): List<GrayscaleMetricRow> =
         metrics.entries.filter { it.key.first == configId }.map { it.value }
+}
+
+/**
+ * 收集发布事件的 [ApplicationEventPublisher] 桩：缓存失效广播（阶段 5）链路的单测观测点。
+ * 单测无需 Redis——Spring 事件在服务内同步发布，转发 Redis 属于上下文层的 Forwarder 职责。
+ */
+class RecordingEventPublisher : ApplicationEventPublisher {
+    val events = mutableListOf<Any>()
+
+    @Suppress("UNCHECKED_CAST")
+    fun <T> published(): List<T> = events.toList() as List<T>
+
+    override fun publishEvent(event: Any) {
+        events.add(event)
+    }
 }

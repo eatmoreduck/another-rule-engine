@@ -182,6 +182,29 @@ class FeatureResolutionService(
             }
         } ?: emptyList()
 
+    /**
+     * 整层失效全部特征缓存（阶段 5 失效广播入口）：特征目录定义与别名关系存在链式映射
+     * （别名 → 规范编码 → 值镜像），无法按键精确圈定，统一整体失效；
+     * 未收到广播时仍由各层 TTL 兜底。
+     */
+    fun invalidateAll() {
+        canonicalCodeCache.invalidateAll()
+        aliasListCache.invalidateAll()
+        featureValueCache.invalidateAll()
+    }
+
+    /** 各层缓存条目数快照（可观测性 + 失效链路测试断言；先 cleanUp 强制结算挂起写入，读数确定） */
+    fun cacheEntryCounts(): Map<String, Long> {
+        canonicalCodeCache.cleanUp()
+        aliasListCache.cleanUp()
+        featureValueCache.cleanUp()
+        return mapOf(
+            "canonicalCode" to canonicalCodeCache.estimatedSize(),
+            "aliasList" to aliasListCache.estimatedSize(),
+            "featureValue" to featureValueCache.estimatedSize(),
+        )
+    }
+
     /** 外部特征平台批量获取：IO 协程执行，[timeoutMsMs] 内未完成或异常 → 空 Map（超时降级） */
     private suspend fun fetchExternal(
         codes: List<String>,

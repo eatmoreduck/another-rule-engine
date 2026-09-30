@@ -1,5 +1,6 @@
 package com.example.ruleengine.admin.grayscale
 
+import com.example.ruleengine.admin.cache.publishInvalidation
 import com.example.ruleengine.admin.dto.CreateGrayscaleRequest
 import com.example.ruleengine.admin.dto.GrayscaleConfigResponse
 import com.example.ruleengine.admin.dto.GrayscaleReportResponse
@@ -12,10 +13,12 @@ import com.example.ruleengine.domain.GrayscaleTarget
 import com.example.ruleengine.domain.GrayscaleTargetType
 import com.example.ruleengine.domain.IllegalTransitionException
 import com.example.ruleengine.domain.VersionStatus
+import com.example.ruleengine.shared.cache.CacheInvalidationType
 import com.example.ruleengine.storage.repository.GrayscaleReleaseRepository
 import com.example.ruleengine.storage.repository.RuleRepository
 import com.example.ruleengine.storage.repository.RuleVersionRepository
 import org.slf4j.LoggerFactory
+import org.springframework.context.ApplicationEventPublisher
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import tools.jackson.core.JacksonException
@@ -45,6 +48,7 @@ class GrayscaleService(
     private val decisionFlowSupportRepository: DecisionFlowSupportRepository,
     private val metricsRepository: GrayscaleMetricsRepository,
     private val assembler: GrayscaleAssembler,
+    private val eventPublisher: ApplicationEventPublisher,
 ) {
     /**
      * 创建灰度配置（DRAFT），并初始化当前/灰度两个版本的零值指标。
@@ -118,6 +122,7 @@ class GrayscaleService(
         metricsRepository.initMetrics(saved.id!!, currentVersion, grayscaleVersion)
 
         log.info("灰度配置创建成功: id={}, targetType={}, targetKey={}", saved.id, targetType, targetKey)
+        eventPublisher.publishInvalidation(CacheInvalidationType.GRAYSCALE, targetKey)
         return assembler.toResponse(saved)
     }
 
@@ -136,6 +141,7 @@ class GrayscaleService(
         val saved = releaseRepository.save(config.start(Instant.now()))
         markGrayscaleVersionCanary(saved)
         log.info("灰度已启动: configId={}, targetKey={}", configId, saved.target.key)
+        eventPublisher.publishInvalidation(CacheInvalidationType.GRAYSCALE, saved.target.key)
         return assembler.toResponse(saved)
     }
 
@@ -153,6 +159,7 @@ class GrayscaleService(
         }
         val saved = releaseRepository.save(config.pause())
         log.info("灰度已暂停: configId={}", configId)
+        eventPublisher.publishInvalidation(CacheInvalidationType.GRAYSCALE, saved.target.key)
         return assembler.toResponse(saved)
     }
 
@@ -193,6 +200,12 @@ class GrayscaleService(
             configId,
             saved.target.type.name,
         )
+        // 全量切换推进了目标主指针（规则生效版本 / 决策流生效版本），除灰度缓存外还需失效对应载荷缓存
+        eventPublisher.publishInvalidation(CacheInvalidationType.GRAYSCALE, saved.target.key)
+        when (saved.target.type) {
+            GrayscaleTargetType.RULE -> eventPublisher.publishInvalidation(CacheInvalidationType.RULE, saved.target.key)
+            GrayscaleTargetType.DECISION_FLOW -> eventPublisher.publishInvalidation(CacheInvalidationType.FLOW, saved.target.key)
+        }
         return assembler.toResponse(saved)
     }
 
@@ -215,6 +228,8 @@ class GrayscaleService(
                 throw IllegalArgumentException(e.message, e)
             }
         log.info("灰度已回滚: configId={}", configId)
+        // 回滚后运行中配置消失：决策侧灰度缓存（含负缓存）必须失效，防止"已停止的灰度仍分流"
+        eventPublisher.publishInvalidation(CacheInvalidationType.GRAYSCALE, saved.target.key)
         return assembler.toResponse(saved)
     }
 
