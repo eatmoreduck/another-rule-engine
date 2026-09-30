@@ -12,6 +12,10 @@ ktlint = "1.8.0"
 caffeine = "3.3.0"
 jackson = "3.2.3" # Jackson 3（tools.jackson 命名空间），与 Boot 4.1 BOM（jackson-bom 3.1.5）同大版本
 h2 = "2.5.252"
+postgresql = "42.7.13"
+flyway = "13.8.1"
+testcontainers = "2.0.5"
+sa-token = "1.46.0"
 
 [libraries]
 # Kotlin 协程（决策链路并发取特征、异步日志）
@@ -32,6 +36,18 @@ spring-transaction = { module = "org.jetbrains.exposed:spring-transaction", vers
 
 # 测试数据库
 h2 = { module = "com.h2database:h2", version.ref = "h2" }
+
+# 认证（Sa-Token，官方 Boot 4 starter）
+sa-token-spring-boot4-starter = { module = "cn.dev33:sa-token-spring-boot4-starter", version.ref = "sa-token" }
+
+# 数据库与迁移（阶段 2）
+postgresql = { module = "org.postgresql:postgresql", version.ref = "postgresql" }
+flyway-core = { module = "org.flywaydb:flyway-core", version.ref = "flyway" }
+flyway-database-postgresql = { module = "org.flywaydb:flyway-database-postgresql", version.ref = "flyway" }
+testcontainers = { module = "org.testcontainers:testcontainers", version.ref = "testcontainers" }
+# ⚠️ 2.x 改名：旧名 org.testcontainers:postgresql / :junit-jupiter 在 2.0.5 下已无 artifact
+testcontainers-postgresql = { module = "org.testcontainers:testcontainers-postgresql", version.ref = "testcontainers" }
+testcontainers-junit-jupiter = { module = "org.testcontainers:testcontainers-junit-jupiter", version.ref = "testcontainers" }
 
 # 本地缓存（脚本编译缓存）
 caffeine = { module = "com.github.ben-manes.caffeine:caffeine", version.ref = "caffeine" }
