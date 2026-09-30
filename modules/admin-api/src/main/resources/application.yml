@@ -1,16 +1,50 @@
+# 管理服务（admin-api）运行时配置
+# 数据源经 ruleengine.storage.* 注入 storage 模块的 StorageProperties（见该类 JavaDoc），
+# Flyway 迁移基线 = 旧后端 V1..V25（随 storage 模块打包在 classpath:db/migration）
 spring:
   application:
     name: admin-api
 
-server:
-  port: 8081
+# 持久化：PostgreSQL + Hikari（默认值对齐旧 monolith 的本地开发配置）
+ruleengine:
+  storage:
+    url: ${DB_URL:jdbc:postgresql://192.168.5.202:5432/yare_engine}
+    username: ${DB_USERNAME:leon}
+    password: ${DB_PASSWORD:ServBay.dev}
+    maximum-pool-size: 20
+    minimum-idle: 5
+    connection-timeout-ms: 30000
+    flyway-locations: classpath:db/migration
 
+# Sa-Token 配置（与旧后端逐项一致：token 从 Authorization 头裸读，无 Bearer 前缀）
+# sa-token.auth-enabled=false 可整体关闭登录拦截（测试环境用）
+sa-token:
+  token-name: Authorization
+  timeout: 86400
+  active-timeout: -1
+  is-concurrent: true
+  is-share: true
+  token-style: uuid
+  is-log: false
+  auth-enabled: true
+
+# Actuator（与旧后端一致的暴露面）
 management:
   endpoints:
     web:
       exposure:
-        include: health, info, metrics, prometheus
-  endpoint:
-    health:
-      probes:
-        enabled: true # K8s liveness / readiness 探针
+        include: health,info,metrics,prometheus
+      base-path: /actuator
+  metrics:
+    tags:
+      application: ${spring.application.name}
+
+server:
+  # 前端 dev 代理（frontend/vite.config.ts）指向 8080，保持一致
+  port: ${ADMIN_API_PORT:8080}
+
+logging:
+  level:
+    root: INFO
+    com.example.ruleengine: DEBUG
+    org.springframework.web: INFO

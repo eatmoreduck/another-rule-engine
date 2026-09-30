@@ -74,12 +74,21 @@ export JAVA_HOME=~/.sdkman/candidates/java/25.0.1-graalce
 | 阶段 | 内容 | 状态 |
 |------|------|------|
 | 0 | 脚手架：多模块 + JDK 25 + 约定插件 + 版本矩阵核实 | ✅ |
-| 1 | domain + engine：沙箱脚本引擎 Kotlin 化 | 进行中 |
-| 2 | storage + admin-api：Exposed 建模 + 规则/版本/灰度 CRUD（契约对齐旧 API） | |
-| 3 | decision-api：决策链路 + 协程并发取特征 | |
-| 4 | Kafka + log-consumer | |
+| 1 | domain + dsl + engine：领域模型 / DSL 树 / 沙箱脚本引擎（208 测试） | ✅ |
+| 2a | storage：Exposed 表映射 + 仓储 + Flyway 基线（44 测试） | ✅ |
+| 2b | admin-api 核心：认证 + 规则 + 版本 + 灰度 + 特征目录（53 测试，契约对齐旧 API） | ✅ |
+| 2c | admin-api 外围：决策流、黑白名单、导入导出、审计、分析等 | |
+| 3 | decision-api：决策链路 + 协程并发取特征 + 灰度分流 | |
+| 4 | Kafka + log-consumer + 旧数据回填迁移 | |
 | 5 | Redis：会话/缓存失效广播/分布式锁 | |
 | 6 | K8s 部署 + 可观测 + 压测（50ms SLA） | |
+
+### Boot 4 关键坑位记录（新部署物必读）
+- **webmvc starter 不含事务自动装配**：部署物必须显式依赖 `org.springframework.boot:spring-boot-transaction`，否则 `@Transactional` 静默失效（Exposed 报 "No transaction in context"）
+- **Exposed 1.x 用 v1 包名**（`org.jetbrains.exposed.v1.*`）；`spring-transaction 1.5.0` 与 Spring 7 实测兼容；**禁用** `exposed-spring-boot-starter`（绑 Boot 3.5.8）
+- **Sa-Token** 用 `sa-token-spring-boot4-starter:1.46.0`（官方 Boot 4 支持）；上下文由 Servlet Filter 建立，MockMvc 测试需显式 `addFilters`
+- **Jackson 3**：`tools.jackson` 命名空间（非 2.x com.fasterxml），ObjectMapper 不可变、builder 构造
+- **Testcontainers 2.x** 改名：`testcontainers-postgresql` / `testcontainers-junit-jupiter`（旧名 2.0.5 下无 artifact）
 
 ## 开发注意事项
 

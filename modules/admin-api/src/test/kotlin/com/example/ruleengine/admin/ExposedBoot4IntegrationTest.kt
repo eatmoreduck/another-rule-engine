@@ -11,10 +11,13 @@ import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 import org.jetbrains.exposed.v1.spring.transaction.SpringTransactionManager
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
-import org.springframework.boot.test.context.SpringBootTest
-import org.springframework.boot.test.context.TestConfiguration
+import org.junit.jupiter.api.extension.ExtendWith
 import org.springframework.context.annotation.Bean
+import org.springframework.context.annotation.Configuration
+import org.springframework.test.context.ContextConfiguration
+import org.springframework.test.context.junit.jupiter.SpringExtension
 import org.springframework.transaction.PlatformTransactionManager
+import org.springframework.transaction.annotation.EnableTransactionManagement
 import org.springframework.transaction.annotation.Transactional
 import javax.sql.DataSource
 
@@ -24,10 +27,16 @@ import javax.sql.DataSource
  * 背景：spring-transaction 1.5.0 声明依赖 Spring 6.2.19，Gradle 已仲裁到 Boot 4 的 Spring 7，
  * 本测试验证 SpringTransactionManager 在 Spring 7 字节码环境下真实可用。
  * 结论落地后此测试转为正式集成方案的回归用例。
+ *
+ * 说明：探针只关心事务桥接本身，故用纯 SpringExtension + @ContextConfiguration 装配
+ * 自持的 H2 数据源与事务管理器，不启动 Boot 应用上下文（那需要真实 PostgreSQL；
+ * 全链路集成由 AdminApiContractTest 承担）。
  */
-@SpringBootTest
+@ExtendWith(SpringExtension::class)
+@ContextConfiguration(classes = [ExposedBoot4IntegrationTest.ExposedSpikeConfig::class])
 class ExposedBoot4IntegrationTest {
-    @TestConfiguration
+    @Configuration
+    @EnableTransactionManagement(proxyTargetClass = true)
     class ExposedSpikeConfig {
         @Bean
         fun spikeDataSource(): DataSource =
