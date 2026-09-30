@@ -1,16 +1,88 @@
+# 决策服务（decision-api）运行时配置
+# 数据源经 ruleengine.storage.* 注入 storage 模块的 StorageProperties（见该类 JavaDoc），
+# Flyway 迁移基线 = 旧后端 V1..V25（随 storage 模块打包在 classpath:db/migration）
 spring:
   application:
     name: decision-api
 
-server:
-  port: 8080
+# 持久化：PostgreSQL + Hikari（默认值对齐 admin-api 的本地开发配置）
+# 注意 URL 携带 stringtype=unspecified：执行日志的 JSONB 列以文本写入，由 PG 服务端隐式转换
+# （见 storage 的 ExecutionLogTables 注释；Testcontainers 契约测试侧同样拼接该参数）
+ruleengine:
+  storage:
+    url: ${DB_URL:jdbc:postgresql://192.168.5.202:5432/yare_engine?stringtype=unspecified}
+    username: ${DB_USERNAME:leon}
+    password: ${DB_PASSWORD:ServBay.dev}
+    maximum-pool-size: 20
+    minimum-idle: 5
+    connection-timeout-ms: 30000
+    flyway-locations: classpath:db/migration
 
+  # 决策链路参数（全部配置化；默认面向本地开发，压测前按环境调优）
+  decision:
+    # 规则脚本执行/整体决策预算兜底上限（请求 timeoutMs 可更小，两者取小）
+    execution-timeout-ms: 200
+    # 特征获取超时（对齐旧 FeatureRequest 默认 20ms）
+    feature-timeout-ms: 20
+    # 外部特征平台（默认禁用：缺失特征走缓存与默认值降级）
+    feature-external-url: ${FEATURE_EXTERNAL_URL:}
+    feature-cache-maximum-size: 5000
+    feature-cache-expire-after-write-seconds: 10
+    feature-code-cache-maximum-size: 2000
+    feature-code-cache-expire-after-write-seconds: 300
+    # 规则/流图快照缓存（(key,version) 与主行两层；短 TTL 兜底发布时效，阶段 5 接 Redis pub/sub 即时失效）
+    snapshot-cache-maximum-size: 1000
+    main-cache-maximum-size: 500
+    snapshot-expire-after-write-seconds: 30
+    # 灰度配置缓存（分流策略变更需最快生效）
+    grayscale-expire-after-write-seconds: 10
+    # 黑白名单查询缓存
+    name-list-cache-maximum-size: 10000
+    name-list-expire-after-write-seconds: 5
+    # 决策流防环步数上限
+    flow-max-steps: 1000
+    # 执行日志异步缓冲批量刷盘
+    log-buffer-capacity: 10000
+    log-batch-size: 100
+    log-flush-interval-ms: 500
+    # 异步决策结果（旧 AsyncResultStore 语义）
+    async-result-expire-seconds: 300
+    async-cleanup-interval-seconds: 60
+
+# Sa-Token 配置（与 admin-api 逐项一致：token 从 Authorization 头裸读，无 Bearer 前缀）
+# 注意：拆分部署后两服务的 token 会话存储各自独立（阶段 5 引入 Redis 会话后跨服务共享），
+# 当前形态下客户端需直接向决策服务建立会话，或经网关注入
+sa-token:
+  token-name: Authorization
+  timeout: 86400
+  active-timeout: -1
+  is-concurrent: true
+  is-share: true
+  token-style: uuid
+  is-log: false
+  auth-enabled: ${SA_TOKEN_AUTH_ENABLED:true}
+
+# Actuator（Prometheus 指标暴露，decision.duration 是阶段 6 压测的数据来源）
 management:
   endpoints:
     web:
       exposure:
-        include: health, info, metrics, prometheus
+        include: health,info,metrics,prometheus
+      base-path: /actuator
   endpoint:
     health:
       probes:
         enabled: true # K8s liveness / readiness 探针
+  metrics:
+    tags:
+      application: ${spring.application.name}
+
+server:
+  # 决策服务默认 8081，避免与 admin-api(8080) 本地端口冲突；生产经 env/K8s 覆盖
+  port: ${DECISION_API_PORT:8081}
+
+logging:
+  level:
+    root: INFO
+    com.example.ruleengine: INFO
+    org.springframework.web: INFO

@@ -1,0 +1,238 @@
+package com.example.ruleengine.decision
+
+import com.example.ruleengine.decision.config.DecisionProperties
+import com.example.ruleengine.decision.core.FlowExecutor
+import com.example.ruleengine.decision.repo.NameListLookup
+import com.example.ruleengine.dsl.DslParser
+import com.example.ruleengine.engine.GroovyScriptEngine
+import java.time.Duration
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertTrue
+
+/**
+ * 决策流图解释执行单测：节点语义与旧 DecisionFlowExecutionService 对齐
+ * （condition 双口径分支、blacklist/whitelist、ruleset 拒绝优先、防环）。
+ */
+class FlowExecutorTest {
+    private class StubNameList(
+        private val entries: Set<String> = emptySet(),
+    ) : NameListLookup {
+        override fun existsActive(
+            listKey: String,
+            listType: String,
+            keyType: String,
+            keyValue: String,
+        ): Boolean = "$listKey|$listType|$keyType|$keyValue" in entries
+    }
+
+    private fun engine(): GroovyScriptEngine = GroovyScriptEngine(defaultExecutionTimeout = Duration.ofMillis(200))
+
+    private fun executor(
+        nameList: NameListLookup = StubNameList(),
+        rulePayloads: Map<String, String> = emptyMap(),
+    ): FlowExecutor = FlowExecutor(nameList, engine(), { ruleKey -> rulePayloads[ruleKey] }, DecisionProperties())
+
+    private fun run(
+        graphJson: String,
+        features: Map<String, Any?>,
+        nameList: NameListLookup = StubNameList(),
+        rulePayloads: Map<String, String> = emptyMap(),
+    ): com.example.ruleengine.domain.DecisionResult =
+        executor(nameList, rulePayloads).execute(
+            requireNotNull(DslParser.parseFlowGraph(graphJson).getOrNull()) { "流图解析失败" },
+            features,
+            executionTimeoutMs = 200,
+        )
+
+    // ---------- 条件节点 ----------
+
+    @Test
+    fun `condition routes true branch on numeric comparison`() {
+        val graph =
+            """
+            {"nodes":[
+              {"id":"s","type":"start","data":{"label":"开始","nodeType":"start"}},
+              {"id":"c","type":"condition","data":{"label":"金额","nodeType":"condition","fieldName":"order_amount","operator":"GT","threshold":1000}},
+              {"id":"r","type":"action","data":{"label":"拒绝","nodeType":"action","action":"REJECT","reason":"金额超限"}},
+              {"id":"p","type":"action","data":{"label":"放行","nodeType":"action","action":"PASS","reason":"正常"}}
+            ],"edges":[
+              {"id":"e1","source":"s","target":"c"},
+              {"id":"e2","source":"c","target":"r","sourceHandle":"true"},
+              {"id":"e3","source":"c","target":"p","sourceHandle":"false"}
+            ]}
+            """.trimIndent()
+        assertEquals("REJECT", run(graph, mapOf("order_amount" to 1500)).action.name)
+        assertEquals("金额超限", run(graph, mapOf("order_amount" to 1500)).reason)
+        assertEquals("PASS", run(graph, mapOf("order_amount" to 100)).action.name)
+    }
+
+    @Test
+    fun `condition falls back to string comparison for non numeric values`() {
+        val graph =
+            """
+            {"nodes":[
+              {"id":"s","type":"start","data":{"label":"开始","nodeType":"start"}},
+              {"id":"c","type":"condition","data":{"label":"地区","nodeType":"condition","fieldName":"region","operator":"EQ","threshold":"US"}},
+              {"id":"r","type":"action","data":{"label":"拒绝","nodeType":"action","action":"REJECT","reason":"受限地区"}},
+              {"id":"p","type":"action","data":{"label":"放行","nodeType":"action","action":"PASS","reason":"正常"}}
+            ],"edges":[
+              {"id":"e1","source":"s","target":"c"},
+              {"id":"e2","source":"c","target":"r","sourceHandle":"true"},
+              {"id":"e3","source":"c","target":"p","sourceHandle":"false"}
+            ]}
+            """.trimIndent()
+        assertEquals("REJECT", run(graph, mapOf("region" to "US")).action.name)
+        assertEquals("PASS", run(graph, mapOf("region" to "CN")).action.name)
+    }
+
+    @Test
+    fun `front end conditionMet edge data participates in branch selection`() {
+        // 前端口径：sourceHandle 缺省时按 data.conditionMet 选分支
+        val graph =
+            """
+            {"nodes":[
+              {"id":"s","type":"start","data":{"label":"开始","nodeType":"start"}},
+              {"id":"c","type":"condition","data":{"label":"风险","nodeType":"condition","fieldName":"risk","operator":"GT","threshold":5}},
+              {"id":"r","type":"action","data":{"label":"拒绝","nodeType":"action","action":"REJECT","reason":"高风险"}},
+              {"id":"p","type":"action","data":{"label":"放行","nodeType":"action","action":"PASS","reason":"正常"}}
+            ],"edges":[
+              {"id":"e1","source":"s","target":"c"},
+              {"id":"e2","source":"c","target":"r","data":{"conditionMet":true}},
+              {"id":"e3","source":"c","target":"p","data":{"conditionMet":false}}
+            ]}
+            """.trimIndent()
+        assertEquals("REJECT", run(graph, mapOf("risk" to 9)).action.name)
+        assertEquals("PASS", run(graph, mapOf("risk" to 1)).action.name)
+    }
+
+    // ---------- 黑白名单节点 ----------
+
+    @Test
+    fun `blacklist hit rejects with legacy reason`() {
+        val graph =
+            """
+            {"nodes":[
+              {"id":"s","type":"start","data":{"label":"开始","nodeType":"start"}},
+              {"id":"b","type":"blacklist","data":{"label":"黑名单","nodeType":"blacklist","keyType":"userId","listKey":"GLOBAL"}},
+              {"id":"p","type":"action","data":{"label":"放行","nodeType":"action","action":"PASS","reason":"正常"}}
+            ],"edges":[
+              {"id":"e1","source":"s","target":"b"},
+              {"id":"e2","source":"b","target":"p"}
+            ]}
+            """.trimIndent()
+        val entries = setOf("GLOBAL|BLACK|userId|bad-guy")
+        assertEquals("REJECT", run(graph, mapOf("userId" to "bad-guy"), nameList = StubNameList(entries)).action.name)
+        assertEquals("命中黑名单: userId=bad-guy", run(graph, mapOf("userId" to "bad-guy"), nameList = StubNameList(entries)).reason)
+        assertEquals("PASS", run(graph, mapOf("userId" to "good-guy"), nameList = StubNameList(entries)).action.name)
+    }
+
+    @Test
+    fun `whitelist miss rejects with legacy reason`() {
+        val graph =
+            """
+            {"nodes":[
+              {"id":"s","type":"start","data":{"label":"开始","nodeType":"start"}},
+              {"id":"w","type":"whitelist","data":{"label":"白名单","nodeType":"whitelist","keyType":"userId","listKey":"GLOBAL"}},
+              {"id":"p","type":"action","data":{"label":"放行","nodeType":"action","action":"PASS","reason":"正常"}}
+            ],"edges":[
+              {"id":"e1","source":"s","target":"w"},
+              {"id":"e2","source":"w","target":"p"}
+            ]}
+            """.trimIndent()
+        val entries = setOf("GLOBAL|WHITE|userId|vip-1")
+        assertEquals("PASS", run(graph, mapOf("userId" to "vip-1"), nameList = StubNameList(entries)).action.name)
+        assertEquals("REJECT", run(graph, mapOf("userId" to "stranger"), nameList = StubNameList(entries)).action.name)
+        assertEquals("未在白名单中: userId=stranger", run(graph, mapOf("userId" to "stranger"), nameList = StubNameList(entries)).reason)
+    }
+
+    // ---------- 规则集节点 ----------
+
+    @Test
+    fun `ruleset rejects on first rejecting rule with reason`() {
+        val graph =
+            """
+            {"nodes":[
+              {"id":"s","type":"start","data":{"label":"开始","nodeType":"start"}},
+              {"id":"rs","type":"ruleset","data":{"label":"规则集","nodeType":"ruleset","ruleKeys":["rule_a","rule_b"]}},
+              {"id":"p","type":"action","data":{"label":"放行","nodeType":"action","action":"PASS","reason":"正常"}}
+            ],"edges":[
+              {"id":"e1","source":"s","target":"rs"},
+              {"id":"e2","source":"rs","target":"p"}
+            ]}
+            """.trimIndent()
+        val payloads =
+            mapOf(
+                // rule_a 放行、rule_b 拒绝（拒绝优先一票否决）
+                "rule_a" to "return 'PASS'",
+                "rule_b" to "return [decision: 'REJECT', reason: '命中欺诈名单']",
+            )
+        val result = run(graph, emptyMap(), rulePayloads = payloads)
+        assertEquals("REJECT", result.action.name)
+        assertEquals("命中欺诈名单", result.reason)
+    }
+
+    @Test
+    fun `ruleset failure is tolerated and flow continues`() {
+        val graph =
+            """
+            {"nodes":[
+              {"id":"s","type":"start","data":{"label":"开始","nodeType":"start"}},
+              {"id":"rs","type":"ruleset","data":{"label":"规则集","nodeType":"ruleset","ruleKeys":["missing_rule"]}},
+              {"id":"e","type":"end","data":{"label":"结束","nodeType":"end","defaultAction":"PASS","defaultReason":"通过"}}
+            ],"edges":[
+              {"id":"e1","source":"s","target":"rs"},
+              {"id":"e2","source":"rs","target":"e"}
+            ]}
+            """.trimIndent()
+        // 引用规则不存在 → 视为不拒绝，流程继续到结束节点
+        assertEquals("PASS", run(graph, emptyMap()).action.name)
+    }
+
+    // ---------- 防环与结构异常 ----------
+
+    @Test
+    fun `cyclic graph is cut off by step limit`() {
+        // 条件节点自环 + 恒真分支 → 步数超限拒绝（旧递归实现此处栈溢出）
+        val cyclicGraph =
+            """
+            {"nodes":[
+              {"id":"s","type":"start","data":{"label":"开始","nodeType":"start"}},
+              {"id":"c","type":"condition","data":{"label":"环","nodeType":"condition","fieldName":"x","operator":"GE","threshold":0}}
+            ],"edges":[
+              {"id":"e1","source":"s","target":"c"},
+              {"id":"e2","source":"c","target":"c","sourceHandle":"true"}
+            ]}
+            """.trimIndent()
+        val result = run(cyclicGraph, mapOf("x" to 1))
+        assertEquals("REJECT", result.action.name)
+        assertTrue(result.reason!!.contains("步数超限"))
+    }
+
+    @Test
+    fun `graph without start node rejects`() {
+        val graph =
+            """{"nodes":[{"id":"a","type":"action","data":{"label":"动作","nodeType":"action","action":"PASS","reason":"ok"}}],"edges":[]}"""
+        val result = run(graph, emptyMap())
+        assertEquals("REJECT", result.action.name)
+        assertEquals("决策流没有开始节点", result.reason)
+    }
+
+    @Test
+    fun `merge node passes through to next node`() {
+        val graph =
+            """
+            {"nodes":[
+              {"id":"s","type":"start","data":{"label":"开始","nodeType":"start"}},
+              {"id":"m","type":"merge","data":{"label":"合并","nodeType":"merge"}},
+              {"id":"e","type":"end","data":{"label":"结束","nodeType":"end","defaultAction":"MANUAL_REVIEW","defaultReason":"转人工"}}
+            ],"edges":[
+              {"id":"e1","source":"s","target":"m"},
+              {"id":"e2","source":"m","target":"e"}
+            ]}
+            """.trimIndent()
+        val result = run(graph, emptyMap())
+        assertEquals("MANUAL_REVIEW", result.action.name)
+        assertEquals("转人工", result.reason)
+    }
+}
