@@ -468,7 +468,7 @@ another-rule-engine/
 ├── .dockerignore                       # Docker 构建排除
 ├── build.gradle                        # Gradle 构建配置
 ├── settings.gradle                     # Gradle 设置
-└── CLAUDE.md                           # AI 辅助开发上下文
+└── AGENTS.md                           # AI 辅助开发上下文
 ```
 
 ---

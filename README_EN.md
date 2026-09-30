@@ -265,7 +265,7 @@ All endpoints are prefixed with `/api/v1/`. Authentication requires an `Authoriz
 another-rule-engine/
 ├── build.gradle                          # Gradle build configuration
 ├── settings.gradle                       # Project settings
-├── CLAUDE.md                             # AI-assisted development context
+├── AGENTS.md                             # AI-assisted development context
 ├── pub_docs/                             # Product documentation & screenshots
 │   ├── screenshots/                      # UI screenshots
 │   ├── multi-environment.md              # Multi-env feature doc
