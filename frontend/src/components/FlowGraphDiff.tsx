@@ -48,6 +48,97 @@ interface DiffSummary {
   modifiedEdges: number;
 }
 
+function parseFlowGraph(json: string): { nodes: FlowNode[]; edges: FlowEdge[] } {
+  try {
+    const parsed = JSON.parse(json);
+    return {
+      nodes: (parsed?.nodes ?? []) as FlowNode[],
+      edges: (parsed?.edges ?? []) as FlowEdge[],
+    };
+  } catch {
+    return { nodes: [], edges: [] };
+  }
+}
+
+function isNodeEqual(a: FlowNode, b: FlowNode): boolean {
+  if (a.type !== b.type) return false;
+  return JSON.stringify(a.data) === JSON.stringify(b.data);
+}
+
+function edgeKey(edge: FlowEdge): string {
+  return `${edge.source}::${edge.sourceHandle ?? ''}::${edge.target}`;
+}
+
+function isEdgeEqual(a: FlowEdge, b: FlowEdge): boolean {
+  if (a.source !== b.source || a.target !== b.target) return false;
+  if (a.sourceHandle !== b.sourceHandle) return false;
+  return JSON.stringify(a.data) === JSON.stringify(b.data);
+}
+
+const NODE_STYLES: Record<DiffStatus, React.CSSProperties> = {
+  added: { boxShadow: '0 0 0 3px #52c41a, 0 0 12px rgba(82,196,26,0.4)', borderRadius: 8 },
+  removed: { boxShadow: '0 0 0 3px #ff4d4f, 0 0 12px rgba(255,77,79,0.4)', borderRadius: 8, opacity: 0.6 },
+  modified: { boxShadow: '0 0 0 3px #faad14, 0 0 12px rgba(250,173,20,0.4)', borderRadius: 8 },
+  unchanged: {},
+};
+
+const EDGE_STYLES: Record<DiffStatus, React.CSSProperties> = {
+  added: { stroke: '#52c41a', strokeWidth: 2 },
+  removed: { stroke: '#ff4d4f', strokeWidth: 2, strokeDasharray: '5 5' },
+  modified: { stroke: '#faad14', strokeWidth: 2 },
+  unchanged: {},
+};
+
+function computeDiff(oldGraph: string, newGraph: string) {
+  const oldParsed = parseFlowGraph(oldGraph);
+  const newParsed = parseFlowGraph(newGraph);
+
+  const oldNodeMap = new Map(oldParsed.nodes.map((n) => [n.id, n]));
+  const newNodeMap = new Map(newParsed.nodes.map((n) => [n.id, n]));
+
+  const nodeStatus = new Map<string, DiffStatus>();
+  for (const [id, node] of oldNodeMap) {
+    if (!newNodeMap.has(id)) {
+      nodeStatus.set(id, 'removed');
+    } else if (isNodeEqual(node, newNodeMap.get(id)!)) {
+      nodeStatus.set(id, 'unchanged');
+    } else {
+      nodeStatus.set(id, 'modified');
+    }
+  }
+  for (const [id] of newNodeMap) {
+    if (!oldNodeMap.has(id)) {
+      nodeStatus.set(id, 'added');
+    }
+  }
+
+  const oldEdgeMap = new Map(oldParsed.edges.map((e) => [edgeKey(e), e]));
+  const newEdgeMap = new Map(newParsed.edges.map((e) => [edgeKey(e), e]));
+
+  const edgeStatus = new Map<string, DiffStatus>();
+  for (const [key, edge] of oldEdgeMap) {
+    if (!newEdgeMap.has(key)) {
+      edgeStatus.set(key, 'removed');
+    } else if (isEdgeEqual(edge, newEdgeMap.get(key)!)) {
+      edgeStatus.set(key, 'unchanged');
+    } else {
+      edgeStatus.set(key, 'modified');
+    }
+  }
+  for (const [key] of newEdgeMap) {
+    if (!oldEdgeMap.has(key)) {
+      edgeStatus.set(key, 'added');
+    }
+  }
+
+  const oldNodes = oldParsed.nodes.map((n) => {
+    const status = nodeStatus.get(n.id) ?? 'unchanged';
+    return { ...n, style: NODE_STYLES[status], data: { ...n.data, _diffStatus: status } };
+  }) as FlowNode[];
+  const newNodes = newParsed.nodes.map((n) => {
+    const status = nodeStatus.get(n.id) ?? 'unchanged';
+    return { ...n, style: NODE_STYLES[status], data: { ...n.data, _diffStatus: status } };
+  }) as FlowNode[];
 
   const oldEdges = oldParsed.edges.map((e) => {
     const status = edgeStatus.get(edgeKey(e)) ?? 'unchanged';
