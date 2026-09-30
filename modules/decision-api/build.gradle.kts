@@ -40,6 +40,8 @@ dependencies {
 
     // 生产运行时的 JDBC 驱动（storage 的 testImplementation 只覆盖测试类路径）
     runtimeOnly(libs.postgresql)
+    // JSON 结构化日志（SPRING_PROFILES_ACTIVE=json 时启用，供 Logstash 采集）
+    runtimeOnly(libs.logstash.logback.encoder)
 
     testImplementation(libs.h2)
 

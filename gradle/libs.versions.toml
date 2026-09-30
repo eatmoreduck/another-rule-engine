@@ -16,6 +16,7 @@ postgresql = "42.7.13"
 flyway = "13.8.1"
 testcontainers = "2.0.5"
 sa-token = "1.46.0"
+logstash-encoder = "8.1"
 
 [libraries]
 # Kotlin 协程（决策链路并发取特征、异步日志）
@@ -39,6 +40,12 @@ h2 = { module = "com.h2database:h2", version.ref = "h2" }
 
 # 认证（Sa-Token，官方 Boot 4 starter）
 sa-token-spring-boot4-starter = { module = "cn.dev33:sa-token-spring-boot4-starter", version.ref = "sa-token" }
+# Sa-Token Redis 会话集成（跨服务 token 共享，阶段 5）
+sa-token-redis-jackson = { module = "cn.dev33:sa-token-redis-jackson", version.ref = "sa-token" }
+
+# 缓存与日志采集
+spring-boot-starter-data-redis = { module = "org.springframework.boot:spring-boot-starter-data-redis" }
+logstash-logback-encoder = { module = "net.logstash.logback:logstash-logback-encoder", version.ref = "logstash-encoder" }
 
 # 数据库与迁移（阶段 2）
 postgresql = { module = "org.postgresql:postgresql", version.ref = "postgresql" }
