@@ -11,6 +11,7 @@ spotless = "8.9.0"
 ktlint = "1.8.0"
 caffeine = "3.3.0"
 jackson = "3.2.3" # Jackson 3（tools.jackson 命名空间），与 Boot 4.1 BOM（jackson-bom 3.1.5）同大版本
+h2 = "2.5.252"
 
 [libraries]
 # Kotlin 协程（决策链路并发取特征、异步日志）
@@ -24,8 +25,13 @@ groovy-json = { module = "org.apache.groovy:groovy-json", version.ref = "groovy"
 # Exposed ORM（storage 模块，阶段 2 启用建模）
 exposed-core = { module = "org.jetbrains.exposed:exposed-core", version.ref = "exposed" }
 exposed-jdbc = { module = "org.jetbrains.exposed:exposed-jdbc", version.ref = "exposed" }
-exposed-spring = { module = "org.jetbrains.exposed:exposed-spring", version.ref = "exposed" }
 exposed-java-time = { module = "org.jetbrains.exposed:exposed-java-time", version.ref = "exposed" }
+# Spring 事务集成（⚠️ 1.5.0 声明依赖 Spring 6.2.19，Gradle 仲裁到 Boot 4 的 Spring 7 后需运行时验证）
+spring-transaction = { module = "org.jetbrains.exposed:spring-transaction", version.ref = "exposed" }
+# ⚠️ 禁用：exposed-spring-boot-starter 1.5.0 绑定 Boot 3.5.8，会污染 Boot 4 classpath
+
+# 测试数据库
+h2 = { module = "com.h2database:h2", version.ref = "h2" }
 
 # 本地缓存（脚本编译缓存）
 caffeine = { module = "com.github.ben-manes.caffeine:caffeine", version.ref = "caffeine" }

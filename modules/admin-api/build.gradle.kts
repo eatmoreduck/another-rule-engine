@@ -19,5 +19,9 @@ dependencies {
     implementation(project(":modules:storage"))
     implementation(project(":modules:shared"))
 
+    // 阶段 2 探针：Exposed × Boot 4 运行时兼容性验证（通过后转正式集成方案）
+    testImplementation(libs.spring.transaction)
+    testImplementation(libs.h2)
+
     testImplementation(libs.spring.boot.starter.test)
 }
