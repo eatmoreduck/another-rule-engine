@@ -77,9 +77,9 @@ export JAVA_HOME=~/.sdkman/candidates/java/25.0.1-graalce
 | 1 | domain + dsl + engine：领域模型 / DSL 树 / 沙箱脚本引擎（208 测试） | ✅ |
 | 2a | storage：Exposed 表映射 + 仓储 + Flyway 基线（44 测试） | ✅ |
 | 2b | admin-api 核心：认证 + 规则 + 版本 + 灰度 + 特征目录（53 测试，契约对齐旧 API） | ✅ |
-| 2c | admin-api 外围：决策流、黑白名单、导入导出、审计、分析等 | |
-| 3 | decision-api：决策链路 + 协程并发取特征 + 灰度分流 | |
-| 4 | Kafka + log-consumer + 旧数据回填迁移 | |
+| 2c | admin-api 外围：决策流管理、黑白名单、审计查询、环境管理 | ✅ |
+| 3 | decision-api：决策链路 + 协程并发取特征 + 灰度分流（p50≈1ms，SLA 余量 50 倍） | ✅ |
+| 4 | Kafka + log-consumer + 旧数据回填迁移（Kafka 切换点：ExecutionLogBuffer.flush 闭包） | |
 | 5 | Redis：会话/缓存失效广播/分布式锁 | |
 | 6 | K8s 部署 + 可观测 + 压测（50ms SLA） | |
 
