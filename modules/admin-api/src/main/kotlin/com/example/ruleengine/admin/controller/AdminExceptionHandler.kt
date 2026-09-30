@@ -67,8 +67,11 @@ class AdminExceptionHandler {
     /** Bean Validation 失败 → 400（字段名: 消息，分号连接，与旧实现一致） */
     @ExceptionHandler(MethodArgumentNotValidException::class)
     fun handleValidation(e: MethodArgumentNotValidException): ResponseEntity<ErrorResponse> {
+        // 按字段名排序：Bean Validation 的字段遍历顺序不保证（跨 JVM 运行漂移），
+        // 排序保证同一请求的错误消息确定（前端仅整体展示 message，顺序无契约含义）
         val message =
             e.bindingResult.fieldErrors
+                .sortedBy { fieldError -> fieldError.field }
                 .joinToString(separator = "; ") { fieldError -> "${fieldError.field}: ${fieldError.defaultMessage}" }
                 .ifEmpty { "请求参数验证失败" }
         return ResponseEntity.badRequest().body(ErrorResponse.of(400, message))

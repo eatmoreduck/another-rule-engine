@@ -1,4 +1,4 @@
-package com.example.ruleengine.admin
+package ruleenginespike
 
 import org.h2.jdbcx.JdbcDataSource
 import org.jetbrains.exposed.v1.core.DatabaseConfig
@@ -12,8 +12,8 @@ import org.jetbrains.exposed.v1.spring.transaction.SpringTransactionManager
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
+import org.springframework.boot.test.context.TestConfiguration
 import org.springframework.context.annotation.Bean
-import org.springframework.context.annotation.Configuration
 import org.springframework.test.context.ContextConfiguration
 import org.springframework.test.context.junit.jupiter.SpringExtension
 import org.springframework.transaction.PlatformTransactionManager
@@ -35,7 +35,13 @@ import javax.sql.DataSource
 @ExtendWith(SpringExtension::class)
 @ContextConfiguration(classes = [ExposedBoot4IntegrationTest.ExposedSpikeConfig::class])
 class ExposedBoot4IntegrationTest {
-    @Configuration
+    /**
+     * @TestConfiguration（而非裸 @Configuration）：嵌套测试配置类带 @TestComponent 元注解，
+     * 组件扫描会跳过——否则被全包扫描（com.example.ruleengine）的上下文拾取后，
+     * spikeDataSource 与 storageDataSource 构成两个 DataSource 候选， spikeDatabase
+     * 按类型注入即失败（NoUniqueBeanDefinitionException），拖垮全部 @SpringBootTest。
+     */
+    @TestConfiguration
     @EnableTransactionManagement(proxyTargetClass = true)
     class ExposedSpikeConfig {
         @Bean

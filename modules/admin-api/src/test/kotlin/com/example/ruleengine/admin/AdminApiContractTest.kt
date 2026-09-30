@@ -256,7 +256,7 @@ class AdminApiContractTest {
         post("/api/v1/auth/login", body = """{"username":"","password":""}""")
             .andExpect(MockMvcResultMatchers.status().isBadRequest)
             .andExpect(MockMvcResultMatchers.jsonPath("$.code").value(400))
-            .andExpect(MockMvcResultMatchers.jsonPath("$.message").value("username: 用户名不能为空; password: 密码不能为空"))
+            .andExpect(MockMvcResultMatchers.jsonPath("$.message").value("password: 密码不能为空; username: 用户名不能为空"))
     }
 
     // ---------- 规则 CRUD + 版本 + 灰度 全链路 ----------
