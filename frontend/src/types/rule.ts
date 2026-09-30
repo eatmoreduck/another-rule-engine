@@ -21,6 +21,7 @@ export interface RuleSelectOption {
   deleted: boolean;
   version?: number;
   unavailable?: boolean;
+  version?: number;
 }
 
 export interface PageResponse<T> {
