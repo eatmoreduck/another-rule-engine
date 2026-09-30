@@ -39,6 +39,9 @@ dependencies {
     implementation(project(":modules:storage"))
     implementation(project(":modules:shared"))
 
+    // 生产运行时的 JDBC 驱动（storage 的 testImplementation 只覆盖测试类路径）
+    runtimeOnly(libs.postgresql)
+
     testImplementation(libs.h2)
 
     // 契约测试：Testcontainers PG16 起真实库（Flyway 全量迁移 + 种子数据）
