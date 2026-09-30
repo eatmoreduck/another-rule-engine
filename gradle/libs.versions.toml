@@ -1,0 +1,48 @@
+# 版本目录：所有第三方依赖的唯一事实源
+# 版本号均于 2026-09 经官方仓库 metadata 核实（repo1.maven.org / plugins.gradle.org / services.gradle.org）
+
+[versions]
+kotlin = "2.4.20"
+coroutines = "1.11.0"
+springBoot = "4.1.1"
+groovy = "5.1.3"
+exposed = "1.5.0"
+spotless = "8.9.0"
+ktlint = "1.8.0"
+
+[libraries]
+# Kotlin 协程（决策链路并发取特征、异步日志）
+kotlinx-coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "coroutines" }
+kotlinx-coroutines-reactor = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-reactor", version.ref = "coroutines" }
+
+# Groovy 脚本引擎（规则 DSL 执行层，宿主为 Kotlin、脚本为 Groovy）
+groovy = { module = "org.apache.groovy:groovy", version.ref = "groovy" }
+groovy-json = { module = "org.apache.groovy:groovy-json", version.ref = "groovy" }
+
+# Exposed ORM（storage 模块，阶段 2 启用建模）
+exposed-core = { module = "org.jetbrains.exposed:exposed-core", version.ref = "exposed" }
+exposed-jdbc = { module = "org.jetbrains.exposed:exposed-jdbc", version.ref = "exposed" }
+exposed-spring = { module = "org.jetbrains.exposed:exposed-spring", version.ref = "exposed" }
+exposed-java-time = { module = "org.jetbrains.exposed:exposed-java-time", version.ref = "exposed" }
+
+# Spring Boot（版本由 BOM 统一管理，此处不声明版本）
+spring-boot-dependencies = { module = "org.springframework.boot:spring-boot-dependencies", version.ref = "springBoot" }
+spring-boot-starter-webmvc = { module = "org.springframework.boot:spring-boot-starter-webmvc" }
+spring-boot-starter-actuator = { module = "org.springframework.boot:spring-boot-starter-actuator" }
+spring-boot-starter-test = { module = "org.springframework.boot:spring-boot-starter-test" }
+micrometer-registry-prometheus = { module = "io.micrometer:micrometer-registry-prometheus" }
+
+# 以下仅供 build-logic 约定插件在编译期使用，业务模块不要直接依赖
+kotlin-gradlePlugin = { module = "org.jetbrains.kotlin:kotlin-gradle-plugin", version.ref = "kotlin" }
+kotlin-allopen = { module = "org.jetbrains.kotlin:kotlin-allopen", version.ref = "kotlin" }
+springBoot-gradlePlugin = { module = "org.springframework.boot:spring-boot-gradle-plugin", version.ref = "springBoot" }
+spotless-gradlePlugin = { module = "com.diffplug.spotless:spotless-plugin-gradle", version.ref = "spotless" }
+
+[bundles]
+groovy = ["groovy", "groovy-json"]
+exposed = ["exposed-core", "exposed-jdbc", "exposed-java-time"]
+
+[plugins]
+kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
+spring-boot = { id = "org.springframework.boot", version.ref = "springBoot" }
+spotless = { id = "com.diffplug.spotless", version.ref = "spotless" }

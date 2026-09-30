@@ -3,6 +3,7 @@ build/
 bin/
 out/
 .gradle/
+.kotlin/
 !gradle/wrapper/gradle-wrapper.jar
 
 # IDE

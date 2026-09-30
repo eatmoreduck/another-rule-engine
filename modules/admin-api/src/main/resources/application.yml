@@ -1,0 +1,16 @@
+spring:
+  application:
+    name: admin-api
+
+server:
+  port: 8081
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health, info, metrics, prometheus
+  endpoint:
+    health:
+      probes:
+        enabled: true # K8s liveness / readiness 探针
