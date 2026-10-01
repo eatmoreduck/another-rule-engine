@@ -4,6 +4,9 @@ import groovy.lang.Binding
 import groovy.lang.GroovyClassLoader
 import groovy.lang.Script
 
+/** Binding 中特征变量的固定键名（生产调用方约定，见 [CompiledScript.evaluateArgumentOf]） */
+private const val FEATURES_BINDING_KEY = "features"
+
 /**
  * 已编译的 Groovy 脚本（编译产物 + 所属隔离类加载器）。
  *
@@ -35,7 +38,22 @@ class CompiledScript(
         val scriptInstance = createScriptInstance()
         scriptInstance.binding = Binding(variables)
         val result = scriptInstance.run()
-        return result ?: invokeEvaluateMethod(scriptInstance, variables)
+        return result ?: invokeEvaluateMethod(scriptInstance, evaluateArgumentOf(variables))
+    }
+
+    /**
+     * evaluate(Map) 回退的实参约定。
+     *
+     * 生产调用方统一以 `mapOf("features" to features)` 包装注入（Binding 中变量名固定
+     * 为 "features"，顶层表达式脚本同样经该键取特征），回退调用须剥掉包装层、把裸特征
+     * Map 交给 evaluate——否则 evaluate 内取 `features.<字段>` 实为外层包装键，
+     * 恒为 null（Groovy 中 `null < n` 为 true，会导致条件恒命中）。
+     * 无包装层时（旧式裸 Map 调用）原样传递，两种风格兼容。
+     */
+    private fun evaluateArgumentOf(variables: Map<String, Any?>): Map<String, Any?> {
+        val inner = variables[FEATURES_BINDING_KEY]
+        @Suppress("UNCHECKED_CAST")
+        return if (inner is Map<*, *>) inner as Map<String, Any?> else variables
     }
 
     /** 实例化脚本类 */

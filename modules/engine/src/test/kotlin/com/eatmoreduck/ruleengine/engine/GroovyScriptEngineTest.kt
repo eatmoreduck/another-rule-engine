@@ -62,6 +62,20 @@ class GroovyScriptEngineTest {
     }
 
     @Test
+    fun `evaluate(Map) fallback unwraps features binding layer`() {
+        // 生产调用方以 mapOf("features" to features) 包装注入（decide/test/flow 三处），
+        // 回退必须剥掉包装层把裸特征 Map 交给 evaluate——否则 features.<字段> 恒为 null，
+        // 且 Groovy 中 null < n 为 true，会造成"条件恒命中"（回归：age_rule_1 全量误拒）
+        GroovyScriptEngine().use { engine ->
+            val script = "def evaluate(Map features) { return features.amount > 1000 }"
+            assertEquals(true, engine.execute(script, mapOf("features" to mapOf("amount" to 5000))))
+            assertEquals(false, engine.execute(script, mapOf("features" to mapOf("amount" to 100))))
+            // 顶层表达式同样经 features 键取值，双向语义需一致
+            assertEquals(30, engine.execute("features.user_age", mapOf("features" to mapOf("user_age" to 30))))
+        }
+    }
+
+    @Test
     fun `runtime exception is wrapped as ScriptExecutionException`() {
         // 脚本执行失败时应抛出 ScriptExecutionException
         GroovyScriptEngine().use { engine ->
