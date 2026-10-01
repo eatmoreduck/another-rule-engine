@@ -100,7 +100,7 @@ export JAVA_HOME=~/.sdkman/candidates/java/25.0.1-graalce
 
 ## 开发注意事项
 
-- **旧代码处置**：`src/main/java/`（旧 Java 后端）保留在工作树但已不参与构建（root 无 java 插件），新引擎跑通决策链路后整体删除；回滚靠 tag `legacy/single-machine-java17`
+- **旧代码处置**：旧 Java 单体已于 2026-10-01 整体删除（commit 5e1cefb2 移除 src/ 共 219 文件，根目录旧单体 Dockerfile/docker-compose.yml 同批清理，Java 代码零残留）；回滚靠 tag `legacy/single-machine-java17` 或 git revert
 - **预编译脚本插件限制**：build-logic 内不能用 `libs.*` 访问器，需经 `VersionCatalogsExtension` 程序化读取；业务模块不受影响
 - **Boot 4 starter**：web MVC 用 `spring-boot-starter-webmvc`（旧名 `web` 仍存在但已非推荐）
 - 版本核实方法：任何新依赖先查 `https://repo1.maven.org/maven2/<group path>/<artifact>/maven-metadata.xml`，不凭记忆写版本号
