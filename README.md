@@ -67,7 +67,7 @@ docker compose -f deploy/compose.local.yml up -d
 ## 文档
 
 - [`AGENTS.md`](AGENTS.md) — 项目上下文唯一权威来源（技术栈矩阵、Boot 4 坑位、路线进度）
-- [`pub_docs/`](pub_docs/README.md) — 功能文档与界面截图
+- [`pub_docs/`](pub_docs/README.md) — 功能设计文档
 - [`.planning/STATE.md`](.planning/STATE.md) — 当前里程碑状态（后续演进基线）
 
 ## 许可证

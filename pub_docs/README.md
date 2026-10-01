@@ -4,7 +4,7 @@
 
 | 模块 | 文档 | 状态 |
 |------|------|------|
-| 灰度发布 - 可视化对比 | [screenshots/README.md](screenshots/README.md) | 已上线 |
+| 灰度发布 - 可视化对比 | 前端已上线（截图已随旧单体文档清理，如需可重新截取） | 已上线 |
 | 多环境管理 | [multi-environment.md](multi-environment.md) | 开发中（默认关闭） |
 | 导入导出 | [import-export.md](import-export.md) | 开发中（默认关闭） |
 
@@ -20,10 +20,5 @@
 pub_docs/
 ├── README.md                    # 本文件（总目录）
 ├── multi-environment.md         # 多环境管理文档
-├── import-export.md             # 导入导出文档
-└── screenshots/                 # 测试截图
-    ├── README.md                # 灰度可视化对比截图说明
-    ├── 01-grayscale-list.png
-    ├── 02-create-modal-default.png
-    └── ...
+└── import-export.md             # 导入导出文档
 ```
