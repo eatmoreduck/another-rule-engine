@@ -48,3 +48,9 @@ frontend/.env.local
 docs/
 .planning/
 .playwright-mcp
+
+# Runtime logs & misc（误提交防复发）
+**/logs/
+frontend/.gradle/
+frontend/test-results/
+.k8s-verify/

@@ -7,13 +7,10 @@ frontend/dist
 *.log
 .env
 .env.*
-!.env.example
 .idea
 *.iml
 .planning
 pub_docs
-docs
-test-results
 *.class
 
 # ── 阶段 6：deploy/ 下的 Dockerfile 以仓库根为构建上下文，以下为上下文瘦身追加项 ──
@@ -23,10 +20,7 @@ test-results
 **/.kotlin
 **/test-results
 **/performance-report-*.txt
-# 旧单体遗留与本地工具目录（不参与镜像构建）
-bin
-scripts
-src
+# 本地工具目录与临时产物（不参与镜像构建）
 .serena
 .claude
 .playwright-mcp
