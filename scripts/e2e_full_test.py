@@ -102,10 +102,11 @@ def scenario_full_chain():
 
     graph = {
         "nodes": [
-            {"id": "n_start", "type": "start", "data": {"label": "开始", "nodeType": "start"}},
-            {"id": "n_ruleset", "type": "ruleset",
+            {"id": "n_start", "type": "start", "position": {"x": 80, "y": 60},
+             "data": {"label": "开始", "nodeType": "start"}},
+            {"id": "n_ruleset", "type": "ruleset", "position": {"x": 320, "y": 60},
              "data": {"label": "规则集", "nodeType": "ruleset", "ruleKeys": [RULE_BIG]}},
-            {"id": "n_end", "type": "end",
+            {"id": "n_end", "type": "end", "position": {"x": 560, "y": 60},
              "data": {"label": "结束", "nodeType": "end", "defaultAction": "PASS", "defaultReason": "流程通过"}},
         ],
         "edges": [

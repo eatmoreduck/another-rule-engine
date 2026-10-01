@@ -58,7 +58,13 @@ function DetailInner() {
       try {
         const graph = JSON.parse(data.flowGraph);
         if (graph.nodes) {
-          setFlowNodes(graph.nodes as FlowNode[]);
+          // 后端 DSL 的 position 可空（API/脚本创建的流图无坐标）；
+          // ReactFlow 渲染要求 position 必有，缺失时按网格顺序补默认布局
+          const normalized = (graph.nodes as FlowNode[]).map((n, i) => ({
+            ...n,
+            position: n.position ?? { x: 80 + (i % 4) * 240, y: 60 + Math.floor(i / 4) * 150 },
+          }));
+          setFlowNodes(normalized);
           requestAnimationFrame(() => {
             if (graph.edges) setFlowEdges(graph.edges as FlowEdge[]);
           });
