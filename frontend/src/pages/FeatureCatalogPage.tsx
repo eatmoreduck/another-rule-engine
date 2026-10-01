@@ -36,8 +36,8 @@ import type {
 
 const { Text } = Typography;
 
-// 特征类型收敛为三种实际形态（数值/文本/布尔）；决策链路不消费该字段，仅作元数据
-const DATA_TYPE_OPTIONS = ['STRING', 'NUMBER', 'BOOLEAN'];
+// 特征类型收敛为四种实际形态（数值/文本/布尔/日期）；决策链路不消费该字段，仅作元数据
+const DATA_TYPE_OPTIONS = ['STRING', 'NUMBER', 'BOOLEAN', 'DATE'];
 // 来源类型：请求输入 / 派生计算 / 外部平台
 const SOURCE_TYPE_OPTIONS = ['INPUT', 'DERIVED', 'EXTERNAL'];
 const SENSITIVITY_OPTIONS = ['NORMAL', 'SENSITIVE', 'HIGHLY_SENSITIVE'];
