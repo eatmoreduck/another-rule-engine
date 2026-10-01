@@ -10,14 +10,14 @@ spring:
   # 失效事件发布失败只记日志；断线重连由 Lettuce 自理（REDIS_URL env 可覆盖，默认本地开发实例）
   data:
     redis:
-      url: ${REDIS_URL:redis://:Joker2025@192.168.192.200:6379}
+      url: ${REDIS_URL:redis://:Joker2025@192.168.5.200:6379}
       connect-timeout: 2s
       timeout: 2s
 
 # 持久化：PostgreSQL + Hikari（默认值对齐旧 monolith 的本地开发配置）
 ruleengine:
   storage:
-    url: ${DB_URL:jdbc:postgresql://192.168.192.200:5432/yare_engine}
+    url: ${DB_URL:jdbc:postgresql://192.168.5.200:5432/yare_engine}
     username: ${DB_USERNAME:yare_app}
     password: ${DB_PASSWORD:ServBay.dev}
     maximum-pool-size: 20

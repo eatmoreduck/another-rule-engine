@@ -11,7 +11,7 @@ spring:
   # 网络分区拖垮决策热路径（REDIS_URL env 可覆盖，默认本地开发实例）
   data:
     redis:
-      url: ${REDIS_URL:redis://:Joker2025@192.168.192.200:6379}
+      url: ${REDIS_URL:redis://:Joker2025@192.168.5.200:6379}
       connect-timeout: 2s
       timeout: 2s
 
@@ -20,7 +20,7 @@ spring:
 # （见 storage 的 ExecutionLogTables 注释；Testcontainers 契约测试侧同样拼接该参数）
 ruleengine:
   storage:
-    url: ${DB_URL:jdbc:postgresql://192.168.192.200:5432/yare_engine?stringtype=unspecified}
+    url: ${DB_URL:jdbc:postgresql://192.168.5.200:5432/yare_engine?stringtype=unspecified}
     username: ${DB_USERNAME:yare_app}
     password: ${DB_PASSWORD:ServBay.dev}
     maximum-pool-size: 20
