@@ -10,18 +10,9 @@
 
 ## 功能开关配置
 
-在 `src/main/resources/application.yml` 中控制：
-
-```yaml
-rule-engine:
-  features:
-    multi-environment:
-      enabled: false   # 多环境管理，设为 true 启用
-    import-export:
-      enabled: false   # 规则导入导出，设为 true 启用
-```
-
-后端 Controller / Service 通过 `@ConditionalOnProperty` 条件加载，前端通过 `/api/v1/features` API 动态隐藏菜单。
+> ⚠️ 以下功能开关属旧 Java 单体实现（`src/main/resources/application.yml`，已删除）。
+> Kotlin 新后端尚未重实现这两个能力（见 `AGENTS.md` 收尾尾巴清单），当前配置不生效，
+> 本节仅作为功能设计参考保留。
 
 ## 目录结构
 
