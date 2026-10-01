@@ -111,6 +111,88 @@ class ExecutionLogRepositoryTest {
     }
 
     @Test
+    fun `query methods filter sort and aggregate execution logs`() {
+        // 时间基准取未来，保证与首个用例插入的历史行在时间窗断言上互不干扰
+        val base = Instant.now().plusSeconds(100_000).truncatedTo(ChronoUnit.MINUTES)
+        val before = transaction { executionLogRepository.aggregateTotal() }
+        transaction {
+            executionLogRepository.insertBatch(
+                listOf(
+                    ExecutionLogRow(
+                        ruleKey = "rule_a",
+                        ruleVersion = 1,
+                        inputFeatures = null,
+                        outputDecision = "PASS",
+                        outputReason = null,
+                        executionTimeMs = 10,
+                        status = "SUCCESS",
+                        errorMessage = null,
+                        createdAt = base,
+                    ),
+                    ExecutionLogRow(
+                        ruleKey = "rule_a",
+                        ruleVersion = 1,
+                        inputFeatures = null,
+                        outputDecision = "REJECT",
+                        outputReason = null,
+                        executionTimeMs = 30,
+                        status = "ERROR",
+                        errorMessage = "boom",
+                        createdAt = base.plusSeconds(60),
+                    ),
+                    ExecutionLogRow(
+                        ruleKey = "rule_b",
+                        ruleVersion = null,
+                        inputFeatures = null,
+                        outputDecision = "PASS",
+                        outputReason = null,
+                        executionTimeMs = 20,
+                        status = "TIMEOUT",
+                        errorMessage = null,
+                        createdAt = base.plusSeconds(120),
+                    ),
+                ),
+            )
+        }
+
+        transaction {
+            // 按规则查询：降序 + 读模型字段完整
+            val byRule = executionLogRepository.findLogsByRuleKey("rule_a")
+            assertEquals(2, byRule.size)
+            assertTrue(byRule[0].createdAt >= byRule[1].createdAt)
+            assertEquals("ERROR", byRule[0].status)
+            assertEquals("boom", byRule[0].errorMessage)
+            assertTrue(byRule[0].id > 0)
+
+            // 时间窗（闭区间）裁剪
+            assertEquals(1, executionLogRepository.findLogsByRuleKeyAndTimeRange("rule_a", base.plusSeconds(60), base.plusSeconds(60)).size)
+            assertEquals(0, executionLogRepository.findLogsByTimeRange(base.plusSeconds(200), base.plusSeconds(300)).size)
+            assertEquals(3, executionLogRepository.findLogsByTimeRange(base, base.plusSeconds(120)).size)
+
+            // 状态过滤（历史用例也有 TIMEOUT 行，按规则定位）与最近日志
+            assertEquals(1, executionLogRepository.findLogsByStatus("TIMEOUT").count { it.ruleKey == "rule_b" })
+            assertEquals(2, executionLogRepository.findRecentLogs(2).size)
+
+            // 全表聚合（相对增量断言，不受历史用例行影响）：命中 = PASS 决策，错误 = ERROR 状态
+            val summary = executionLogRepository.aggregateTotal()
+            assertEquals(before.totalExecutions + 3, summary.totalExecutions)
+            assertEquals(before.hitCount + 2, summary.hitCount)
+            assertEquals(before.errorCount + 1, summary.errorCount)
+
+            // 分组聚合：按 ruleKey 定位本用例行
+            val perRule = executionLogRepository.aggregatePerRule()
+            val ruleA = perRule.first { it.ruleKey == "rule_a" }
+            assertEquals(2L, ruleA.executionCount)
+            assertEquals(1L, ruleA.hitCount)
+            assertEquals(1L, ruleA.errorCount)
+            assertEquals(20.0, ruleA.avgExecutionTimeMs, 0.0001)
+            // rule_b 单条 PASS 决策：命中 1、错误 0
+            assertEquals(1L, perRule.first { it.ruleKey == "rule_b" }.hitCount)
+            assertEquals(0L, perRule.first { it.ruleKey == "rule_b" }.errorCount)
+        }
+    }
+
+    @Test
     fun `insertBatch persists canary execution log rows`() {
         val rows =
             listOf(

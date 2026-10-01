@@ -13,6 +13,7 @@ import org.springframework.web.HttpRequestMethodNotSupportedException
 import org.springframework.web.bind.MethodArgumentNotValidException
 import org.springframework.web.bind.annotation.ExceptionHandler
 import org.springframework.web.bind.annotation.RestControllerAdvice
+import org.springframework.web.servlet.resource.NoResourceFoundException
 
 /**
  * 全局异常处理：将 Sa-Token 异常与业务异常转换为旧契约的标准 JSON 响应
@@ -97,6 +98,21 @@ class AdminExceptionHandler {
         ResponseEntity
             .badRequest()
             .body(ErrorResponse.of(400, "请求体解析失败: ${e.mostSpecificCause.message}"))
+
+    /**
+     * 静态资源/接口路径不存在 → 404。
+     *
+     * Spring MVC 6.1+ 对未匹配到 Handler 的请求由 ResourceHttpRequestHandler 抛出
+     * NoResourceFoundException；不单独映射会落入下方兜底 500（旧契约的错误结构为
+     * {code:404, error:"Not Found"}，此处补齐映射）。
+     */
+    @ExceptionHandler(NoResourceFoundException::class)
+    fun handleNoResourceFound(e: NoResourceFoundException): ResponseEntity<ErrorResponse> {
+        log.debug("资源不存在: {} {}", e.httpMethod.name(), e.resourcePath)
+        return ResponseEntity
+            .status(HttpStatus.NOT_FOUND)
+            .body(ErrorResponse.of(404, "资源不存在: ${e.resourcePath}"))
+    }
 
     /** 兜底 → 500 */
     @ExceptionHandler(Exception::class)

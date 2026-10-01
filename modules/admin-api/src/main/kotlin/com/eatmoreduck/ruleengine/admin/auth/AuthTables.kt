@@ -30,6 +30,9 @@ object SysRolesTable : Table("sys_role") {
     val id = long("id").autoIncrement()
     val roleCode = varchar("role_code", 100)
     val roleName = varchar("role_name", 100)
+
+    /** V15 基线列（角色描述）：系统管理查询面（/system/roles、/system/users 的角色字段）消费 */
+    val description = text("description").nullable()
     val status = varchar("status", 20)
 
     override val primaryKey = PrimaryKey(id)
@@ -39,6 +42,13 @@ object SysPermissionsTable : Table("sys_permission") {
     val id = long("id").autoIncrement()
     val permissionCode = varchar("permission_code", 200)
     val permissionName = varchar("permission_name", 200)
+
+    /** V15 基线列（权限树元数据）：系统管理查询面（/system/permissions）消费 */
+    val resourceType = varchar("resource_type", 50)
+    val resourcePath = varchar("resource_path", 500).nullable()
+    val method = varchar("method", 10).nullable()
+    val parentId = long("parent_id").nullable()
+    val sortOrder = integer("sort_order")
     val status = varchar("status", 20)
 
     override val primaryKey = PrimaryKey(id)
