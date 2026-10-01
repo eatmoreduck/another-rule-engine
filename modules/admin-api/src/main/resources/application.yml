@@ -17,8 +17,8 @@ spring:
 # 持久化：PostgreSQL + Hikari（默认值对齐旧 monolith 的本地开发配置）
 ruleengine:
   storage:
-    url: ${DB_URL:jdbc:postgresql://192.168.5.202:5432/yare_engine}
-    username: ${DB_USERNAME:leon}
+    url: ${DB_URL:jdbc:postgresql://192.168.192.200:5432/yare_engine}
+    username: ${DB_USERNAME:yare_app}
     password: ${DB_PASSWORD:ServBay.dev}
     maximum-pool-size: 20
     minimum-idle: 5
