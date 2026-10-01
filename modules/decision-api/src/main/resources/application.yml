@@ -11,7 +11,7 @@ spring:
   # 网络分区拖垮决策热路径（REDIS_URL env 可覆盖，默认本地开发实例）
   data:
     redis:
-      url: ${REDIS_URL:redis://localhost:6379}
+      url: ${REDIS_URL:redis://:Joker2025@192.168.192.200:6379}
       connect-timeout: 2s
       timeout: 2s
 
