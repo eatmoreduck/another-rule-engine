@@ -63,5 +63,5 @@ server:
 logging:
   level:
     root: INFO
-    com.example.ruleengine: DEBUG
+    com.eatmoreduck.ruleengine: DEBUG
     org.springframework.web: INFO

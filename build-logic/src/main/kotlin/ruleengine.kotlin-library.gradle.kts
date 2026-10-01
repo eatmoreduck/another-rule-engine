@@ -8,7 +8,7 @@ plugins {
     id("com.diffplug.spotless")
 }
 
-group = "com.example.ruleengine"
+group = "com.eatmoreduck.ruleengine"
 version = "0.1.0-SNAPSHOT"
 
 val libs = extensions.getByType(VersionCatalogsExtension::class.java).named("libs")

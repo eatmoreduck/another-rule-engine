@@ -37,7 +37,7 @@ import javax.sql.DataSource
 class ExposedBoot4IntegrationTest {
     /**
      * @TestConfiguration（而非裸 @Configuration）：嵌套测试配置类带 @TestComponent 元注解，
-     * 组件扫描会跳过——否则被全包扫描（com.example.ruleengine）的上下文拾取后，
+     * 组件扫描会跳过——否则被全包扫描（com.eatmoreduck.ruleengine）的上下文拾取后，
      * spikeDataSource 与 storageDataSource 构成两个 DataSource 候选， spikeDatabase
      * 按类型注入即失败（NoUniqueBeanDefinitionException），拖垮全部 @SpringBootTest。
      */

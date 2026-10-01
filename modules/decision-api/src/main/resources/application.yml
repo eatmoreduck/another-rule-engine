@@ -100,5 +100,5 @@ server:
 logging:
   level:
     root: INFO
-    com.example.ruleengine: INFO
+    com.eatmoreduck.ruleengine: INFO
     org.springframework.web: INFO
