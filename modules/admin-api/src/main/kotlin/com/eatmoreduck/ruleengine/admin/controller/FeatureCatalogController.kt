@@ -37,14 +37,13 @@ class FeatureCatalogController(
         @RequestParam(defaultValue = "0") page: Int,
         @RequestParam(defaultValue = "20") size: Int,
         @RequestParam(required = false) keyword: String?,
-        @RequestParam(required = false) scope: String?,
         @RequestParam(required = false) dataType: String?,
         @RequestParam(required = false) sourceType: String?,
         @RequestParam(required = false) sensitivity: String?,
         @RequestParam(required = false) status: String?,
     ): ResponseEntity<PageResponse<FeatureDefinitionResponse>> =
         ResponseEntity.ok(
-            featureCatalogService.searchDefinitions(page, size, keyword, scope, dataType, sourceType, sensitivity, status),
+            featureCatalogService.searchDefinitions(page, size, keyword, dataType, sourceType, sensitivity, status),
         )
 
     /** 特征详情：GET /api/v1/features/catalog/{code} */

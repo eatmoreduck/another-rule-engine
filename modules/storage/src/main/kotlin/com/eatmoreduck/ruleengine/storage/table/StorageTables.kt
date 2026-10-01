@@ -106,7 +106,6 @@ object FeatureDefinitionsTable : Table("feature_definition") {
     val sourceType = varchar("source_type", 50)
     val exampleValue = text("example_value").nullable()
     val description = text("description").nullable()
-    val scope = varchar("scope", 100).nullable()
     val sensitivity = varchar("sensitivity", 50)
     val status = varchar("status", 20)
     val owner = varchar("owner", 100).nullable()

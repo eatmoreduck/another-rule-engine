@@ -440,7 +440,6 @@ class H2StorageMappingTest {
         private fun newDefinition(
             code: String,
             status: String = "ACTIVE",
-            scope: String? = "ORDER",
         ): FeatureDefinition =
             FeatureDefinition(
                 code = code,
@@ -448,7 +447,6 @@ class H2StorageMappingTest {
                 dataType = "NUMBER",
                 sourceType = "INPUT",
                 exampleValue = "42",
-                scope = scope,
                 sensitivity = "SENSITIVE",
                 status = status,
                 owner = "risk-team",
@@ -541,13 +539,12 @@ class H2StorageMappingTest {
                     featureRepository.searchDefinitions(
                         FeatureDefinitionQuery(
                             keyword = "h2_fc_def_search",
-                            scope = "ORDER",
                             dataType = "NUMBER",
                             sensitivity = "SENSITIVE",
                         ),
                     )
                 assertTrue(hit.any { it.code == "h2_fc_def_search" })
-                val miss = featureRepository.searchDefinitions(FeatureDefinitionQuery(keyword = "h2_fc_def_search", scope = "USER_PROFILE"))
+                val miss = featureRepository.searchDefinitions(FeatureDefinitionQuery(keyword = "h2_fc_def_search", sensitivity = "NORMAL"))
                 assertTrue(miss.isEmpty())
 
                 assertEquals(1, featureRepository.deleteAliasesByCanonicalCode("H2_FC_DEF_SEARCH"))

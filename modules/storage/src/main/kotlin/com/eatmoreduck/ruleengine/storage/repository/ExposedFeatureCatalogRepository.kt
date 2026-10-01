@@ -45,7 +45,6 @@ internal class ExposedFeatureCatalogRepository : FeatureCatalogRepository {
                 statement[sourceType] = definition.sourceType
                 statement[exampleValue] = definition.exampleValue
                 statement[description] = definition.description
-                statement[scope] = definition.scope
                 statement[sensitivity] = definition.sensitivity
                 statement[status] = definition.status
                 statement[owner] = definition.owner
@@ -67,7 +66,6 @@ internal class ExposedFeatureCatalogRepository : FeatureCatalogRepository {
                 statement[sourceType] = definition.sourceType
                 statement[exampleValue] = definition.exampleValue
                 statement[description] = definition.description
-                statement[scope] = definition.scope
                 statement[sensitivity] = definition.sensitivity
                 statement[status] = definition.status
                 statement[owner] = definition.owner
@@ -111,7 +109,6 @@ internal class ExposedFeatureCatalogRepository : FeatureCatalogRepository {
                         (FeatureDefinitionsTable.name.lowerCase() like pattern)
                 }
         }
-        query.scope?.let { select = select.andWhere { FeatureDefinitionsTable.scope eq it } }
         query.dataType?.let { select = select.andWhere { FeatureDefinitionsTable.dataType eq it } }
         query.sourceType?.let { select = select.andWhere { FeatureDefinitionsTable.sourceType eq it } }
         query.sensitivity?.let { select = select.andWhere { FeatureDefinitionsTable.sensitivity eq it } }
@@ -182,7 +179,6 @@ internal class ExposedFeatureCatalogRepository : FeatureCatalogRepository {
                 sourceType = row[FeatureDefinitionsTable.sourceType],
                 exampleValue = row[FeatureDefinitionsTable.exampleValue],
                 description = row[FeatureDefinitionsTable.description],
-                scope = row[FeatureDefinitionsTable.scope],
                 sensitivity = row[FeatureDefinitionsTable.sensitivity],
                 status = row[FeatureDefinitionsTable.status],
                 owner = row[FeatureDefinitionsTable.owner],

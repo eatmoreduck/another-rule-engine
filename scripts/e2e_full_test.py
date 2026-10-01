@@ -70,7 +70,7 @@ def scenario_full_chain():
 
     status, r = call("POST", f"{BASE_ADMIN}/api/v1/features/catalog", H, body={
         "code": f"{FEATURE}_{RUN}", "name": "交易金额", "dataType": "NUMBER",
-        "sourceType": "REQUEST", "exampleValue": "12000", "description": "E2E 测试特征",
+        "sourceType": "INPUT", "exampleValue": "12000", "description": "E2E 测试特征",
     })
     check("A2 创建特征", status == 200, f"status={status} body={r}")
 
@@ -182,7 +182,7 @@ def scenario_rbac(admin_token):
         "groovyScript": "def evaluate(Map features) { return true }"})
     check("B7a viewer 创建规则 → 403", status == 403, f"status={status}")
     status, _ = call("POST", f"{BASE_ADMIN}/api/v1/features/catalog", vtoken, body={
-        "code": f"e2e_hack_feat_{RUN}", "name": "越权特征", "dataType": "NUMBER", "sourceType": "REQUEST"})
+        "code": f"e2e_hack_feat_{RUN}", "name": "越权特征", "dataType": "NUMBER", "sourceType": "INPUT"})
     check("B7b viewer 创建特征 → 403", status == 403, f"status={status}")
     status, _ = call("POST", f"{BASE_ADMIN}/api/v1/decision-flows", vtoken, body={
         "flowKey": f"e2e_hack_flow_{RUN}", "flowName": "越权流", "flowGraph": "{}"})

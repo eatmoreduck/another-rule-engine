@@ -50,7 +50,6 @@ class FeatureCatalogServiceTest {
         dataType = "NUMBER",
         sourceType = "INPUT",
         exampleValue = "100",
-        scope = "ORDER",
         aliases = aliases,
     )
 
@@ -230,7 +229,6 @@ class FeatureCatalogServiceTest {
                 0,
                 20,
                 keyword = null,
-                scope = null,
                 dataType = "number",
                 sourceType = null,
                 sensitivity = null,

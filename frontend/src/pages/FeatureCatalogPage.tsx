@@ -8,6 +8,8 @@ import {
   Form,
   Input,
   Modal,
+  Row,
+  Col,
   Select,
   Space,
   Spin,
@@ -34,8 +36,10 @@ import type {
 
 const { Text } = Typography;
 
-const DATA_TYPE_OPTIONS = ['STRING', 'NUMBER', 'BOOLEAN', 'TEXT', 'LIST', 'ARRAY', 'INTEGER', 'LONG', 'DOUBLE', 'DECIMAL'];
-const SOURCE_TYPE_OPTIONS = ['INPUT', 'DERIVED', 'EXTERNAL', 'MODEL'];
+// 特征类型收敛为三种实际形态（数值/文本/布尔）；决策链路不消费该字段，仅作元数据
+const DATA_TYPE_OPTIONS = ['STRING', 'NUMBER', 'BOOLEAN'];
+// 来源类型：请求输入 / 派生计算 / 外部平台
+const SOURCE_TYPE_OPTIONS = ['INPUT', 'DERIVED', 'EXTERNAL'];
 const SENSITIVITY_OPTIONS = ['NORMAL', 'SENSITIVE', 'HIGHLY_SENSITIVE'];
 const STATUS_OPTIONS = ['ACTIVE', 'INACTIVE', 'DEPRECATED'];
 
@@ -118,7 +122,6 @@ export default function FeatureCatalogPage() {
       sourceType: feature.sourceType,
       exampleValue: feature.exampleValue ?? '',
       description: feature.description ?? '',
-      scope: feature.scope ?? '',
       sensitivity: feature.sensitivity,
       status: feature.status,
       owner: feature.owner ?? '',
@@ -184,13 +187,6 @@ export default function FeatureCatalogPage() {
       key: 'sourceType',
       width: 120,
       render: (value: string) => <Tag>{value}</Tag>,
-    },
-    {
-      title: t('featureCatalog.scope'),
-      dataIndex: 'scope',
-      key: 'scope',
-      width: 140,
-      render: (value?: string | null) => value || '-',
     },
     {
       title: t('featureCatalog.sensitivity'),
@@ -282,9 +278,6 @@ export default function FeatureCatalogPage() {
           <Form.Item name="status">
             <Select allowClear placeholder={t('common.status')} style={{ width: 140 }} options={STATUS_OPTIONS.map((value) => ({ value, label: value }))} />
           </Form.Item>
-          <Form.Item name="scope">
-            <Input allowClear placeholder={t('featureCatalog.scope')} style={{ width: 160 }} />
-          </Form.Item>
           <Form.Item>
             <Space>
               <Button type="primary" onClick={handleSearch}>{t('common.search')}</Button>
@@ -320,39 +313,52 @@ export default function FeatureCatalogPage() {
         width={720}
       >
         <Form form={editForm} layout="vertical">
-          <Space style={{ width: '100%' }} size={16} align="start">
-            <Form.Item name="code" label={t('featureCatalog.code')} rules={[{ required: true, message: t('featureCatalog.codeRequired') }]} style={{ width: 280 }}>
-              <Input disabled={!!editingFeature} placeholder="risk_score" />
-            </Form.Item>
-            <Form.Item name="name" label={t('featureCatalog.name')} rules={[{ required: true, message: t('featureCatalog.nameRequired') }]} style={{ width: 280 }}>
-              <Input placeholder={t('featureCatalog.namePlaceholder')} />
-            </Form.Item>
-          </Space>
-          <Space style={{ width: '100%' }} size={16} align="start">
-            <Form.Item name="dataType" label={t('featureCatalog.type')} rules={[{ required: true, message: t('featureCatalog.typeRequired') }]} style={{ width: 160 }}>
-              <Select options={DATA_TYPE_OPTIONS.map((value) => ({ value, label: value }))} />
-            </Form.Item>
-            <Form.Item name="sourceType" label={t('featureCatalog.sourceType')} rules={[{ required: true, message: t('featureCatalog.sourceTypeRequired') }]} style={{ width: 160 }}>
-              <Select options={SOURCE_TYPE_OPTIONS.map((value) => ({ value, label: value }))} />
-            </Form.Item>
-            <Form.Item name="sensitivity" label={t('featureCatalog.sensitivity')} style={{ width: 180 }}>
-              <Select options={SENSITIVITY_OPTIONS.map((value) => ({ value, label: value }))} />
-            </Form.Item>
-            <Form.Item name="status" label={t('common.status')} style={{ width: 160 }}>
-              <Select options={STATUS_OPTIONS.map((value) => ({ value, label: value }))} />
-            </Form.Item>
-          </Space>
-          <Space style={{ width: '100%' }} size={16} align="start">
-            <Form.Item name="scope" label={t('featureCatalog.scope')} style={{ width: 220 }}>
-              <Input placeholder="ORDER" />
-            </Form.Item>
-            <Form.Item name="owner" label={t('featureCatalog.owner')} style={{ width: 220 }}>
-              <Input placeholder="risk-ops" />
-            </Form.Item>
-            <Form.Item name="exampleValue" label={t('featureCatalog.exampleValue')} style={{ width: 220 }}>
-              <Input placeholder="0.85" />
-            </Form.Item>
-          </Space>
+          <Row gutter={16}>
+            <Col span={12}>
+              <Form.Item name="code" label={t('featureCatalog.code')} rules={[{ required: true, message: t('featureCatalog.codeRequired') }]}>
+                <Input disabled={!!editingFeature} placeholder="risk_score" />
+              </Form.Item>
+            </Col>
+            <Col span={12}>
+              <Form.Item name="name" label={t('featureCatalog.name')} rules={[{ required: true, message: t('featureCatalog.nameRequired') }]}>
+                <Input placeholder={t('featureCatalog.namePlaceholder')} />
+              </Form.Item>
+            </Col>
+          </Row>
+          <Row gutter={16}>
+            <Col span={6}>
+              <Form.Item name="dataType" label={t('featureCatalog.type')} rules={[{ required: true, message: t('featureCatalog.typeRequired') }]}>
+                <Select options={DATA_TYPE_OPTIONS.map((value) => ({ value, label: value }))} />
+              </Form.Item>
+            </Col>
+            <Col span={6}>
+              <Form.Item name="sourceType" label={t('featureCatalog.sourceType')} rules={[{ required: true, message: t('featureCatalog.sourceTypeRequired') }]}>
+                <Select options={SOURCE_TYPE_OPTIONS.map((value) => ({ value, label: value }))} />
+              </Form.Item>
+            </Col>
+            <Col span={6}>
+              <Form.Item name="sensitivity" label={t('featureCatalog.sensitivity')}>
+                <Select allowClear options={SENSITIVITY_OPTIONS.map((value) => ({ value, label: value }))} />
+              </Form.Item>
+            </Col>
+            <Col span={6}>
+              <Form.Item name="status" label={t('common.status')}>
+                <Select options={STATUS_OPTIONS.map((value) => ({ value, label: value }))} />
+              </Form.Item>
+            </Col>
+          </Row>
+          <Row gutter={16}>
+            <Col span={12}>
+              <Form.Item name="owner" label={t('featureCatalog.owner')}>
+                <Input placeholder="risk-ops" />
+              </Form.Item>
+            </Col>
+            <Col span={12}>
+              <Form.Item name="exampleValue" label={t('featureCatalog.exampleValue')}>
+                <Input placeholder="0.85" />
+              </Form.Item>
+            </Col>
+          </Row>
           <Form.Item name="aliases" label={t('featureCatalog.aliases')}>
             <Select mode="tags" tokenSeparators={[',']} placeholder={t('featureCatalog.aliasesPlaceholder')} />
           </Form.Item>

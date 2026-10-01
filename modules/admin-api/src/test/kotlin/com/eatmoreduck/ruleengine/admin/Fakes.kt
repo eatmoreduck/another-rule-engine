@@ -154,8 +154,7 @@ class FakeFeatureCatalogRepository : FeatureCatalogRepository {
                     definition.code.contains(keyword, ignoreCase = true) ||
                         definition.name.contains(keyword, ignoreCase = true)
                 } ?: true
-            }.filter { query.scope == null || it.scope.equals(query.scope, ignoreCase = true) }
-            .filter { query.dataType == null || it.dataType.equals(query.dataType, ignoreCase = true) }
+            }.filter { query.dataType == null || it.dataType.equals(query.dataType, ignoreCase = true) }
             .filter { query.sourceType == null || it.sourceType.equals(query.sourceType, ignoreCase = true) }
             .filter { query.sensitivity == null || it.sensitivity.equals(query.sensitivity, ignoreCase = true) }
             .filter { query.status == null || it.status.equals(query.status, ignoreCase = true) }

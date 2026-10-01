@@ -100,7 +100,6 @@
     "name": "Feature Name",
     "type": "Data Type",
     "sourceType": "Source Type",
-    "scope": "Scope",
     "sensitivity": "Sensitivity",
     "owner": "Owner",
     "aliases": "Aliases",

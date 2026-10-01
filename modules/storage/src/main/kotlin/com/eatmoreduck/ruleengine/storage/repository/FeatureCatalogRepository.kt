@@ -50,7 +50,6 @@ interface FeatureCatalogRepository {
 data class FeatureDefinitionQuery(
     /** 关键字：命中 code 或 name（大小写不敏感的包含匹配） */
     val keyword: String? = null,
-    val scope: String? = null,
     val dataType: String? = null,
     val sourceType: String? = null,
     val sensitivity: String? = null,

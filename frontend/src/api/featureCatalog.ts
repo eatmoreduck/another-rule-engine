@@ -16,7 +16,6 @@ export async function getFeatureDefinitions(params?: FeatureCatalogQueryParams):
       page: params?.page ?? 0,
       size: params?.size ?? 20,
       keyword: params?.keyword,
-      scope: params?.scope,
       dataType: params?.dataType,
       sourceType: params?.sourceType,
       sensitivity: params?.sensitivity,

@@ -21,8 +21,6 @@ data class FeatureDefinition(
     val sourceType: String,
     val exampleValue: String? = null,
     val description: String? = null,
-    /** 所属业务域（如 USER_PROFILE / ORDER） */
-    val scope: String? = null,
     /** 敏感级别（旧默认 NORMAL） */
     val sensitivity: String = "NORMAL",
     /** 目录状态（旧默认 ACTIVE） */

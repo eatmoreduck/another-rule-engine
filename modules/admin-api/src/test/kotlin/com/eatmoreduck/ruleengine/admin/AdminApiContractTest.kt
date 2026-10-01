@@ -586,7 +586,7 @@ class AdminApiContractTest {
             "/api/v1/features/catalog",
             flowToken,
             """{"code":"contract_amount","name":"订单金额","dataType":"NUMBER","sourceType":"INPUT",
-                "exampleValue":"100","description":"测试特征","scope":"ORDER","aliases":["contract_amt"]}""",
+                "exampleValue":"100","description":"测试特征","aliases":["contract_amt"]}""",
         ).andExpect(MockMvcResultMatchers.status().isOk)
             .andExpect(MockMvcResultMatchers.jsonPath("$.id").isNumber)
             .andExpect(MockMvcResultMatchers.jsonPath("$.code").value("contract_amount"))

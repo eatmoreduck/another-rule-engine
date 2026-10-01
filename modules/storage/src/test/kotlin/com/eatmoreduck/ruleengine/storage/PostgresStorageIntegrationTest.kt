@@ -43,7 +43,7 @@ import java.time.temporal.ChronoUnit
 import javax.sql.DataSource
 
 /**
- * 持久化层集成测试：真实 PostgreSQL（Testcontainers）+ Flyway 全量迁移（V1..V26）+ 仓储端到端读写。
+ * 持久化层集成测试：真实 PostgreSQL（Testcontainers）+ Flyway 全量迁移（V1..V27）+ 仓储端到端读写。
  *
  * 这是表对象 ↔ 旧 schema 映射的事实核对：表定义缺列/类型错位会在 CRUD 与
  * [schemaColumnsMatchFlywayBaseline] 的列集合比对中暴露。
@@ -137,7 +137,7 @@ class PostgresStorageIntegrationTest {
     }
 
     @Test
-    @DisplayName("Flyway 应用迁移数为 25（V1..V26，无 V8）")
+    @DisplayName("Flyway 应用迁移数为 26（V1..V27，无 V8）")
     fun flywayAppliedAllMigrations() {
         val applied =
             Flyway
@@ -147,7 +147,7 @@ class PostgresStorageIntegrationTest {
                 .load()
                 .info()
                 .applied()
-        assertEquals(25, applied.size)
+        assertEquals(26, applied.size)
     }
 
     @Test
@@ -285,7 +285,6 @@ class PostgresStorageIntegrationTest {
                         dataType = "BOOLEAN",
                         sourceType = "DERIVED",
                         description = "集成测试写入",
-                        scope = "RISK_MODEL",
                         owner = "pg-tester",
                         createdAt = Instant.now().truncatedTo(ChronoUnit.MICROS),
                         updatedAt = Instant.now().truncatedTo(ChronoUnit.MICROS),

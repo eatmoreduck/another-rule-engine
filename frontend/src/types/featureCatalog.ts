@@ -13,7 +13,6 @@ export interface FeatureDefinition {
   sourceType: string;
   exampleValue: string | null;
   description: string | null;
-  scope: string | null;
   sensitivity: string;
   status: string;
   owner: string | null;
@@ -24,7 +23,6 @@ export interface FeatureDefinition {
 
 export interface FeatureCatalogQueryParams {
   keyword?: string;
-  scope?: string;
   dataType?: string;
   sourceType?: string;
   sensitivity?: string;
@@ -40,7 +38,6 @@ export interface FeatureDefinitionRequest {
   sourceType: string;
   exampleValue?: string;
   description?: string;
-  scope?: string;
   sensitivity?: string;
   status?: string;
   owner?: string;

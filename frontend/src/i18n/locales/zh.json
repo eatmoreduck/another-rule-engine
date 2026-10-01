@@ -100,7 +100,6 @@
     "name": "特征名称",
     "type": "特征类型",
     "sourceType": "来源类型",
-    "scope": "适用范围",
     "sensitivity": "敏感级别",
     "owner": "负责人",
     "aliases": "别名",
