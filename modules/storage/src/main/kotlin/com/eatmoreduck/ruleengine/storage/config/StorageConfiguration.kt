@@ -48,6 +48,7 @@ class StorageConfiguration {
                 maximumPoolSize = properties.maximumPoolSize
                 minimumIdle = properties.minimumIdle
                 connectionTimeout = properties.connectionTimeoutMs
+                if (properties.keepaliveTimeMs > 0) keepaliveTime = properties.keepaliveTimeMs
                 // PostgreSQL 驱动经 URL 自动识别，无需显式 driverClassName
                 poolName = "ruleengine-storage"
             },

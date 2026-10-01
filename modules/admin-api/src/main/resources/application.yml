@@ -22,7 +22,7 @@ ruleengine:
     password: ${DB_PASSWORD:ServBay.dev}
     maximum-pool-size: 20
     minimum-idle: 5
-    connection-timeout-ms: 30000
+    connection-timeout-ms: 5000
     flyway-locations: classpath:db/migration
 
 # Sa-Token 配置（与旧后端逐项一致：token 从 Authorization 头裸读，无 Bearer 前缀）

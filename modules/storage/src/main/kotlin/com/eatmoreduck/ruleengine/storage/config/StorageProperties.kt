@@ -35,8 +35,17 @@ class StorageProperties {
     /** Hikari 连接池最小空闲连接数 */
     var minimumIdle: Int = 2
 
-    /** 获取连接超时（毫秒） */
+    /** 获取连接超时（毫秒）；链路抖动场景下调小可快速失败、避免请求长时间挂起 */
     var connectionTimeoutMs: Long = 30_000
+
+    /**
+     * 空闲连接探活间隔（毫秒），映射 Hikari keepaliveTime，0 = 关闭。
+     *
+     * 跨网链路（如 ZeroTier 隧道）瞬断后池中会残留死连接，开启后由 Hikari
+     * 周期性对空闲连接发探活查询并及时剔除，恢复后池子以秒级速度回满。
+     * 默认 30s，须小于 Hikari 默认 maxLifetime（30min）。
+     */
+    var keepaliveTimeMs: Long = 30_000
 
     /** Flyway 迁移脚本位置（沿用旧后端迁移基线） */
     var flywayLocations: Array<String> = arrayOf("classpath:db/migration")
