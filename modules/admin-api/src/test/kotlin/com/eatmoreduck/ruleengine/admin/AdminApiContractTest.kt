@@ -658,6 +658,32 @@ class AdminApiContractTest {
             .andExpect(MockMvcResultMatchers.jsonPath("$.content").isArray)
             .andExpect(MockMvcResultMatchers.jsonPath("$.totalElements").value(1))
             .andExpect(MockMvcResultMatchers.jsonPath("$.content[0].code").value("contract_amount"))
+
+        // 软删除：被规则引用时拒绝删除（引用硬校验）→ 删除引用规则 → 删除成功 → 同名可重建
+        delete("/api/v1/features/catalog/contract_amount", flowToken)
+            .andExpect(MockMvcResultMatchers.status().isBadRequest)
+            .andExpect(
+                MockMvcResultMatchers
+                    .jsonPath("$.message")
+                    .value("特征被引用，无法删除（共 1 处）：规则「特征引用规则」；请先解除引用"),
+            )
+        delete("/api/v1/rules/feature_ref_rule", flowToken).andExpect(MockMvcResultMatchers.status().isOk)
+        delete("/api/v1/features/catalog/contract_amount", flowToken)
+            .andExpect(MockMvcResultMatchers.status().isOk)
+        get("/api/v1/features/catalog/contract_amount", flowToken)
+            .andExpect(MockMvcResultMatchers.status().isBadRequest)
+            .andExpect(MockMvcResultMatchers.jsonPath("$.message").value("特征不存在: contract_amount"))
+        delete("/api/v1/features/catalog/contract_amount", flowToken)
+            .andExpect(MockMvcResultMatchers.status().isBadRequest)
+            .andExpect(MockMvcResultMatchers.jsonPath("$.message").value("特征不存在: contract_amount"))
+        post(
+            "/api/v1/features/catalog",
+            flowToken,
+            """{"code":"contract_amount","name":"订单总金额","dataType":"NUMBER","sourceType":"INPUT",
+                "aliases":["contract_amt"]}""",
+        ).andExpect(MockMvcResultMatchers.status().isOk)
+            .andExpect(MockMvcResultMatchers.jsonPath("$.code").value("contract_amount"))
+            .andExpect(MockMvcResultMatchers.jsonPath("$.aliases[0]").value("contract_amt"))
     }
 
     // ---------- 私有工具 ----------

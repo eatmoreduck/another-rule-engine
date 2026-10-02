@@ -10,6 +10,7 @@ import com.eatmoreduck.ruleengine.admin.rules.RuleService
 import com.eatmoreduck.ruleengine.engine.GroovyScriptEngine
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
+import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
@@ -234,5 +235,61 @@ class FeatureCatalogServiceTest {
             )
         assertEquals(1, page.totalElements)
         assertEquals("order_amount", page.content.single().code)
+    }
+
+    @Test
+    fun `被规则引用的特征拒绝删除并给出引用清单`() {
+        service.createDefinition(createRequest())
+        val ruleService =
+            RuleService(
+                ruleRepository,
+                versionRepository,
+                RulePayloadValidator(GroovyScriptEngine()),
+                RuleAssembler(),
+                flowSupport,
+                RecordingEventPublisher(),
+            )
+        ruleService.createRule(
+            com.eatmoreduck.ruleengine.admin.dto.CreateRuleRequest(
+                ruleKey = "amount_rule",
+                ruleName = "金额规则",
+                groovyScript = "def amt = features.order_amount\nreturn 'PASS'",
+            ),
+            "tester",
+        )
+
+        val ex =
+            assertThrows<IllegalArgumentException> { service.deleteDefinition("order_amount") }
+        assertEquals("特征被引用，无法删除（共 1 处）：规则「金额规则」；请先解除引用", ex.message)
+
+        // 特征仍可查、未被软删
+        assertEquals("order_amount", service.getDefinition("order_amount").code)
+    }
+
+    @Test
+    fun `软删除特征清理别名且同名可重建`() {
+        service.createDefinition(createRequest())
+        service.deleteDefinition("order_amount")
+
+        // 删除后详情不可见、别名行已清理、别名占用已释放
+        assertThrows<IllegalArgumentException> { service.getDefinition("order_amount") }
+        assertNull(featureRepository.findDefinitionByCode("amt"))
+        assertNull(featureRepository.findAliasByCode("amt"))
+
+        // 同名可重建（部分唯一索引只约束未删除行）
+        val rebuilt = service.createDefinition(createRequest())
+        assertEquals("order_amount", rebuilt.code)
+        assertEquals(listOf("amt"), rebuilt.aliases)
+    }
+
+    @Test
+    fun `删除不存在或已删除的特征统一报特征不存在`() {
+        val ex = assertThrows<IllegalArgumentException> { service.deleteDefinition("no_such") }
+        assertEquals("特征不存在: no_such", ex.message)
+
+        service.createDefinition(createRequest())
+        service.deleteDefinition("order_amount")
+        val ex2 = assertThrows<IllegalArgumentException> { service.deleteDefinition("ORDER_AMOUNT") }
+        assertEquals("特征不存在: ORDER_AMOUNT", ex2.message)
     }
 }

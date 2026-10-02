@@ -16,16 +16,25 @@ interface FeatureCatalogRepository {
      */
     fun saveDefinition(definition: FeatureDefinition): FeatureDefinition
 
-    /** 按编码精确查询（忽略大小写） */
+    /** 按编码精确查询（忽略大小写）；已软删除的行不返回 */
     fun findDefinitionByCode(code: String): FeatureDefinition?
 
+    /** 编码是否已存在（忽略大小写）；仅统计未软删除的行，同名可重建 */
     fun existsDefinitionWithCode(code: String): Boolean
 
     /** 批量按编码加载（保持 [codes] 原顺序，缺失的编码不出现） */
     fun findDefinitionsByCodes(codes: Collection<String>): List<FeatureDefinition>
 
-    /** 组合条件分页查询（管理端目录检索）；条件全部可选 */
+    /** 组合条件分页查询（管理端目录检索）；条件全部可选；已软删除的行不返回 */
     fun searchDefinitions(query: FeatureDefinitionQuery): List<FeatureDefinition>
+
+    /**
+     * 软删除特征（deleted = TRUE，仅作用于未删除行），并物理清理其全部别名行
+     * （兼容映射随特征失效，也释放别名占用供后续特征使用）。
+     *
+     * @return 是否删到行（编码不存在或已删除返回 false）
+     */
+    fun softDeleteDefinition(code: String): Boolean
 
     /** 新增别名（aliasCode 重复将触发数据库唯一约束异常） */
     fun saveAlias(alias: FeatureAlias): FeatureAlias
@@ -53,6 +62,8 @@ data class FeatureDefinitionQuery(
     val dataType: String? = null,
     val sourceType: String? = null,
     val status: String? = null,
+    /** 是否包含已软删除行（管理端"显示已删除"开关） */
+    val includeDeleted: Boolean = false,
     val limit: Int = 100,
     val offset: Long = 0,
 )

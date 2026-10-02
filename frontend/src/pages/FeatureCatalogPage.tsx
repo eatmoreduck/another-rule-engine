@@ -13,16 +13,18 @@ import {
   Select,
   Space,
   Spin,
+  Switch,
   Table,
   Tag,
   Typography,
 } from 'antd';
-import { PlusOutlined, ReloadOutlined } from '@ant-design/icons';
+import { DeleteOutlined, PlusOutlined, ReloadOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import { useTranslation } from 'react-i18next';
 import { usePermission } from '../hooks/usePermission';
 import {
   createFeatureDefinition,
+  deleteFeatureDefinition,
   getFeatureDefinitions,
   getFeatureReferences,
   updateFeatureDefinition,
@@ -158,6 +160,38 @@ export default function FeatureCatalogPage() {
     }
   };
 
+  const handleDelete = async (feature: FeatureDefinition) => {
+    // 删除前引用硬校验的 UI 侧预检：有引用先明示（后端仍会兜底拦截）
+    let references: FeatureReference[] = [];
+    try {
+      references = await getFeatureReferences(feature.code);
+    } catch {
+      // 查询失败不阻塞删除流程，由后端引用校验兜底
+    }
+    if (references.length > 0) {
+      message.warning(
+        `${t('featureCatalog.deleteBlockedByRefs', { count: references.length })} ${references.map((r) => r.name).join('、')}`,
+      );
+      return;
+    }
+    Modal.confirm({
+      title: t('featureCatalog.deleteConfirm'),
+      content: t('featureCatalog.deleteConfirmDesc', { code: feature.code }),
+      okText: t('common.delete'),
+      okButtonProps: { danger: true },
+      cancelText: t('common.cancel'),
+      onOk: async () => {
+        try {
+          await deleteFeatureDefinition(feature.code);
+          message.success(t('featureCatalog.deleteSuccess'));
+          await loadData();
+        } catch (error: any) {
+          message.error(`${t('featureCatalog.deleteFailed')}: ${error.response?.data?.message || error.message}`);
+        }
+      },
+    });
+  };
+
   const columns: ColumnsType<FeatureDefinition> = useMemo(() => [
     {
       title: t('featureCatalog.code'),
@@ -165,8 +199,8 @@ export default function FeatureCatalogPage() {
       key: 'code',
       width: 180,
       render: (value: string, record) => (
-        <div>
-          <div style={{ fontWeight: 600 }}>{value}</div>
+        <div style={record.deleted ? { opacity: 0.55 } : undefined}>
+          <div style={{ fontWeight: 600, textDecoration: record.deleted ? 'line-through' : undefined }}>{value}</div>
           <div style={{ fontSize: 12, color: '#8c8c8c' }}>{record.name}</div>
         </div>
       ),
@@ -190,7 +224,8 @@ export default function FeatureCatalogPage() {
       dataIndex: 'status',
       key: 'status',
       width: 120,
-      render: (value: string) => <Tag color={value === 'ACTIVE' ? 'green' : value === 'DEPRECATED' ? 'volcano' : 'default'}>{value}</Tag>,
+      render: (value: string, record) =>
+        record.deleted ? <Tag color="red">{t('featureCatalog.deletedTag')}</Tag> : <Tag color={value === 'ACTIVE' ? 'green' : value === 'DEPRECATED' ? 'volcano' : 'default'}>{value}</Tag>,
     },
     {
       title: t('featureCatalog.aliases'),
@@ -220,9 +255,14 @@ export default function FeatureCatalogPage() {
           <Button type="link" size="small" onClick={() => openReferences(record)}>
             {t('featureCatalog.references')}
           </Button>
-          {canManage && (
+          {canManage && !record.deleted && (
             <Button type="link" size="small" onClick={() => openEditModal(record)}>
               {t('common.edit')}
+            </Button>
+          )}
+          {canManage && !record.deleted && (
+            <Button type="link" size="small" danger icon={<DeleteOutlined />} onClick={() => handleDelete(record)}>
+              {t('common.delete')}
             </Button>
           )}
         </Space>
@@ -264,6 +304,9 @@ export default function FeatureCatalogPage() {
           </Form.Item>
           <Form.Item name="status">
             <Select allowClear placeholder={t('common.status')} style={{ width: 140 }} options={STATUS_OPTIONS.map((value) => ({ value, label: value }))} />
+          </Form.Item>
+          <Form.Item name="includeDeleted" valuePropName="checked" style={{ marginBottom: 0 }}>
+            <Switch checkedChildren={t('featureCatalog.showDeleted')} unCheckedChildren={t('featureCatalog.showDeleted')} />
           </Form.Item>
           <Form.Item>
             <Space>

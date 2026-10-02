@@ -110,6 +110,7 @@ object FeatureDefinitionsTable : Table("feature_definition") {
     val owner = varchar("owner", 100).nullable()
     val createdAt = timestamp("created_at")
     val updatedAt = timestamp("updated_at")
+    val deleted = bool("deleted")
 
     override val primaryKey = PrimaryKey(id)
 }

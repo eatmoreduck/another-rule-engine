@@ -53,6 +53,7 @@ class FeatureCatalogService(
         dataType: String?,
         sourceType: String?,
         status: String?,
+        includeDeleted: Boolean = false,
     ): PageResponse<FeatureDefinitionResponse> {
         val definitions =
             featureRepository.searchDefinitions(
@@ -61,6 +62,7 @@ class FeatureCatalogService(
                     dataType = normalizeEnumFilter(dataType),
                     sourceType = normalizeEnumFilter(sourceType),
                     status = normalizeEnumFilter(status),
+                    includeDeleted = includeDeleted,
                     limit = MAX_SCAN,
                 ),
             )
@@ -107,6 +109,29 @@ class FeatureCatalogService(
         // 特征目录/别名变更影响决策侧特征解析缓存（别名 → 规范编码 → 值镜像），广播失效
         eventPublisher.publishInvalidation(CacheInvalidationType.FEATURE, saved.code)
         return toResponse(saved, listAliases(saved.code))
+    }
+
+    /**
+     * 软删除特征（别名行随删除一并清理），并广播特征缓存失效。
+     *
+     * 删除守卫（引用硬校验）：特征被规则/决策流引用时拒绝删除并返回引用清单——
+     * 强引用下删除会导致规则执行时特征解析失败，必须先解绑再删。
+     * 编码不存在或已删除时报"特征不存在"（与查询侧口径一致）。
+     */
+    @Transactional
+    fun deleteDefinition(code: String) {
+        val definition = getFeatureByCode(code)
+        val references = getReferences(definition.code)
+        if (references.isNotEmpty()) {
+            val summary =
+                references.joinToString("、") { ref ->
+                    "${if (ref.type == "rule") "规则" else "决策流"}「${ref.name}」"
+                }
+            throw IllegalArgumentException("特征被引用，无法删除（共 ${references.size} 处）：$summary；请先解除引用")
+        }
+        featureRepository.softDeleteDefinition(definition.code)
+        eventPublisher.publishInvalidation(CacheInvalidationType.FEATURE, definition.code)
+        log.info("软删除特征: code={}", definition.code)
     }
 
     @Transactional
@@ -349,6 +374,7 @@ class FeatureCatalogService(
             owner = feature.owner,
             createdAt = feature.createdAt,
             updatedAt = feature.updatedAt,
+            deleted = feature.deleted,
             aliases = aliases.toList(),
         )
 

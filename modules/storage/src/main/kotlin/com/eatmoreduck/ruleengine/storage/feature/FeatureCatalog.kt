@@ -28,6 +28,8 @@ data class FeatureDefinition(
     val createdAt: Instant,
     /** 最近更新时间：调用方显式传入 */
     val updatedAt: Instant,
+    /** 软删除标记（列表 includeDeleted 时可见，其余读取路径恒为未删除行） */
+    val deleted: Boolean = false,
 ) {
     init {
         require(code.isNotBlank()) { "特征 code 不能为空白" }

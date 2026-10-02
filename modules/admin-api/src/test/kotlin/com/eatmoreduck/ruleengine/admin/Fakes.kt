@@ -134,25 +134,39 @@ class FakeGrayscaleReleaseRepository : GrayscaleReleaseRepository {
     override fun findAll(): List<GrayscaleRelease> = releases.values.sortedByDescending { it.createdAt }
 }
 
-/** 内存版特征目录仓储（编码与别名比较忽略大小写） */
+/** 内存版特征目录仓储（编码与别名比较忽略大小写；软删为标记模式，支持 includeDeleted 查询） */
 class FakeFeatureCatalogRepository : FeatureCatalogRepository {
     val definitions = LinkedHashMap<String, FeatureDefinition>()
     val aliases = LinkedHashMap<String, FeatureAlias>()
+    private val deletedCodes = mutableSetOf<String>()
+
+    private fun isDeleted(code: String): Boolean = code.lowercase() in deletedCodes
 
     override fun saveDefinition(definition: FeatureDefinition): FeatureDefinition {
         definitions[definition.code.lowercase()] = definition
+        deletedCodes.remove(definition.code.lowercase())
         return definition
     }
 
-    override fun findDefinitionByCode(code: String): FeatureDefinition? = definitions[code.lowercase()]
+    override fun findDefinitionByCode(code: String): FeatureDefinition? = definitions[code.lowercase()]?.takeIf { !isDeleted(it.code) }
 
-    override fun existsDefinitionWithCode(code: String): Boolean = definitions.containsKey(code.lowercase())
+    override fun existsDefinitionWithCode(code: String): Boolean = findDefinitionByCode(code) != null
 
     override fun findDefinitionsByCodes(codes: Collection<String>): List<FeatureDefinition> = codes.mapNotNull(::findDefinitionByCode)
+
+    override fun softDeleteDefinition(code: String): Boolean {
+        val key = code.lowercase()
+        if (!definitions.containsKey(key) || isDeleted(key)) return false
+        deletedCodes.add(key)
+        // 与 Exposed 实现一致：别名随特征一并清理
+        aliases.entries.removeIf { it.value.canonicalCode.equals(code, ignoreCase = true) }
+        return true
+    }
 
     override fun searchDefinitions(query: FeatureDefinitionQuery): List<FeatureDefinition> =
         definitions.values
             .asSequence()
+            .filter { !isDeleted(it.code) || query.includeDeleted }
             .filter { definition ->
                 query.keyword?.let { keyword ->
                     definition.code.contains(keyword, ignoreCase = true) ||

@@ -218,6 +218,11 @@ def scenario_cleanup(admin_token):
         check(f"C1 删除规则 {key}", status in (200, 400, 404), f"status={status}")
     status, _ = call("DELETE", f"{BASE_ADMIN}/api/v1/decision-flows/{FLOW}", admin_token)
     check("C2 删除决策流", status in (200, 400, 404), f"status={status}")
+    # 特征删除（引用规则已在 C1 删除，引用硬校验放行；接口无删除能力的历史遗留数据走 psql 兜底）
+    status, r = call("DELETE", f"{BASE_ADMIN}/api/v1/features/catalog/{FEATURE}", admin_token)
+    check("C3 删除特征（软删除接口）", status == 200, f"status={status} body={r}")
+    psql(f"delete from feature_alias where canonical_code='{FEATURE}'")
+    psql(f"delete from feature_definition where code='{FEATURE}'")
 
 
 if __name__ == "__main__":

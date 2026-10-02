@@ -38,6 +38,7 @@ data class FeatureDefinitionResponse(
     val owner: String?,
     val createdAt: java.time.Instant?,
     val updatedAt: java.time.Instant?,
+    val deleted: Boolean = false,
     val aliases: List<String>,
 )
 

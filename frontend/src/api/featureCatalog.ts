@@ -19,6 +19,7 @@ export async function getFeatureDefinitions(params?: FeatureCatalogQueryParams):
       dataType: params?.dataType,
       sourceType: params?.sourceType,
       status: params?.status,
+      includeDeleted: params?.includeDeleted,
     },
   });
   return data;
@@ -37,6 +38,10 @@ export async function createFeatureDefinition(request: FeatureDefinitionRequest)
 export async function updateFeatureDefinition(code: string, request: FeatureDefinitionRequest): Promise<FeatureDefinition> {
   const { data } = await apiClient.put<FeatureDefinition>(`/api/v1/features/catalog/${code}`, request);
   return data;
+}
+
+export async function deleteFeatureDefinition(code: string): Promise<void> {
+  await apiClient.delete(`/api/v1/features/catalog/${code}`);
 }
 
 export async function validateFeatureDefinitions(items: FeatureValidationItem[]): Promise<FeatureValidationResponse> {

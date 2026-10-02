@@ -11,6 +11,7 @@ import com.eatmoreduck.ruleengine.admin.dto.RuleReferenceResponse
 import com.eatmoreduck.ruleengine.admin.feature.FeatureCatalogService
 import jakarta.validation.Valid
 import org.springframework.http.ResponseEntity
+import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
@@ -40,9 +41,10 @@ class FeatureCatalogController(
         @RequestParam(required = false) dataType: String?,
         @RequestParam(required = false) sourceType: String?,
         @RequestParam(required = false) status: String?,
+        @RequestParam(defaultValue = "false") includeDeleted: Boolean,
     ): ResponseEntity<PageResponse<FeatureDefinitionResponse>> =
         ResponseEntity.ok(
-            featureCatalogService.searchDefinitions(page, size, keyword, dataType, sourceType, status),
+            featureCatalogService.searchDefinitions(page, size, keyword, dataType, sourceType, status, includeDeleted),
         )
 
     /** 特征详情：GET /api/v1/features/catalog/{code} */
@@ -66,6 +68,16 @@ class FeatureCatalogController(
         @PathVariable code: String,
         @Valid @RequestBody request: FeatureDefinitionRequest,
     ): ResponseEntity<FeatureDefinitionResponse> = ResponseEntity.ok(featureCatalogService.updateDefinition(code, request))
+
+    /** 软删除特征（别名随删除清理，同名可重建）：DELETE /api/v1/features/catalog/{code} */
+    @DeleteMapping("/{code}")
+    @SaCheckPermission("api:feature-catalog:manage")
+    fun deleteDefinition(
+        @PathVariable code: String,
+    ): ResponseEntity<Void> {
+        featureCatalogService.deleteDefinition(code)
+        return ResponseEntity.ok().build()
+    }
 
     /** 批量字段校验：POST /api/v1/features/catalog/validate */
     @PostMapping("/validate")

@@ -442,10 +442,12 @@ CREATE TABLE feature_definition (
     status VARCHAR(20) NOT NULL DEFAULT 'ACTIVE',
     owner VARCHAR(100),
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    deleted BOOLEAN NOT NULL DEFAULT FALSE
 );
 
-CREATE UNIQUE INDEX uq_feature_definition_code ON feature_definition (code);
+-- 同名重建支持：部分唯一索引只约束未删除行（删除后可重建同名特征）
+CREATE UNIQUE INDEX uq_feature_definition_code ON feature_definition (code) WHERE deleted = FALSE;
 CREATE INDEX idx_feature_definition_status ON feature_definition (status);
 CREATE INDEX idx_feature_definition_source_type ON feature_definition (source_type);
 
@@ -455,15 +457,17 @@ CREATE TABLE feature_alias (
     canonical_code VARCHAR(120) NOT NULL,
     alias_type VARCHAR(50) NOT NULL DEFAULT 'LEGACY',
     status VARCHAR(20) NOT NULL DEFAULT 'ACTIVE',
-    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT fk_feature_alias_canonical_code
-        FOREIGN KEY (canonical_code) REFERENCES feature_definition(code) ON DELETE CASCADE
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
+-- 注：旧设计在 canonical_code 上挂了指向 feature_definition(code) 的外键；code 改为
+-- 部分唯一索引（软删除同名重建语义）后外键不再可行。别名行的完整性由应用层保证：
+-- 写入仅经 FeatureCatalogService，特征软删除时别名行一并清理。
 
 CREATE UNIQUE INDEX uq_feature_alias_alias_code ON feature_alias (alias_code);
 CREATE INDEX idx_feature_alias_canonical_code ON feature_alias (canonical_code);
 
 COMMENT ON TABLE feature_definition IS '特征定义（特征字典）';
+COMMENT ON COLUMN feature_definition.deleted IS '软删除标记；别名行随删除一并物理清理（兼容映射随特征失效）';
 COMMENT ON TABLE feature_alias IS '特征别名（历史编码 → 规范编码）';
 
 INSERT INTO feature_definition (code, name, data_type, source_type, example_value, description, status, owner)

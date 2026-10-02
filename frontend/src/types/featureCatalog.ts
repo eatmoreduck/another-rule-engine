@@ -16,6 +16,7 @@ export interface FeatureDefinition {
   owner: string | null;
   createdAt: string;
   updatedAt: string | null;
+  deleted: boolean;
   aliases: string[];
 }
 
@@ -24,6 +25,7 @@ export interface FeatureCatalogQueryParams {
   dataType?: string;
   sourceType?: string;
   status?: string;
+  includeDeleted?: boolean;
   page?: number;
   size?: number;
 }

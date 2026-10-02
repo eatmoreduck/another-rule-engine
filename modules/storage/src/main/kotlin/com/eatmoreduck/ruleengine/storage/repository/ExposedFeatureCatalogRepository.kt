@@ -19,12 +19,14 @@ import org.jetbrains.exposed.v1.jdbc.deleteWhere
 import org.jetbrains.exposed.v1.jdbc.insert
 import org.jetbrains.exposed.v1.jdbc.selectAll
 import org.jetbrains.exposed.v1.jdbc.update
+import java.time.Instant
 
 /**
  * [FeatureCatalogRepository] 的 Exposed 实现。
  *
  * 大小写不敏感语义沿用旧派生查询（findByCodeIgnoreCase 等）：经 lower() 归一后比较。
  * ACTIVE 状态过滤集中在 [resolveCode]（别名解析链路），目录管理查询不过滤状态。
+ * 软删除：读取侧全部过滤 deleted = FALSE（同 Key 可在删除后重建，部分唯一索引只约束未删除行）。
  */
 internal class ExposedFeatureCatalogRepository : FeatureCatalogRepository {
     override fun saveDefinition(definition: FeatureDefinition): FeatureDefinition {
@@ -49,6 +51,7 @@ internal class ExposedFeatureCatalogRepository : FeatureCatalogRepository {
                 statement[owner] = definition.owner
                 statement[createdAt] = definition.createdAt
                 statement[updatedAt] = definition.updatedAt
+                statement[deleted] = false
             }
         return definition.copy(id = inserted[FeatureDefinitionsTable.id])
     }
@@ -77,14 +80,14 @@ internal class ExposedFeatureCatalogRepository : FeatureCatalogRepository {
     override fun findDefinitionByCode(code: String): FeatureDefinition? =
         FeatureDefinitionsTable
             .selectAll()
-            .where { FeatureDefinitionsTable.code.lowerCase() eq code.lowercase() }
+            .where { (FeatureDefinitionsTable.code.lowerCase() eq code.lowercase()) and notDeleted() }
             .singleOrNull()
             ?.let(::toDefinition)
 
     override fun existsDefinitionWithCode(code: String): Boolean =
         FeatureDefinitionsTable
             .selectAll()
-            .where { FeatureDefinitionsTable.code.lowerCase() eq code.lowercase() }
+            .where { (FeatureDefinitionsTable.code.lowerCase() eq code.lowercase()) and notDeleted() }
             .any()
 
     override fun findDefinitionsByCodes(codes: Collection<String>): List<FeatureDefinition> {
@@ -92,13 +95,16 @@ internal class ExposedFeatureCatalogRepository : FeatureCatalogRepository {
         val normalized = codes.map { it.lowercase() }
         return FeatureDefinitionsTable
             .selectAll()
-            .where { FeatureDefinitionsTable.code.lowerCase() inList normalized }
+            .where { (FeatureDefinitionsTable.code.lowerCase() inList normalized) and notDeleted() }
             .map(::toDefinition)
             .sortedBy { normalized.indexOf(it.code.lowercase()) }
     }
 
     override fun searchDefinitions(query: FeatureDefinitionQuery): List<FeatureDefinition> {
         var select = FeatureDefinitionsTable.selectAll()
+        if (!query.includeDeleted) {
+            select = select.andWhere { notDeleted() }
+        }
         query.keyword?.takeIf { it.isNotBlank() }?.let { keyword ->
             val pattern = "%${keyword.lowercase()}%"
             select =
@@ -147,6 +153,24 @@ internal class ExposedFeatureCatalogRepository : FeatureCatalogRepository {
             FeatureAliasesTable.canonicalCode.lowerCase() eq canonicalCode.lowercase()
         }
 
+    override fun softDeleteDefinition(code: String): Boolean {
+        val deletedRows =
+            FeatureDefinitionsTable.update(
+                where = { (FeatureDefinitionsTable.code.lowerCase() eq code.lowercase()) and notDeleted() },
+            ) { statement ->
+                statement[deleted] = true
+                statement[updatedAt] = Instant.now()
+            }
+        if (deletedRows > 0) {
+            // 别名随特征一并清理：兼容映射失效，同时释放别名占用（外键 CASCADE 亦可级联，显式删语义更直白）
+            deleteAliasesByCanonicalCode(code)
+        }
+        return deletedRows > 0
+    }
+
+    /** 未软删除行过滤（同名重建语义：已删除行不参与查询与唯一性） */
+    private fun notDeleted() = FeatureDefinitionsTable.deleted eq false
+
     override fun resolveCode(code: String): FeatureDefinition? {
         findDefinitionByCode(code)?.let { direct ->
             // 直接命中的定义仅取 ACTIVE（旧 getByCode 语义：非 ACTIVE 视为不可用）
@@ -181,6 +205,7 @@ internal class ExposedFeatureCatalogRepository : FeatureCatalogRepository {
                 createdAt = createdAt,
                 // updated_at NOT NULL DEFAULT CURRENT_TIMESTAMP，与 created_at 同默认值
                 updatedAt = row[FeatureDefinitionsTable.updatedAt],
+                deleted = row[FeatureDefinitionsTable.deleted],
             )
         }
 
