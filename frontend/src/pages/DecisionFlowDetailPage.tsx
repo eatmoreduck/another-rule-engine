@@ -9,6 +9,7 @@ import { getDecisionFlow, deleteDecisionFlow, enableDecisionFlow, disableDecisio
 import type { DecisionFlow } from '../types/decisionFlow';
 import type { FlowNode, FlowEdge } from '../types/flowConfig';
 import { createInitialNodes, createInitialEdges } from '../types/flowConfig';
+import { withDefaultPositions } from '../utils/flowGraphLayout';
 import StartNodeComponent from '../components/flow/nodes/StartNode';
 import EndNodeComponent from '../components/flow/nodes/EndNode';
 import ConditionNodeComponent from '../components/flow/nodes/ConditionNode';
@@ -58,13 +59,8 @@ function DetailInner() {
       try {
         const graph = JSON.parse(data.flowGraph);
         if (graph.nodes) {
-          // 后端 DSL 的 position 可空（API/脚本创建的流图无坐标）；
-          // ReactFlow 渲染要求 position 必有，缺失时按网格顺序补默认布局
-          const normalized = (graph.nodes as FlowNode[]).map((n, i) => ({
-            ...n,
-            position: n.position ?? { x: 80 + (i % 4) * 240, y: 60 + Math.floor(i / 4) * 150 },
-          }));
-          setFlowNodes(normalized);
+          // 后端 DSL 的 position 可空；ReactFlow 渲染要求必有坐标——统一补默认布局
+          setFlowNodes(withDefaultPositions(graph.nodes as FlowNode[]));
           requestAnimationFrame(() => {
             if (graph.edges) setFlowEdges(graph.edges as FlowEdge[]);
           });

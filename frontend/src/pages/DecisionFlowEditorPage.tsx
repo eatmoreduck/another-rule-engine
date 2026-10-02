@@ -9,6 +9,7 @@ import { getDecisionFlow, createDecisionFlow, updateDecisionFlow } from '../api/
 import { validateFeatureDefinitions } from '../api/featureCatalog';
 import type { DecisionFlow } from '../types/decisionFlow';
 import type { FlowNode, FlowEdge, ConditionNodeData, ActionNodeData, EndNodeData, RuleSetNodeData, BlacklistNodeData, WhitelistNodeData, MergeNodeData } from '../types/flowConfig';
+import { withDefaultPositions } from '../utils/flowGraphLayout';
 import type { FeatureValidationResponse } from '../types/featureCatalog';
 import { createInitialNodes, createInitialEdges } from '../types/flowConfig';
 import FlowCanvas from '../components/flow/FlowCanvas';
@@ -96,7 +97,7 @@ function FlowEditorInner() {
           setFlowDescription(flow.flowDescription ?? '');
           try {
             const graph = JSON.parse(flow.flowGraph);
-            if (graph.nodes) setNodes(graph.nodes as FlowNode[]);
+            if (graph.nodes) setNodes(withDefaultPositions(graph.nodes as FlowNode[]));
             if (graph.edges) setEdges(graph.edges as FlowEdge[]);
           } catch { /* ignore parse error */ }
         })
