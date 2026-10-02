@@ -42,6 +42,9 @@ fun interface RuleSetPayloadSource {
  * - 规则集内引用规则走快照缓存（生效版本载荷），不重复解析；
  * - 全部结果携带 executionContext（旧流节点构造的响应不含该字段，统一后前端多读一个字段不破坏契约）。
  *
+ * 结构：[execute] 主循环只做「取节点 → 处理 → 推进」，节点语义在各自的处理函数中
+ * （一节点一函数），出口统一为 [NodeOutcome]；所有拒绝文案为对外契约，不可改字。
+ *
  * 线程安全：无共享可变状态，单实例可被并发决策复用。
  */
 @Component
@@ -67,94 +70,134 @@ class FlowExecutor(
         executionTimeoutMs: Long,
     ): DecisionResult {
         val start = graph.nodes.firstOrNull { it.data is StartNodeData } ?: return rejected("决策流没有开始节点")
-        var current: FlowNode? = start
+        var current: FlowNode = start
         var steps = 0
 
-        while (current != null) {
+        while (true) {
             if (++steps > properties.flowMaxSteps) {
                 return rejected("决策流执行步数超限(${properties.flowMaxSteps})，疑似流图成环")
             }
-            val node = current
-            when (val data = node.data) {
-                is StartNodeData -> {
-                    current = nextNode(node.id, graph, null) ?: return rejected("无后续节点")
-                }
+            val outcome =
+                when (val data = current.data) {
+                    is StartNodeData -> {
+                        advance(nextNode(current.id, graph, null), "无后续节点")
+                    }
 
-                is ConditionNodeData -> {
-                    val met = evaluateOperator(features[data.fieldName], data.operator.name, data.threshold)
-                    current = nextNode(node.id, graph, met) ?: return rejected("条件分支无后续节点")
-                }
+                    is ConditionNodeData -> {
+                        advance(
+                            nextNode(current.id, graph, evaluateOperator(features[data.fieldName], data.operator.name, data.threshold)),
+                            "条件分支无后续节点",
+                        )
+                    }
 
-                is ActionNodeData -> {
-                    return decisionOf(data.action.name, data.reason, features)
-                }
+                    is ActionNodeData -> {
+                        return decisionOf(data.action.name, data.reason, features)
+                    }
 
-                is EndNodeData -> {
-                    return decisionOf(data.defaultAction.name, data.defaultReason, features)
-                }
+                    is EndNodeData -> {
+                        return decisionOf(data.defaultAction.name, data.defaultReason, features)
+                    }
 
-                is RuleSetNodeData -> {
-                    if (data.ruleKeys.isEmpty()) {
-                        current = nextNode(node.id, graph, null) ?: return rejected("规则集无引用规则")
-                    } else {
-                        val reject = evaluateRuleSet(data.ruleKeys, node.id, features, executionTimeoutMs)
-                        if (reject != null) return reject
-                        current = nextNode(node.id, graph, null) ?: return rejected("规则集通过分支无后续节点")
+                    is RuleSetNodeData -> {
+                        ruleSetOutcome(data, current, graph, features, executionTimeoutMs)
+                    }
+
+                    is BlacklistNodeData -> {
+                        blacklistOutcome(data, current, graph, features)
+                    }
+
+                    is WhitelistNodeData -> {
+                        whitelistOutcome(data, current, graph, features)
+                    }
+
+                    is MergeNodeData -> {
+                        advance(nextNode(current.id, graph, null), "合并节点无后续节点")
                     }
                 }
-
-                is BlacklistNodeData -> {
-                    val keyType = data.keyType
-                    // 特征取值：fieldName 显式绑定优先（特征编码），回退 keyType（旧约定：调用方特征键 = 名单枚举名）
-                    val value =
-                        (data.fieldName?.let { features[it] } ?: features[data.keyType])
-                            ?.toString()
-                            .orEmpty()
-                    if (value.isEmpty()) {
-                        current = nextNode(node.id, graph, null) ?: return rejected("黑名单节点无后续节点")
-                    } else {
-                        val hit =
-                            nameListLookup.existsActive(data.listKey.orEmpty(), "BLACK", keyType, value) ||
-                                (
-                                    !"GLOBAL".equals(data.listKey, ignoreCase = true) &&
-                                        nameListLookup.existsActive("GLOBAL", "BLACK", keyType, value)
-                                )
-                        if (hit) return rejected("命中黑名单: $keyType=$value")
-                        current = nextNode(node.id, graph, null) ?: return rejected("黑名单节点无后续节点")
-                    }
-                }
-
-                is WhitelistNodeData -> {
-                    val keyType = data.keyType
-                    // 特征取值：fieldName 显式绑定优先，回退 keyType（同黑名单节点）
-                    val value =
-                        (data.fieldName?.let { features[it] } ?: features[data.keyType])
-                            ?.toString()
-                            .orEmpty()
-                    if (value.isEmpty()) {
-                        return rejected("白名单校验失败: 缺少特征值 $keyType")
-                    }
-                    val hit =
-                        nameListLookup.existsActive(data.listKey.orEmpty(), "WHITE", keyType, value) ||
-                            (
-                                !"GLOBAL".equals(data.listKey, ignoreCase = true) &&
-                                    nameListLookup.existsActive("GLOBAL", "WHITE", keyType, value)
-                            )
-                    if (hit) {
-                        current = nextNode(node.id, graph, null) ?: return rejected("白名单节点无后续节点")
-                    } else {
-                        return rejected("未在白名单中: $keyType=$value")
-                    }
-                }
-
-                is MergeNodeData -> {
-                    current = nextNode(node.id, graph, null) ?: return rejected("合并节点无后续节点")
-                }
+            when (outcome) {
+                is NodeOutcome.Reject -> return outcome.result
+                is NodeOutcome.Advance -> current = outcome.next ?: return rejected(outcome.missingNextReason)
             }
         }
-        // 循环出口不可达（所有分支要么 return 要么推进 current）
-        return rejected("决策流没有可执行节点")
     }
+
+    /** 规则集节点：拒绝优先（一票否决）；通过/无引用规则继续流程 */
+    private fun ruleSetOutcome(
+        data: RuleSetNodeData,
+        node: FlowNode,
+        graph: FlowGraph,
+        features: Map<String, Any?>,
+        executionTimeoutMs: Long,
+    ): NodeOutcome {
+        if (data.ruleKeys.isEmpty()) {
+            return advance(nextNode(node.id, graph, null), "规则集无引用规则")
+        }
+        for (ruleKey in data.ruleKeys) {
+            val outcome = runRuleInRuleSet(ruleKey, features, executionTimeoutMs) ?: continue
+            if (outcome.rejected) {
+                log.info("规则集拒绝优先触发: node={}, ruleKey={}, reason={}", node.id, ruleKey, outcome.reason)
+                return NodeOutcome.Reject(rejected(outcome.reason ?: "规则集命中拒绝规则: $ruleKey"))
+            }
+        }
+        return advance(nextNode(node.id, graph, null), "规则集通过分支无后续节点")
+    }
+
+    /** 黑名单节点：命中拒绝（旧文案逐字），未命中/无值继续流程 */
+    private fun blacklistOutcome(
+        data: BlacklistNodeData,
+        node: FlowNode,
+        graph: FlowGraph,
+        features: Map<String, Any?>,
+    ): NodeOutcome {
+        val value = listFeatureValue(features, data.fieldName, data.keyType)
+        if (value.isNotEmpty() && isListed(data.listKey, LIST_TYPE_BLACK, data.keyType, value)) {
+            return NodeOutcome.Reject(rejected("命中黑名单: ${data.keyType}=$value"))
+        }
+        return advance(nextNode(node.id, graph, null), "黑名单节点无后续节点")
+    }
+
+    /** 白名单节点：无值拒绝、未命中拒绝、命中继续（旧文案逐字） */
+    private fun whitelistOutcome(
+        data: WhitelistNodeData,
+        node: FlowNode,
+        graph: FlowGraph,
+        features: Map<String, Any?>,
+    ): NodeOutcome {
+        val value = listFeatureValue(features, data.fieldName, data.keyType)
+        if (value.isEmpty()) {
+            return NodeOutcome.Reject(rejected("白名单校验失败: 缺少特征值 ${data.keyType}"))
+        }
+        if (!isListed(data.listKey, LIST_TYPE_WHITE, data.keyType, value)) {
+            return NodeOutcome.Reject(rejected("未在白名单中: ${data.keyType}=$value"))
+        }
+        return advance(nextNode(node.id, graph, null), "白名单节点无后续节点")
+    }
+
+    /**
+     * 名单节点的特征取值：[fieldName] 显式绑定优先（特征编码），
+     * 回退 [keyType]（旧约定：调用方特征键 = 名单枚举名）。
+     */
+    private fun listFeatureValue(
+        features: Map<String, Any?>,
+        fieldName: String?,
+        keyType: String,
+    ): String = (fieldName?.let { features[it] } ?: features[keyType])?.toString().orEmpty()
+
+    /**
+     * 名单命中判定：先查节点绑定名单，非 GLOBAL 名单未命中再回退查 GLOBAL
+     * （专属名单未命中不代表全局无风险，语义照搬旧实现）。
+     */
+    private fun isListed(
+        listKey: String?,
+        listType: String,
+        keyType: String,
+        value: String,
+    ): Boolean =
+        nameListLookup.existsActive(listKey.orEmpty(), listType, keyType, value) ||
+            (
+                !"GLOBAL".equals(listKey, ignoreCase = true) &&
+                    nameListLookup.existsActive("GLOBAL", listType, keyType, value)
+            )
 
     /**
      * 分支选择（旧 getNextNode 语义）：
@@ -235,27 +278,6 @@ class FlowExecutor(
         }
     }
 
-    /**
-     * 规则集节点：拒绝优先（一票否决）。
-     * 逐条执行引用规则，任一输出 REJECT 立即短路返回；全部通过 → 返回 null 继续流程。
-     * 单条规则执行失败不拒绝（旧 executeRuleWithDecision 的容错语义）。
-     */
-    private fun evaluateRuleSet(
-        ruleKeys: List<String>,
-        nodeId: String,
-        features: Map<String, Any?>,
-        executionTimeoutMs: Long,
-    ): DecisionResult? {
-        for (ruleKey in ruleKeys) {
-            val outcome = runRuleInRuleSet(ruleKey, features, executionTimeoutMs) ?: continue
-            if (outcome.rejected) {
-                log.info("规则集拒绝优先触发: node={}, ruleKey={}, reason={}", nodeId, ruleKey, outcome.reason)
-                return rejected(outcome.reason ?: "规则集命中拒绝规则: $ruleKey")
-            }
-        }
-        return null
-    }
-
     /** 执行规则集内单条规则；规则缺失/停用/载荷缺失 → 视为不拒绝 */
     private fun runRuleInRuleSet(
         ruleKey: String,
@@ -274,26 +296,16 @@ class FlowExecutor(
                 log.warn("规则集引用规则执行失败: ruleKey={}", ruleKey, e)
                 return RuleExecResult(rejected = false, reason = null)
             }
-        return when (raw) {
-            is Map<*, *> -> {
-                val decision = raw["decision"]?.toString()
-                val reason = raw["reason"]?.toString()
-                if (decision != null && "REJECT" == decision) {
-                    RuleExecResult(rejected = true, reason = reason)
-                } else {
-                    RuleExecResult(rejected = false, reason = reason)
-                }
-            }
-
-            is Boolean -> {
-                RuleExecResult(rejected = !raw, reason = null)
-            }
-
-            else -> {
-                RuleExecResult(rejected = "REJECT" == raw.toString(), reason = null)
-            }
-        }
+        return toRuleExecResult(raw ?: return RuleExecResult(rejected = false, reason = null))
     }
+
+    /** 规则输出 → 执行结果：Map 取 decision/reason，Boolean 即拒绝位，其余按字符串比较 */
+    private fun toRuleExecResult(raw: Any): RuleExecResult =
+        when (raw) {
+            is Map<*, *> -> RuleExecResult(rejected = "REJECT" == raw["decision"]?.toString(), reason = raw["reason"]?.toString())
+            is Boolean -> RuleExecResult(rejected = !raw, reason = null)
+            else -> RuleExecResult(rejected = "REJECT" == raw.toString(), reason = null)
+        }
 
     private data class RuleExecResult(
         val rejected: Boolean,
@@ -307,4 +319,26 @@ class FlowExecutor(
     ): DecisionResult = ResultMapper.toDecision(action, features).copy(reason = reason)
 
     private fun rejected(reason: String): DecisionResult = DecisionResult.rejected(reason, executionTimeMs = 0)
+
+    /** 节点处理结果：推进到下一节点（携带缺边时的拒绝文案），或以给定结果终止 */
+    private sealed interface NodeOutcome {
+        data class Advance(
+            val next: FlowNode?,
+            val missingNextReason: String,
+        ) : NodeOutcome
+
+        data class Reject(
+            val result: DecisionResult,
+        ) : NodeOutcome
+    }
+
+    private fun advance(
+        next: FlowNode?,
+        missingNextReason: String,
+    ): NodeOutcome = NodeOutcome.Advance(next, missingNextReason)
+
+    private companion object {
+        private const val LIST_TYPE_BLACK = "BLACK"
+        private const val LIST_TYPE_WHITE = "WHITE"
+    }
 }
