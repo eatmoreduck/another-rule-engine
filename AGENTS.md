@@ -105,6 +105,8 @@ export JAVA_HOME=~/.sdkman/candidates/java/25.0.1-graalce
 - **Boot 4 starter**：web MVC 用 `spring-boot-starter-webmvc`（旧名 `web` 仍存在但已非推荐）
 - 版本核实方法：任何新依赖先查 `https://repo1.maven.org/maven2/<group path>/<artifact>/maven-metadata.xml`，不凭记忆写版本号
 - 规则执行必须过沙箱（SecureASTCustomizer 白名单），AI 生成的规则同样要过静态分析
+- **UI 走查截图/临时产物**：Playwright 截图等临时文件统一落 `.playwright-mcp/`（已被 ignore），**禁止在仓库根目录或源码目录落任何图片/临时文件**（.gitignore 已有根目录锚定规则 `/*.png` 兜底）；走查截图用完即弃不进仓库，产品截图只进 `pub_docs/screenshots/`
+- **UI 自动化走查**：改动涉及页面/接口时，除 API E2E（`scripts/e2e_full_test.py` + `scripts/e2e_node_matrix_test.py`）外，用 Playwright 过一遍受影响页面（含动态实体详情页与表单弹窗），检测崩溃与 4xx/5xx
 
 ## GSD Workflow Enforcement
 
