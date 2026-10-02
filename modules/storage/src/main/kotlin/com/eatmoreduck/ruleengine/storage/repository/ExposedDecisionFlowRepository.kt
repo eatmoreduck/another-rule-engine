@@ -5,6 +5,7 @@ import com.eatmoreduck.ruleengine.storage.table.DecisionFlowsTable
 import org.jetbrains.exposed.v1.core.ResultRow
 import org.jetbrains.exposed.v1.core.SortOrder
 import org.jetbrains.exposed.v1.core.and
+import org.jetbrains.exposed.v1.core.not
 import org.jetbrains.exposed.v1.core.eq
 import org.jetbrains.exposed.v1.jdbc.insert
 import org.jetbrains.exposed.v1.jdbc.selectAll
@@ -21,7 +22,11 @@ class ExposedDecisionFlowRepository : DecisionFlowRepository {
             .singleOrNull()
             ?.toMain()
 
-    override fun findAllMains(): List<DecisionFlowMain> = DecisionFlowsTable.selectAll().map { it.toMain() }
+    override fun findAllMains(): List<DecisionFlowMain> =
+        DecisionFlowsTable
+            .selectAll()
+            .where { not(DecisionFlowsTable.status eq "DELETED") }
+            .map { it.toMain() }
 
     override fun findVersion(
         flowKey: String,

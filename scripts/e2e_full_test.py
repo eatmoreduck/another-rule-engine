@@ -19,12 +19,11 @@ import urllib.request
 
 BASE_ADMIN = "http://localhost:8080"
 BASE_DECISION = "http://localhost:8081"
-RUN = str(int(time.time()))[-6:]
-
-RULE_BIG = f"e2e_big_{RUN}"
-RULE_ADMIN = f"e2e_admin_{RUN}"
-FLOW = f"e2e_flow_{RUN}"
-FEATURE = "txn_amount"
+# 语义化命名（可读优先）：运行前清场 + 运行后删除保证幂等，不用时间戳后缀
+RULE_BIG = "e2e_big_amount_test"
+RULE_ADMIN = "e2e_admin_rule_test"
+FLOW = "e2e_flow_test"
+FEATURE = "txn_amount_test"
 
 results = []
 
@@ -68,8 +67,14 @@ def scenario_full_chain():
     check("A1 admin 登录", status == 200 and token, f"status={status}")
     H = token
 
+    # 运行前清场：删除上轮可能残留的同名资源（容忍失败），保证幂等
+    for m, u in [("DELETE", f"{BASE_ADMIN}/api/v1/rules/{RULE_BIG}"),
+                 ("DELETE", f"{BASE_ADMIN}/api/v1/rules/{RULE_ADMIN}"),
+                 ("DELETE", f"{BASE_ADMIN}/api/v1/decision-flows/{FLOW}")]:
+        call(m, u, H)
+
     status, r = call("POST", f"{BASE_ADMIN}/api/v1/features/catalog", H, body={
-        "code": f"{FEATURE}_{RUN}", "name": "交易金额", "dataType": "NUMBER",
+        "code": FEATURE, "name": "交易金额", "dataType": "NUMBER",
         "sourceType": "INPUT", "exampleValue": "12000", "description": "E2E 测试特征",
     })
     check("A2 创建特征", status == 200, f"status={status} body={r}")
@@ -178,14 +183,14 @@ def scenario_rbac(admin_token):
         check(f"B6 viewer GET {ep} → 200", status == 200, f"status={status}")
 
     status, _ = call("POST", f"{BASE_ADMIN}/api/v1/rules", vtoken, body={
-        "ruleKey": f"e2e_hack_{RUN}", "ruleName": "越权尝试",
+        "ruleKey": "e2e_hack_rule_test", "ruleName": "越权尝试",
         "groovyScript": "def evaluate(Map features) { return true }"})
     check("B7a viewer 创建规则 → 403", status == 403, f"status={status}")
     status, _ = call("POST", f"{BASE_ADMIN}/api/v1/features/catalog", vtoken, body={
-        "code": f"e2e_hack_feat_{RUN}", "name": "越权特征", "dataType": "NUMBER", "sourceType": "INPUT"})
+        "code": "e2e_hack_feat_test", "name": "越权特征", "dataType": "NUMBER", "sourceType": "INPUT"})
     check("B7b viewer 创建特征 → 403", status == 403, f"status={status}")
     status, _ = call("POST", f"{BASE_ADMIN}/api/v1/decision-flows", vtoken, body={
-        "flowKey": f"e2e_hack_flow_{RUN}", "flowName": "越权流", "flowGraph": "{}"})
+        "flowKey": "e2e_hack_flow_test", "flowName": "越权流", "flowGraph": "{}"})
     check("B7c viewer 创建决策流 → 403", status == 403, f"status={status}")
     status, _ = call("GET", f"{BASE_ADMIN}/api/v1/system/users", vtoken)
     check("B7d viewer 查用户列表 → 403", status == 403, f"status={status}")
