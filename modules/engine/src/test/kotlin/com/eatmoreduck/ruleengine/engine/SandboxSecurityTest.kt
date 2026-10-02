@@ -441,4 +441,55 @@ class SandboxSecurityTest {
         // 有界 while 循环应正常执行（验证 while 中断注入不破坏语义）
         assertEquals(10, assertScriptAllowed("def i = 0; while (i < 10) { i = i + 1 }; return i"))
     }
+
+    // ==================== 全限定名构造绕过（2026-10 沙箱加固回归组） ====================
+    // 拦截分层：FQN 构造由 ScriptAuditor 文本预检（正则）拦截；接收者黑名单在编译期兜底。
+    // 本组用例按实际拦截层分别断言，避免用错工具产生假失败。
+
+    @Test
+    fun `fully qualified File constructor is blocked by audit`() {
+        // 修复前：静态审计正则只匹配简单名 new File(，全限定名绕过并真实读到文件系统
+        val result = auditor.audit("def f = new java.io.File('/tmp')\nreturn f.list().length")
+        assertFalse(result.safe, "全限定名 File 构造应被审计拦截")
+        assertTrue(result.errors.first().contains("文件操作"), "应归入文件操作类别: ${result.errors}")
+    }
+
+    @Test
+    fun `fully qualified Socket constructor is blocked by audit`() {
+        val result = auditor.audit("def s = new java.net.Socket('example.com', 80)\nreturn 'connected'")
+        assertFalse(result.safe, "全限定名 Socket 构造应被审计拦截")
+    }
+
+    @Test
+    fun `fully qualified URL constructor is blocked by audit`() {
+        val result = auditor.audit("def u = new java.net.URL('http://example.com')\nreturn u.text")
+        assertFalse(result.safe, "全限定名 URL 构造应被审计拦截")
+    }
+
+    @Test
+    fun `nio Files API is blocked by audit`() {
+        val result = auditor.audit("return java.nio.file.Files.exists(java.nio.file.Paths.get('/tmp'))")
+        assertFalse(result.safe, "java.nio.file NIO API 应被审计拦截")
+    }
+
+    @Test
+    fun `file class reference members are blocked at compile time by receiver blacklist`() {
+        // 纵深防线：接收者黑名单（java.io.File/Path/Files）对显式类引用的成员访问在编译期拦截。
+        // ⚠️ 边界：def 动态类型变量的接收者类型推断不出（Groovy SecureASTCustomizer 静态推断限制），
+        // 该场景由 ScriptAuditor 文本预检兜底（主防线，见上一组 FQN 用例）——审计在决策执行前必跑。
+        assertScriptBlocked("return java.io.File.separator")
+    }
+
+    @Test
+    fun `simple name File constructor remains blocked by audit`() {
+        val result = auditor.audit("def f = new File('/tmp')\nreturn f.list().length")
+        assertFalse(result.safe)
+    }
+
+    @Test
+    fun `benign util classes still construct normally`() {
+        // 白名单域内的正常构造不受加固影响（java.util / java.math）
+        assertEquals(3, assertScriptAllowed("def l = new java.util.ArrayList(); l.add(1); l.add(2); l.add(3); return l.size()"))
+        assertEquals(0, assertScriptAllowed("return new java.math.BigDecimal('10.5').compareTo(new java.math.BigDecimal('10.5'))"))
+    }
 }

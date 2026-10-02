@@ -415,7 +415,8 @@ CREATE TABLE name_list (
     updated_by VARCHAR(255),
     updated_at TIMESTAMP,
     CONSTRAINT chk_nl_list_type CHECK (list_type IN ('BLACK', 'WHITE')),
-    CONSTRAINT chk_nl_key_type CHECK (key_type IN ('ID_NO', 'DEVICE_ID', 'IP', 'PHONE_NO', 'MAC_ADDR')),
+    -- key_type 不设枚举约束（2026-10）：决策流黑白名单节点支持绑定任意特征编码做名单分组，
+    -- 封闭枚举曾导致特征编码（如 user_level）作为 keyType 入库时撞 CHECK 变 500
     CONSTRAINT uq_nl_list_type_key UNIQUE (list_key, list_type, key_type, key_value)
 );
 
@@ -425,7 +426,7 @@ CREATE INDEX idx_nl_expired ON name_list (expired_at);
 COMMENT ON TABLE name_list IS '黑名单/白名单';
 COMMENT ON COLUMN name_list.list_key IS '名单 Key，通常为决策流 flowKey，GLOBAL 表示全局共享';
 COMMENT ON COLUMN name_list.list_type IS 'BLACK-黑名单, WHITE-白名单';
-COMMENT ON COLUMN name_list.key_type IS 'ID_NO, DEVICE_ID, IP, PHONE_NO, MAC_ADDR';
+COMMENT ON COLUMN name_list.key_type IS '名单键类型：常用枚举（ID_NO/DEVICE_ID/IP/PHONE_NO/MAC_ADDR）或特征编码（不设枚举约束）';
 
 -- ─────────────────────────────────────────────────────────────
 -- 8. 特征目录域

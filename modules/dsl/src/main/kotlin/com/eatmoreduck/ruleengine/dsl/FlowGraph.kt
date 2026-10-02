@@ -108,20 +108,30 @@ data class RuleSetNodeData(
     val ruleKeys: List<String> = emptyList(),
 ) : FlowNodeData
 
-/** 黑名单节点数据：`{ label, nodeType: 'blacklist', keyType, listKey? }` */
+/**
+ * 黑名单节点数据：`{ label, nodeType: 'blacklist', keyType, listKey?, fieldName? }`。
+ *
+ * [fieldName] 特征绑定（2026-10 新增）：从特征取值的键。缺省时回退 [keyType]（旧约定：
+ * 调用方特征键直接使用名单键类型枚举名）。名单匹配仍按 [keyType] 查询。
+ */
 data class BlacklistNodeData(
     override val label: String,
     override val nodeType: FlowNodeKind = FlowNodeKind.BLACKLIST,
     val keyType: String,
     val listKey: String? = null,
+    val fieldName: String? = null,
 ) : FlowNodeData
 
-/** 白名单节点数据：`{ label, nodeType: 'whitelist', keyType, listKey? }` */
+/**
+ * 白名单节点数据：`{ label, nodeType: 'whitelist', keyType, listKey?, fieldName? }`。
+ * [fieldName] 语义同 [BlacklistNodeData]。
+ */
 data class WhitelistNodeData(
     override val label: String,
     override val nodeType: FlowNodeKind = FlowNodeKind.WHITELIST,
     val keyType: String,
     val listKey: String? = null,
+    val fieldName: String? = null,
 ) : FlowNodeData
 
 /** 合并节点数据：`{ label, nodeType: 'merge' }` */

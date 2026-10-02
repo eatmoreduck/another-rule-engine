@@ -105,7 +105,11 @@ class FlowExecutor(
 
                 is BlacklistNodeData -> {
                     val keyType = data.keyType
-                    val value = features[keyType]?.toString().orEmpty()
+                    // 特征取值：fieldName 显式绑定优先（特征编码），回退 keyType（旧约定：调用方特征键 = 名单枚举名）
+                    val value =
+                        (data.fieldName?.let { features[it] } ?: features[data.keyType])
+                            ?.toString()
+                            .orEmpty()
                     if (value.isEmpty()) {
                         current = nextNode(node.id, graph, null) ?: return rejected("黑名单节点无后续节点")
                     } else {
@@ -122,7 +126,11 @@ class FlowExecutor(
 
                 is WhitelistNodeData -> {
                     val keyType = data.keyType
-                    val value = features[keyType]?.toString().orEmpty()
+                    // 特征取值：fieldName 显式绑定优先，回退 keyType（同黑名单节点）
+                    val value =
+                        (data.fieldName?.let { features[it] } ?: features[data.keyType])
+                            ?.toString()
+                            .orEmpty()
                     if (value.isEmpty()) {
                         return rejected("白名单校验失败: 缺少特征值 $keyType")
                     }

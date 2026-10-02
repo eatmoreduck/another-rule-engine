@@ -23,7 +23,7 @@ import java.util.regex.Pattern
  */
 object SandboxWhitelist {
     /** 沙箱配置版本号：参与缓存 key 计算，清单变更时必须递增 */
-    const val SANDBOX_CONFIG_VERSION: String = "1"
+    const val SANDBOX_CONFIG_VERSION: String = "2"
 
     // ---------------- 导入白名单（SecureASTCustomizer.importsWhitelist） ----------------
 
@@ -79,7 +79,9 @@ object SandboxWhitelist {
     /**
      * 接收者类黑名单：禁止脚本对这些类的实例调用任何方法/属性。
      * 基于 Class 对象匹配（receiversClassesBlackList），比字符串匹配更可靠。
-     * 覆盖：System.exit / Runtime / ProcessBuilder / 反射（Class）/ 线程 / 类加载器。
+     * 覆盖：System.exit / Runtime / ProcessBuilder / 反射（Class）/ 线程 / 类加载器 /
+     * 文件系统（File/Path——2026-10 修复全限定名构造绕过后加的纵深防线：
+     * 即使构造漏网，实例方法（list/read/write/delete）也会在调用点被拦）。
      */
     val BLACKLISTED_RECEIVER_CLASSES: List<Class<*>> =
         listOf(
@@ -96,6 +98,10 @@ object SandboxWhitelist {
             // 类加载器操作
             ClassLoader::class.java,
             java.net.URLClassLoader::class.java,
+            // 文件系统操作（2026-10 沙箱加固）
+            java.io.File::class.java,
+            java.nio.file.Path::class.java,
+            java.nio.file.Files::class.java,
         )
 
     // ---------------- 静态审计危险模式（正则级文本预检） ----------------
@@ -136,22 +142,25 @@ object SandboxWhitelist {
             ),
             DangerousPattern(
                 name = "文件操作",
+                // 2026-10 加固：支持全限定名（可选包名前缀），封堵 new java.io.File(...) 绕过
                 pattern =
                     Pattern.compile(
-                        "\\bnew\\s+File\\s*\\(|\\bnew\\s+FileInputStream\\s*\\(|" +
-                            "\\bnew\\s+FileOutputStream\\s*\\(|\\bnew\\s+FileWriter\\s*\\(|" +
-                            "\\bnew\\s+FileReader\\s*\\(|\\bnew\\s+RandomAccessFile\\s*\\(|" +
+                        "\\bnew\\s+(?:\\w+\\.)*File\\s*\\(|\\bnew\\s+(?:\\w+\\.)*FileInputStream\\s*\\(|" +
+                            "\\bnew\\s+(?:\\w+\\.)*FileOutputStream\\s*\\(|\\bnew\\s+(?:\\w+\\.)*FileWriter\\s*\\(|" +
+                            "\\bnew\\s+(?:\\w+\\.)*FileReader\\s*\\(|\\bnew\\s+(?:\\w+\\.)*RandomAccessFile\\s*\\(|" +
+                            "\\bnew\\s+java\\.nio\\.file\\.Paths?\\b|\\bjava\\.nio\\.file\\.Files\\b|" +
                             "\\.delete\\s*\\(\\s*\\)",
                     ),
                 reason = "禁止文件读取、写入与删除操作",
             ),
             DangerousPattern(
                 name = "网络操作",
+                // 2026-10 加固：支持全限定名，封堵 new java.net.Socket(...) 绕过
                 pattern =
                     Pattern.compile(
-                        "\\bnew\\s+URL\\s*\\(|\\bnew\\s+Socket\\s*\\(|" +
-                            "\\bnew\\s+ServerSocket\\s*\\(|\\bHttpURLConnection\\b|" +
-                            "\\bnew\\s+InetAddress\\s*\\(",
+                        "\\bnew\\s+(?:\\w+\\.)*URL\\s*\\(|\\bnew\\s+(?:\\w+\\.)*Socket\\s*\\(|" +
+                            "\\bnew\\s+(?:\\w+\\.)*ServerSocket\\s*\\(|\\bHttpURLConnection\\b|" +
+                            "\\bnew\\s+(?:\\w+\\.)*InetAddress\\s*\\(|\\bjava\\.net\\.\\w+\\b",
                     ),
                 reason = "禁止网络连接与远程访问",
             ),

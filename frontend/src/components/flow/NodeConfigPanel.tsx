@@ -447,6 +447,20 @@ function BlacklistConfig({
           }))}
         />
       </div>
+      <div style={{ marginBottom: 12 }}>
+        <Text type="secondary" style={{ fontSize: 12 }}>{t('nodeConfig.featureBinding')}</Text>
+        <Input
+          value={data.fieldName || undefined}
+          onChange={(e) => onUpdate({ fieldName: e.target.value || undefined })}
+          size="small"
+          style={{ marginTop: 4 }}
+          placeholder={t('nodeConfig.featureBindingPlaceholder')}
+          allowClear
+        />
+        <Text type="secondary" style={{ fontSize: 11, display: 'block', marginTop: 2 }}>
+          {t('nodeConfig.featureBindingHint')}
+        </Text>
+      </div>
       <Divider style={{ margin: '8px 0' }} />
       <div style={{ padding: '8px 10px', background: '#fff2f0', borderRadius: 4, border: '1px solid #ffccc7' }}>
         <Text type="secondary" style={{ fontSize: 12 }}>
@@ -527,6 +541,20 @@ function WhitelistConfig({
             label,
           }))}
         />
+      </div>
+      <div style={{ marginBottom: 12 }}>
+        <Text type="secondary" style={{ fontSize: 12 }}>{t('nodeConfig.featureBinding')}</Text>
+        <Input
+          value={data.fieldName || undefined}
+          onChange={(e) => onUpdate({ fieldName: e.target.value || undefined })}
+          size="small"
+          style={{ marginTop: 4 }}
+          placeholder={t('nodeConfig.featureBindingPlaceholder')}
+          allowClear
+        />
+        <Text type="secondary" style={{ fontSize: 11, display: 'block', marginTop: 2 }}>
+          {t('nodeConfig.featureBindingHint')}
+        </Text>
       </div>
       <Divider style={{ margin: '8px 0' }} />
       <div style={{ padding: '8px 10px', background: '#f6ffed', borderRadius: 4, border: '1px solid #b7eb8f' }}>

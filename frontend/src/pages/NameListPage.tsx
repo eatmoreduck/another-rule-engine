@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Card, Table, Button, Space, Select, Input, Modal, Form, Breadcrumb, Tag, Popconfirm, Alert, DatePicker } from 'antd';
+import { Card, Table, Button, Space, Select, Input, Modal, Form, Breadcrumb, Tag, Popconfirm, Alert, DatePicker, AutoComplete } from 'antd';
 import { PlusOutlined, DeleteOutlined } from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
 import { getNameListEntries, createNameListEntry, deleteNameListEntry } from '../api/nameList';
@@ -243,9 +243,11 @@ export default function NameListPage() {
               />
             </Form.Item>
             <Form.Item name="keyType" label={t('nameList.keyType')} rules={[{ required: true, message: t('nameList.keyTypeRequired') }]}>
-              <Select
+              {/* 键类型支持自定义（如特征编码）：决策流黑白名单节点可绑定任意特征做名单分组 */}
+              <AutoComplete
                 placeholder={t('nameList.selectKeyTypePlaceholder')}
                 options={Object.entries(KEY_TYPE_LABELS).map(([key, label]) => ({ value: key, label }))}
+                filterOption={(input, option) => (option?.label as string)?.toLowerCase().includes(input.toLowerCase()) ?? false}
               />
             </Form.Item>
             <Form.Item name="keyValue" label={t('nameList.keyValue')} rules={[{ required: true, message: t('nameList.keyValueRequired') }]}>

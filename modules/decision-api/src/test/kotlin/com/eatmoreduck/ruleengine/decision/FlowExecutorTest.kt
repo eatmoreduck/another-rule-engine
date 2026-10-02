@@ -106,6 +106,71 @@ class FlowExecutorTest {
         assertEquals("PASS", run(graph, mapOf("risk" to 1)).action.name)
     }
 
+    @Test
+    fun `blacklist resolves value from fieldName feature binding`() {
+        // 2026-10 特征绑定：fieldName 指向特征编码（device_id），名单匹配仍按 keyType（DEVICE_ID）查询；
+        // 修复前取值只看 keyType（features["DEVICE_ID"]），特征编码输入永远取不到值导致名单失效
+        val graph =
+            """
+            {"nodes":[
+              {"id":"s","type":"start","data":{"label":"开始","nodeType":"start"}},
+              {"id":"b","type":"blacklist","data":{"label":"黑名单","nodeType":"blacklist","keyType":"DEVICE_ID","listKey":"GLOBAL","fieldName":"device_id"}},
+              {"id":"p","type":"action","data":{"label":"放行","nodeType":"action","action":"REJECT","reason":"正常"}}
+            ],"edges":[
+              {"id":"e1","source":"s","target":"b"},
+              {"id":"e2","source":"b","target":"p"}
+            ]}
+            """.trimIndent()
+        val entries = setOf("GLOBAL|BLACK|DEVICE_ID|D-999")
+        assertEquals("REJECT", run(graph, mapOf("device_id" to "D-999"), nameList = StubNameList(entries)).action.name)
+        assertEquals("命中黑名单: DEVICE_ID=D-999", run(graph, mapOf("device_id" to "D-999"), nameList = StubNameList(entries)).reason)
+        // 未命中：fieldName 取值成功但不在名单 → 继续走到后续 action 节点
+        val miss = run(graph, mapOf("device_id" to "D-100"), nameList = StubNameList(entries))
+        assertEquals("REJECT", miss.action.name)
+        assertEquals("正常", miss.reason)
+    }
+
+    @Test
+    fun `whitelist resolves value from fieldName feature binding`() {
+        val graph =
+            """
+            {"nodes":[
+              {"id":"s","type":"start","data":{"label":"开始","nodeType":"start"}},
+              {"id":"w","type":"whitelist","data":{"label":"白名单","nodeType":"whitelist","keyType":"USER_LEVEL","listKey":"GLOBAL","fieldName":"user_level"}},
+              {"id":"p","type":"action","data":{"label":"放行","nodeType":"action","action":"REJECT","reason":"正常"}}
+            ],"edges":[
+              {"id":"e1","source":"s","target":"w"},
+              {"id":"e2","source":"w","target":"p"}
+            ]}
+            """.trimIndent()
+        val entries = setOf("GLOBAL|WHITE|USER_LEVEL|VIP")
+        // 命中：继续走到后续 action 节点；未命中：白名单语义直接拒绝
+        val hit = run(graph, mapOf("user_level" to "VIP"), nameList = StubNameList(entries))
+        assertEquals("REJECT", hit.action.name)
+        assertEquals("正常", hit.reason)
+        val miss = run(graph, mapOf("user_level" to "NORMAL"), nameList = StubNameList(entries))
+        assertEquals("REJECT", miss.action.name)
+        assertEquals("未在白名单中: USER_LEVEL=NORMAL", miss.reason)
+    }
+
+    @Test
+    fun `blacklist falls back to keyType when fieldName absent`() {
+        // 向后兼容：无 fieldName 时维持旧约定（调用方特征键 = 名单枚举名）
+        val graph =
+            """
+            {"nodes":[
+              {"id":"s","type":"start","data":{"label":"开始","nodeType":"start"}},
+              {"id":"b","type":"blacklist","data":{"label":"黑名单","nodeType":"blacklist","keyType":"PHONE_NO","listKey":"GLOBAL"}},
+              {"id":"p","type":"action","data":{"label":"放行","nodeType":"action","action":"REJECT","reason":"正常"}}
+            ],"edges":[
+              {"id":"e1","source":"s","target":"b"},
+              {"id":"e2","source":"b","target":"p"}
+            ]}
+            """.trimIndent()
+        val entries = setOf("GLOBAL|BLACK|PHONE_NO|13800000001")
+        assertEquals("REJECT", run(graph, mapOf("PHONE_NO" to "13800000001"), nameList = StubNameList(entries)).action.name)
+    }
+
     // ---------- 黑白名单节点 ----------
 
     @Test
