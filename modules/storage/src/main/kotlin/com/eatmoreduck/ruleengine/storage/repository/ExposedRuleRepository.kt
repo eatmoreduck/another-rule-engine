@@ -88,14 +88,17 @@ internal class ExposedRuleRepository : RuleRepository {
     override fun findByRuleKey(ruleKey: String): Rule? =
         RulesTable
             .selectAll()
-            .where { RulesTable.ruleKey eq ruleKey }
-            .singleOrNull()
+            .where {
+                (RulesTable.ruleKey eq ruleKey) and
+                    // 排除软删行：同名重建后同 Key 存在新旧行，读取语义以未删除行为准
+                    (RulesTable.deleted eq false)
+            }.singleOrNull()
             ?.let(::toRule)
 
     override fun existsByRuleKey(ruleKey: String): Boolean =
         RulesTable
             .selectAll()
-            .where { RulesTable.ruleKey eq ruleKey }
+            .where { (RulesTable.ruleKey eq ruleKey) and (RulesTable.deleted eq false) }
             .any()
 
     override fun findEnabled(environmentId: Long?): List<Rule> {

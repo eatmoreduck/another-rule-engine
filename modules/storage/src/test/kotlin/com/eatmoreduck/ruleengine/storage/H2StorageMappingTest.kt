@@ -146,10 +146,12 @@ class H2StorageMappingTest {
         }
 
         @Test
-        fun `DELETED 状态以 deleted 列承载且回读无损`() {
+        fun `DELETED 状态以 deleted 列承载且读取路径不可见`() {
             transaction { ruleRepository.save(newRule("h2_rule_deleted", RuleStatus.DELETED)) }
-            val loaded = transaction { ruleRepository.findByRuleKey("h2_rule_deleted") }!!
-            assertEquals(RuleStatus.DELETED, loaded.status)
+            // findByRuleKey 排除软删行（同名重建语义），DELETED 行以 existsActiveMain/existsByRuleKey 语义判定
+            val loaded = transaction { ruleRepository.findByRuleKey("h2_rule_deleted") }
+            assertNull(loaded)
+            assertFalse(transaction { ruleRepository.existsByRuleKey("h2_rule_deleted") })
             val enabledRules = transaction { ruleRepository.findEnabled() }
             assertFalse(enabledRules.any { it.ruleKey == "h2_rule_deleted" })
         }

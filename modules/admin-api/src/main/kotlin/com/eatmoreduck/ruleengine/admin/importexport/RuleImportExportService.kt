@@ -134,7 +134,7 @@ class RuleImportExportService(
         try {
             ruleService.getRule(ruleKey)
             true
-        } catch (_: IllegalArgumentException) {
+        } catch (_: com.eatmoreduck.ruleengine.storage.EntityNotFoundException) {
             false
         }
 

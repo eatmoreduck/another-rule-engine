@@ -10,6 +10,7 @@ import com.eatmoreduck.ruleengine.admin.dto.FlowRollbackRequest
 import com.eatmoreduck.ruleengine.admin.dto.PageResponse
 import com.eatmoreduck.ruleengine.admin.dto.UpdateDecisionFlowRequest
 import com.eatmoreduck.ruleengine.shared.cache.CacheInvalidationType
+import com.eatmoreduck.ruleengine.storage.EntityNotFoundException
 import com.eatmoreduck.ruleengine.storage.repository.DecisionFlowMain
 import com.eatmoreduck.ruleengine.storage.repository.DecisionFlowRepository
 import com.eatmoreduck.ruleengine.storage.repository.DecisionFlowVersion
@@ -50,7 +51,7 @@ class DecisionFlowService(
         request: CreateDecisionFlowRequest,
         operator: String,
     ): DecisionFlowResponse {
-        if (flowRepository.findMain(request.flowKey) != null) {
+        if (flowRepository.existsActiveMain(request.flowKey)) {
             throw IllegalArgumentException("决策流Key已存在: ${request.flowKey}")
         }
         graphValidator.validateOrThrow(request.flowGraph)
@@ -108,7 +109,7 @@ class DecisionFlowService(
     ): DecisionFlowResponse {
         val main =
             flowRepository.findMain(flowKey)
-                ?: throw IllegalArgumentException("决策流不存在: $flowKey")
+                ?: throw EntityNotFoundException("DecisionFlow", flowKey)
 
         val newFlowName = request.flowName ?: main.flowName
         val newFlowDescription = request.flowDescription ?: main.flowDescription
@@ -154,7 +155,7 @@ class DecisionFlowService(
     ) {
         val main =
             flowRepository.findMain(flowKey)
-                ?: throw IllegalArgumentException("决策流不存在: $flowKey")
+                ?: throw EntityNotFoundException("DecisionFlow", flowKey)
         flowRepository.updateMainStatus(flowKey, FLOW_STATUS_DELETED, operator)
         flowRepository.setMainEnabled(flowKey, false, operator)
         log.info("删除决策流: flowKey={}, operator={}", flowKey, main.flowKey)
@@ -167,7 +168,7 @@ class DecisionFlowService(
         flowKey: String,
         operator: String,
     ): DecisionFlowResponse {
-        flowRepository.findMain(flowKey) ?: throw IllegalArgumentException("决策流不存在: $flowKey")
+        flowRepository.findMain(flowKey) ?: throw EntityNotFoundException("DecisionFlow", flowKey)
         flowRepository.updateMainStatus(flowKey, FLOW_STATUS_ACTIVE, operator)
         flowRepository.setMainEnabled(flowKey, true, operator)
         eventPublisher.publishInvalidation(CacheInvalidationType.FLOW, flowKey)
@@ -180,7 +181,7 @@ class DecisionFlowService(
         flowKey: String,
         operator: String,
     ): DecisionFlowResponse {
-        flowRepository.findMain(flowKey) ?: throw IllegalArgumentException("决策流不存在: $flowKey")
+        flowRepository.findMain(flowKey) ?: throw EntityNotFoundException("DecisionFlow", flowKey)
         flowRepository.setMainEnabled(flowKey, false, operator)
         eventPublisher.publishInvalidation(CacheInvalidationType.FLOW, flowKey)
         return toResponse(flowRepository.findMain(flowKey)!!)
@@ -192,15 +193,20 @@ class DecisionFlowService(
         flowRepository
             .findMain(flowKey)
             ?.let(::toResponse)
-            ?: throw IllegalArgumentException("决策流不存在: $flowKey")
+            ?: throw EntityNotFoundException("DecisionFlow", flowKey)
 
-    /** 决策流列表（分页；照旧实现不过滤 DELETED，软删行仍可见） */
+    /** 决策流列表（分页）；已删除（DELETED）的流不在默认列表展示，可用 query 接口按 status 显式查询 */
     @Transactional(readOnly = true)
     fun listFlows(
         page: Int,
         size: Int,
     ): PageResponse<DecisionFlowResponse> {
-        val flows = flowRepository.findAllMains().sortedBy { it.id }.map(::toResponse)
+        val flows =
+            flowRepository
+                .findAllMains()
+                .sortedBy { it.id }
+                .filter { it.status != "DELETED" }
+                .map(::toResponse)
         return PageResponse.of(flows, page, size)
     }
 
@@ -268,7 +274,7 @@ class DecisionFlowService(
     ): DecisionFlowVersionResponse {
         val main =
             flowRepository.findMain(flowKey)
-                ?: throw IllegalArgumentException("决策流不存在: $flowKey")
+                ?: throw EntityNotFoundException("DecisionFlow", flowKey)
         graphValidator.validateOrThrow(request.flowGraph)
 
         val newVersion = main.version + 1
@@ -308,7 +314,7 @@ class DecisionFlowService(
         version: Int,
         operator: String,
     ): DecisionFlowVersionResponse {
-        flowRepository.findMain(flowKey) ?: throw IllegalArgumentException("决策流不存在: $flowKey")
+        flowRepository.findMain(flowKey) ?: throw EntityNotFoundException("DecisionFlow", flowKey)
         val target =
             flowRepository.findVersion(flowKey, version)
                 ?: throw IllegalArgumentException("版本不存在: $version")
@@ -343,7 +349,7 @@ class DecisionFlowService(
                 ?: throw IllegalArgumentException("目标版本号不能为空")
         val main =
             flowRepository.findMain(flowKey)
-                ?: throw IllegalArgumentException("决策流不存在: $flowKey")
+                ?: throw EntityNotFoundException("DecisionFlow", flowKey)
         val target =
             flowRepository.findVersion(flowKey, targetVersion)
                 ?: throw IllegalArgumentException("版本不存在: $targetVersion")

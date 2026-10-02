@@ -248,8 +248,8 @@ class AdminApiPeripheralContractTest {
             .andExpect(MockMvcResultMatchers.status().isOk)
             .andExpect(MockMvcResultMatchers.jsonPath("$.flowDescription").value("阶段2c"))
         get("/api/v1/decision-flows/ghost", token)
-            .andExpect(MockMvcResultMatchers.status().isBadRequest)
-            .andExpect(MockMvcResultMatchers.jsonPath("$.message").value("决策流不存在: ghost"))
+            .andExpect(MockMvcResultMatchers.status().isNotFound)
+            .andExpect(MockMvcResultMatchers.jsonPath("$.message").value("实体不存在: DecisionFlow key=ghost"))
 
         // 6. 仅元数据更新（版本不变）
         put("/api/v1/decision-flows/$flowKey", token, """{"flowName":"契约流程V2"}""")
@@ -335,9 +335,9 @@ class AdminApiPeripheralContractTest {
             .andExpect(MockMvcResultMatchers.jsonPath("$.enabled").value(true))
             .andExpect(MockMvcResultMatchers.jsonPath("$.status").value("ACTIVE"))
         delete("/api/v1/decision-flows/$flowKey", token).andExpect(MockMvcResultMatchers.status().isOk)
+        // 软删后读取路径不可见（findMain 排除 DELETED）：详情返回 404；同名 Key 可重建
         get("/api/v1/decision-flows/$flowKey", token)
-            .andExpect(MockMvcResultMatchers.jsonPath("$.status").value("DELETED"))
-            .andExpect(MockMvcResultMatchers.jsonPath("$.enabled").value(false))
+            .andExpect(MockMvcResultMatchers.status().isNotFound)
         post("/api/v1/decision-flows/query?page=0&size=20", token, """{"status":"DELETED"}""")
             .andExpect(MockMvcResultMatchers.jsonPath("$.totalElements").value(1))
     }

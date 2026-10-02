@@ -192,12 +192,12 @@ class DecisionFlowRepositoryTest {
             }
         assertEquals(1, statusUpdated)
         assertEquals(1, enabledUpdated)
-        val reloaded =
+        // 读取路径排除软删行：DELETED 后 findMain 不再可见，existsActiveMain 为 false
+        val visibleAfterDelete =
             transaction {
-                repository.findMain("flow_repo_state")
-            }!!
-        assertEquals("DELETED", reloaded.status)
-        assertEquals(false, reloaded.enabled)
+                repository.existsActiveMain("flow_repo_state")
+            }
+        assertEquals(false, visibleAfterDelete)
     }
 
     @Test

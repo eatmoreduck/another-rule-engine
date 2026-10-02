@@ -18,6 +18,7 @@ import com.eatmoreduck.ruleengine.dsl.FlowGraph
 import com.eatmoreduck.ruleengine.dsl.ParseResult
 import com.eatmoreduck.ruleengine.dsl.RuleSetNodeData
 import com.eatmoreduck.ruleengine.shared.cache.CacheInvalidationType
+import com.eatmoreduck.ruleengine.storage.EntityNotFoundException
 import com.eatmoreduck.ruleengine.storage.repository.RuleRepository
 import com.eatmoreduck.ruleengine.storage.repository.RuleSearchQuery
 import com.eatmoreduck.ruleengine.storage.repository.RuleVersionRepository
@@ -154,7 +155,7 @@ class RuleService(
     ) {
         val rule =
             ruleRepository.findByRuleKey(ruleKey)
-                ?: throw IllegalArgumentException("规则不存在: $ruleKey")
+                ?: throw EntityNotFoundException("Rule", ruleKey)
         if (rule.status == RuleStatus.DELETED) {
             throw IllegalStateException("规则正在使用中，不能删除: $ruleKey")
         }
@@ -216,7 +217,7 @@ class RuleService(
     fun getRule(ruleKey: String): RuleResponse {
         val rule =
             ruleRepository.findByRuleKey(ruleKey)
-                ?: throw IllegalArgumentException("规则不存在: $ruleKey")
+                ?: throw EntityNotFoundException("Rule", ruleKey)
         return assembler.toRuleResponse(rule, currentPayload(ruleKey))
     }
 

@@ -137,7 +137,7 @@ class PostgresStorageIntegrationTest {
     }
 
     @Test
-    @DisplayName("Flyway 应用迁移数为 26（V1..V27，无 V8）")
+    @DisplayName("Flyway 应用迁移数为 27（V1..V28，无 V8）")
     fun flywayAppliedAllMigrations() {
         val applied =
             Flyway
@@ -147,7 +147,7 @@ class PostgresStorageIntegrationTest {
                 .load()
                 .info()
                 .applied()
-        assertEquals(26, applied.size)
+        assertEquals(27, applied.size)
     }
 
     @Test

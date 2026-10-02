@@ -225,8 +225,8 @@ class DecisionFlowServiceTest {
                 },
             )
         for (call in calls) {
-            val e = assertThrows<IllegalArgumentException>(call)
-            assertEquals("决策流不存在: ghost", e.message)
+            val e = assertThrows<com.eatmoreduck.ruleengine.storage.EntityNotFoundException>(call)
+            assertEquals("实体不存在: DecisionFlow key=ghost", e.message)
         }
     }
 

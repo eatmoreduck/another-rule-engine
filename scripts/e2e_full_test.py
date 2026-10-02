@@ -67,17 +67,22 @@ def scenario_full_chain():
     check("A1 admin 登录", status == 200 and token, f"status={status}")
     H = token
 
-    # 运行前清场：删除上轮可能残留的同名资源（容忍失败），保证幂等
-    for m, u in [("DELETE", f"{BASE_ADMIN}/api/v1/rules/{RULE_BIG}"),
-                 ("DELETE", f"{BASE_ADMIN}/api/v1/rules/{RULE_ADMIN}"),
-                 ("DELETE", f"{BASE_ADMIN}/api/v1/decision-flows/{FLOW}")]:
-        call(m, u, H)
+    # 运行前清场：物理删除上轮残留（逻辑删除的行会占住 Key 且产生新旧双行，
+    # 导致 findMain 语义错乱），保证幂等
+    psql(f"delete from decision_flow_versions where flow_key='{FLOW}'")
+    psql(f"delete from decision_flows where flow_key='{FLOW}'")
+    psql(f"delete from rule_versions where rule_key in ('{RULE_BIG}','{RULE_ADMIN}')")
+    psql(f"delete from rules where rule_key in ('{RULE_BIG}','{RULE_ADMIN}')")
+    call("DELETE", f"{BASE_ADMIN}/api/v1/rules/{RULE_BIG}", H)
+    call("DELETE", f"{BASE_ADMIN}/api/v1/rules/{RULE_ADMIN}", H)
+    call("DELETE", f"{BASE_ADMIN}/api/v1/decision-flows/{FLOW}", H)
 
     status, r = call("POST", f"{BASE_ADMIN}/api/v1/features/catalog", H, body={
         "code": FEATURE, "name": "交易金额", "dataType": "NUMBER",
         "sourceType": "INPUT", "exampleValue": "12000", "description": "E2E 测试特征",
     })
-    check("A2 创建特征", status == 200, f"status={status} body={r}")
+    check("A2 创建特征", status == 200 or (status == 400 and "已存在" in json.dumps(r, ensure_ascii=False)),
+          f"status={status} body={r}")
 
     script = ("def evaluate(Map features) {\n"
               "  if (features.txn_amount > 10000) {\n"

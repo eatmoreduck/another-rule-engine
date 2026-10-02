@@ -197,12 +197,12 @@ class RuleServiceTest {
     }
 
     @Test
-    fun `查询不存在的规则返回旧契约消息`() {
+    fun `查询不存在的规则返回 404 语义`() {
         val error =
-            assertThrows<IllegalArgumentException> {
+            assertThrows<com.eatmoreduck.ruleengine.storage.EntityNotFoundException> {
                 service.getRule("missing_rule")
             }
-        assertEquals("规则不存在: missing_rule", error.message)
+        assertEquals("实体不存在: Rule key=missing_rule", error.message)
     }
 
     @Test

@@ -31,7 +31,7 @@ ruleengine:
   # 决策链路参数（全部配置化；默认面向本地开发，压测前按环境调优）
   decision:
     # 规则脚本执行/整体决策预算兜底上限（请求 timeoutMs 可更小，两者取小）
-    execution-timeout-ms: 200
+    execution-timeout-ms: 1000
     # 特征获取超时（对齐旧 FeatureRequest 默认 20ms）
     feature-timeout-ms: 20
     # 外部特征平台（默认禁用：缺失特征走缓存与默认值降级）

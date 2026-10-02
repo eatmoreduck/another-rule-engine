@@ -487,14 +487,11 @@ class AdminApiContractTest {
             .andExpect(MockMvcResultMatchers.jsonPath("$.enabled").value(true))
         delete("/api/v1/rules/$ruleKey", flowToken).andExpect(MockMvcResultMatchers.status().isOk)
         get("/api/v1/rules/$ruleKey", flowToken)
-            .andExpect(MockMvcResultMatchers.status().isOk)
-            .andExpect(MockMvcResultMatchers.jsonPath("$.deleted").value(true))
-            .andExpect(MockMvcResultMatchers.jsonPath("$.enabled").value(false))
+            .andExpect(MockMvcResultMatchers.status().isNotFound)
         get("/api/v1/rules?page=0&size=20&keyword=$ruleKey", flowToken)
             .andExpect(MockMvcResultMatchers.jsonPath("$.totalElements").value(0))
         delete("/api/v1/rules/$ruleKey", flowToken)
-            .andExpect(MockMvcResultMatchers.status().isBadRequest)
-            .andExpect(MockMvcResultMatchers.jsonPath("$.message").value("规则正在使用中，不能删除: $ruleKey"))
+            .andExpect(MockMvcResultMatchers.status().isNotFound)
     }
 
     @Test

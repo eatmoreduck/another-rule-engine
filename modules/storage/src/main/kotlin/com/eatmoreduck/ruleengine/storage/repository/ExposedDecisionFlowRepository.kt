@@ -5,8 +5,8 @@ import com.eatmoreduck.ruleengine.storage.table.DecisionFlowsTable
 import org.jetbrains.exposed.v1.core.ResultRow
 import org.jetbrains.exposed.v1.core.SortOrder
 import org.jetbrains.exposed.v1.core.and
-import org.jetbrains.exposed.v1.core.not
 import org.jetbrains.exposed.v1.core.eq
+import org.jetbrains.exposed.v1.core.not
 import org.jetbrains.exposed.v1.jdbc.insert
 import org.jetbrains.exposed.v1.jdbc.selectAll
 import org.jetbrains.exposed.v1.jdbc.update
@@ -18,15 +18,20 @@ class ExposedDecisionFlowRepository : DecisionFlowRepository {
     override fun findMain(flowKey: String): DecisionFlowMain? =
         DecisionFlowsTable
             .selectAll()
-            .where { DecisionFlowsTable.flowKey eq flowKey }
-            .singleOrNull()
+            .where {
+                (DecisionFlowsTable.flowKey eq flowKey) and
+                    // 排除软删行：同名重建后同 Key 存在新旧行，读取语义以未删除行为准
+                    not(DecisionFlowsTable.status eq "DELETED")
+            }.singleOrNull()
             ?.toMain()
 
-    override fun findAllMains(): List<DecisionFlowMain> =
+    override fun findAllMains(): List<DecisionFlowMain> = DecisionFlowsTable.selectAll().map { it.toMain() }
+
+    override fun existsActiveMain(flowKey: String): Boolean =
         DecisionFlowsTable
             .selectAll()
-            .where { not(DecisionFlowsTable.status eq "DELETED") }
-            .map { it.toMain() }
+            .where { (DecisionFlowsTable.flowKey eq flowKey) and not(DecisionFlowsTable.status eq "DELETED") }
+            .any()
 
     override fun findVersion(
         flowKey: String,

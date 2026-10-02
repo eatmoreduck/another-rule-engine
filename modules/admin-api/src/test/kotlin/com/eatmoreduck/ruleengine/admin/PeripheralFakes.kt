@@ -23,6 +23,8 @@ class FakeDecisionFlowRepository : DecisionFlowRepository {
 
     override fun findMain(flowKey: String): DecisionFlowMain? = mains[flowKey]
 
+    override fun existsActiveMain(flowKey: String): Boolean = mains[flowKey]?.let { it.status != "DELETED" } ?: false
+
     override fun findAllMains(): List<DecisionFlowMain> = mains.values.sortedBy { it.id }
 
     override fun findVersion(

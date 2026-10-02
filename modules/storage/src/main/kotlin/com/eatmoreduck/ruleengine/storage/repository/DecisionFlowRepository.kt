@@ -51,6 +51,9 @@ interface DecisionFlowRepository {
 
     fun findMain(flowKey: String): DecisionFlowMain?
 
+    /** 未删除的同 Key 流是否存在（创建查重用：逻辑删除的流不阻塞同名重建） */
+    fun existsActiveMain(flowKey: String): Boolean
+
     fun findAllMains(): List<DecisionFlowMain>
 
     fun findVersion(

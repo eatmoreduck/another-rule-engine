@@ -114,6 +114,15 @@ class AdminExceptionHandler {
             .body(ErrorResponse.of(404, "资源不存在: ${e.resourcePath}"))
     }
 
+    /** 业务实体不存在（读路径排除软删行后未命中）→ 404，与路径不存在同构 */
+    @ExceptionHandler(com.eatmoreduck.ruleengine.storage.EntityNotFoundException::class)
+    fun handleEntityNotFound(e: com.eatmoreduck.ruleengine.storage.EntityNotFoundException): ResponseEntity<ErrorResponse> {
+        log.debug("实体不存在: {}", e.message)
+        return ResponseEntity
+            .status(HttpStatus.NOT_FOUND)
+            .body(ErrorResponse.of(404, e.message ?: "资源不存在"))
+    }
+
     /** 兜底 → 500 */
     @ExceptionHandler(Exception::class)
     fun handleGeneric(e: Exception): ResponseEntity<ErrorResponse> {
