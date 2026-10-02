@@ -48,6 +48,10 @@ frontend/.env.local
 docs/
 .planning/
 .playwright-mcp
+# 根目录不允许任何图片（UI 走查截图等临时产物一律落 .playwright-mcp/）
+/*.png
+/*.jpg
+/*.jpeg
 
 # Runtime logs & misc（误提交防复发）
 **/logs/
