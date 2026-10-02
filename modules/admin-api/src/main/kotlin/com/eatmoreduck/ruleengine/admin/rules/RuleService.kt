@@ -61,6 +61,8 @@ class RuleService(
         if (ruleRepository.existsByRuleKey(request.ruleKey)) {
             throw IllegalArgumentException("规则Key已存在: ${request.ruleKey}")
         }
+        // 1.1 同名软删残留物理清场：避免主行/版本行双套导致读取语义错乱
+        ruleRepository.purgeDeleted(request.ruleKey)
         // 2. 定义载荷校验（DSL JSON / Groovy 脚本两道校验链）
         requireValidPayload(request.groovyScript)
         // 3. 主表 + 版本 1（ACTIVE，立即可用）

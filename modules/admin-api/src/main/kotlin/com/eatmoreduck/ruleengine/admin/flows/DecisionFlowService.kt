@@ -54,6 +54,8 @@ class DecisionFlowService(
         if (flowRepository.existsActiveMain(request.flowKey)) {
             throw IllegalArgumentException("决策流Key已存在: ${request.flowKey}")
         }
+        // 同名软删残留物理清场：避免主行/版本行双套导致读取语义错乱
+        flowRepository.purgeDeletedMain(request.flowKey)
         graphValidator.validateOrThrow(request.flowGraph)
 
         val now = Instant.now()

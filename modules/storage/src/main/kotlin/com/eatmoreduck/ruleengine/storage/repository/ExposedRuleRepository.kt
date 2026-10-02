@@ -4,6 +4,7 @@ import com.eatmoreduck.ruleengine.domain.Rule
 import com.eatmoreduck.ruleengine.domain.RuleStatus
 import com.eatmoreduck.ruleengine.storage.EntityNotFoundException
 import com.eatmoreduck.ruleengine.storage.StorageDataCorruptionException
+import com.eatmoreduck.ruleengine.storage.table.RuleVersionsTable
 import com.eatmoreduck.ruleengine.storage.table.RulesTable
 import org.jetbrains.exposed.v1.core.ResultRow
 import org.jetbrains.exposed.v1.core.SortOrder
@@ -13,6 +14,7 @@ import org.jetbrains.exposed.v1.core.like
 import org.jetbrains.exposed.v1.core.lowerCase
 import org.jetbrains.exposed.v1.core.or
 import org.jetbrains.exposed.v1.jdbc.andWhere
+import org.jetbrains.exposed.v1.jdbc.deleteWhere
 import org.jetbrains.exposed.v1.jdbc.insert
 import org.jetbrains.exposed.v1.jdbc.selectAll
 import org.jetbrains.exposed.v1.jdbc.update
@@ -94,6 +96,12 @@ internal class ExposedRuleRepository : RuleRepository {
                     (RulesTable.deleted eq false)
             }.singleOrNull()
             ?.let(::toRule)
+
+    /** 物理删除软删残留：同名重建前清场，避免主行/版本行双套导致查询语义错乱 */
+    override fun purgeDeleted(ruleKey: String) {
+        RuleVersionsTable.deleteWhere { RuleVersionsTable.ruleKey eq ruleKey }
+        RulesTable.deleteWhere { (RulesTable.ruleKey eq ruleKey) and (RulesTable.deleted eq true) }
+    }
 
     override fun existsByRuleKey(ruleKey: String): Boolean =
         RulesTable

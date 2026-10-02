@@ -9,6 +9,9 @@ import com.eatmoreduck.ruleengine.domain.Rule
  * （经 SpringTransactionManager）或测试中的 `transaction { }` 提供事务上下文。
  */
 interface RuleRepository {
+    /** 物理删除指定 Key 的软删残留（主行 + 版本行）；同名重建前调用，保证同 Key 单套数据 */
+    fun purgeDeleted(ruleKey: String)
+
     /**
      * 新增或更新规则行。
      * - [Rule.id] 为 null → 插入，返回携带生成 id 的副本

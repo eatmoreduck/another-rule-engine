@@ -31,6 +31,10 @@ class FakeRuleRepository : RuleRepository {
     val rules = LinkedHashMap<String, Rule>()
     private val idSeq = AtomicLong(0)
 
+    override fun purgeDeleted(ruleKey: String) {
+        rules.remove(ruleKey)
+    }
+
     override fun save(rule: Rule): Rule {
         val withId = if (rule.id == null) rule.copy(id = idSeq.incrementAndGet()) else rule
         rules[withId.ruleKey] = withId

@@ -7,6 +7,7 @@ import org.jetbrains.exposed.v1.core.SortOrder
 import org.jetbrains.exposed.v1.core.and
 import org.jetbrains.exposed.v1.core.eq
 import org.jetbrains.exposed.v1.core.not
+import org.jetbrains.exposed.v1.jdbc.deleteWhere
 import org.jetbrains.exposed.v1.jdbc.insert
 import org.jetbrains.exposed.v1.jdbc.selectAll
 import org.jetbrains.exposed.v1.jdbc.update
@@ -26,6 +27,12 @@ class ExposedDecisionFlowRepository : DecisionFlowRepository {
             ?.toMain()
 
     override fun findAllMains(): List<DecisionFlowMain> = DecisionFlowsTable.selectAll().map { it.toMain() }
+
+    /** 物理删除软删残留（主行 + 版本行）：同名重建前清场 */
+    override fun purgeDeletedMain(flowKey: String) {
+        DecisionFlowVersionsTable.deleteWhere { DecisionFlowVersionsTable.flowKey eq flowKey }
+        DecisionFlowsTable.deleteWhere { (DecisionFlowsTable.flowKey eq flowKey) and (DecisionFlowsTable.status eq "DELETED") }
+    }
 
     override fun existsActiveMain(flowKey: String): Boolean =
         DecisionFlowsTable

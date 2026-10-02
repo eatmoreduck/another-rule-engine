@@ -57,6 +57,10 @@ class GrayscaleRouterTest {
         val rules = mutableMapOf<String, Rule>()
         var lookups = 0
 
+        override fun purgeDeleted(ruleKey: String) {
+            rules.remove(ruleKey)
+        }
+
         override fun save(rule: Rule): Rule {
             rules[rule.ruleKey] = rule
             return rule

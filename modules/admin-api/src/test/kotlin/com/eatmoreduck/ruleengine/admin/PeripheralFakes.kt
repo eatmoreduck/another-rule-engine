@@ -21,6 +21,11 @@ class FakeDecisionFlowRepository : DecisionFlowRepository {
     private val mainIdSeq = AtomicLong(0)
     private val versionIdSeq = AtomicLong(0)
 
+    override fun purgeDeletedMain(flowKey: String) {
+        mains.remove(flowKey)
+        versions.remove(flowKey)
+    }
+
     override fun findMain(flowKey: String): DecisionFlowMain? = mains[flowKey]
 
     override fun existsActiveMain(flowKey: String): Boolean = mains[flowKey]?.let { it.status != "DELETED" } ?: false

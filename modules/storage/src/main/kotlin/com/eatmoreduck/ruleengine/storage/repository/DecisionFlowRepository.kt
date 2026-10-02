@@ -47,6 +47,9 @@ data class DecisionFlowVersion(
  * 事务边界由调用方（Spring @Transactional 或测试事务）提供，本接口不开事务。
  */
 interface DecisionFlowRepository {
+    /** 物理删除指定 Key 的软删残留（主行 + 版本行）；同名重建前调用，保证同 Key 单套数据 */
+    fun purgeDeletedMain(flowKey: String)
+
     // ---------- 读 ----------
 
     fun findMain(flowKey: String): DecisionFlowMain?
