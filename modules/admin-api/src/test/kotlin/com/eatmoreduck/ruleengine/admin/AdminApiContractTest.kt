@@ -33,8 +33,8 @@ import org.testcontainers.junit.jupiter.Testcontainers
 import java.time.Instant
 
 /**
- * admin-api 全链路契约测试：Testcontainers PG16（真实 PostgreSQL + Flyway V1..V25 迁移 +
- * V15/V16/V17/V25 权限种子数据）+ 完整 Spring 上下文（Sa-Token 拦截链）+ MockMvc。
+ * admin-api 全链路契约测试：Testcontainers PG16（真实 PostgreSQL + Flyway V1__init 初始化脚本 +
+ * 权限种子数据）+ 完整 Spring 上下文（Sa-Token 拦截链）+ MockMvc。
  *
  * 断言口径为前端消费方（frontend/src/api 与 frontend/src/types 下的类型定义）的字段名与解析逻辑，
  * 无 Docker 的环境自动跳过整个类（等价 @Disabled，构建不挂）。
@@ -182,12 +182,14 @@ class AdminApiContractTest {
     @Order(10)
     @DisplayName("登录颁发 token，token 可访问受保护接口，登出后失效")
     fun authLifecycle() {
+        // 用一次性专用账号验证登出语义：共享 Spring 上下文 + Sa-Token is-share 下，
+        // 多个契约类复用同一 admin token，若在此登出 admin 会连带销毁其他用例的会话
+        seedUser("auth_lc", "auth-pass", roleCode = "SUPER_ADMIN")
         val body =
-            post("/api/v1/auth/login", body = """{"username":"admin","password":"admin123"}""")
+            post("/api/v1/auth/login", body = """{"username":"auth_lc","password":"auth-pass"}""")
                 .andExpect(MockMvcResultMatchers.status().isOk)
                 .andExpect(MockMvcResultMatchers.jsonPath("$.token").isNotEmpty)
-                .andExpect(MockMvcResultMatchers.jsonPath("$.username").value("admin"))
-                .andExpect(MockMvcResultMatchers.jsonPath("$.nickname").value("系统管理员"))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.username").value("auth_lc"))
                 .andExpect(MockMvcResultMatchers.jsonPath("$.roles[0]").value("SUPER_ADMIN"))
                 .andReturn()
                 .response
@@ -202,7 +204,7 @@ class AdminApiContractTest {
         get("/api/v1/auth/me", token)
             .andExpect(MockMvcResultMatchers.status().isOk)
             .andExpect(MockMvcResultMatchers.jsonPath("$.id").isNumber)
-            .andExpect(MockMvcResultMatchers.jsonPath("$.username").value("admin"))
+            .andExpect(MockMvcResultMatchers.jsonPath("$.username").value("auth_lc"))
             .andExpect(MockMvcResultMatchers.jsonPath("$.roles[0]").value("SUPER_ADMIN"))
             .andExpect(MockMvcResultMatchers.jsonPath("$.permissions").value(Matchers.hasItem("api:rules:create")))
             .andExpect(MockMvcResultMatchers.jsonPath("$.permissions").value(Matchers.hasItem("api:feature-catalog:manage")))
@@ -588,7 +590,6 @@ class AdminApiContractTest {
             .andExpect(MockMvcResultMatchers.jsonPath("$.id").isNumber)
             .andExpect(MockMvcResultMatchers.jsonPath("$.code").value("contract_amount"))
             .andExpect(MockMvcResultMatchers.jsonPath("$.dataType").value("NUMBER"))
-            .andExpect(MockMvcResultMatchers.jsonPath("$.sensitivity").value("NORMAL"))
             .andExpect(MockMvcResultMatchers.jsonPath("$.status").value("ACTIVE"))
             .andExpect(MockMvcResultMatchers.jsonPath("$.aliases[0]").value("contract_amt"))
             .andExpect(MockMvcResultMatchers.jsonPath("$.createdAt").isNotEmpty)

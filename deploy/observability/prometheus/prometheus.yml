@@ -1,6 +1,6 @@
 # =============================================================================
 # Prometheus 抓取配置（compose 本地栈）
-# 目标：decision-api / admin-api 的 /actuator/prometheus（Micrometer + Prometheus registry）
+# 目标：统一后端 admin-api（管理面 + 决策面）的 /actuator/prometheus（Micrometer + Prometheus registry）
 # K8s 环境建议改用 ServiceMonitor（kube-prometheus-stack）或按 kubernetes_sd 发现
 # =============================================================================
 global:
@@ -8,15 +8,7 @@ global:
   evaluation_interval: 15s
 
 scrape_configs:
-  # 决策服务（50ms SLA 的数据源：decision_duration_seconds / decision_errors_total）
-  - job_name: decision-api
-    metrics_path: /actuator/prometheus
-    static_configs:
-      - targets: ["decision-api:8081"]
-        labels:
-          application: decision-api
-
-  # 管理服务
+  # 统一后端（决策链路 50ms SLA 的数据源：decision_duration_seconds / decision_errors_total）
   - job_name: admin-api
     metrics_path: /actuator/prometheus
     static_configs:

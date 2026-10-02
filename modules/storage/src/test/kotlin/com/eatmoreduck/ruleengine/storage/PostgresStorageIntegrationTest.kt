@@ -43,7 +43,7 @@ import java.time.temporal.ChronoUnit
 import javax.sql.DataSource
 
 /**
- * 持久化层集成测试：真实 PostgreSQL（Testcontainers）+ Flyway 全量迁移（V1..V27）+ 仓储端到端读写。
+ * 持久化层集成测试：真实 PostgreSQL（Testcontainers）+ Flyway 初始化脚本（V1__init）+ 仓储端到端读写。
  *
  * 这是表对象 ↔ 旧 schema 映射的事实核对：表定义缺列/类型错位会在 CRUD 与
  * [schemaColumnsMatchFlywayBaseline] 的列集合比对中暴露。
@@ -137,7 +137,7 @@ class PostgresStorageIntegrationTest {
     }
 
     @Test
-    @DisplayName("Flyway 应用迁移数为 27（V1..V28，无 V8）")
+    @DisplayName("Flyway 应用迁移数为 1（单一 V1__init 初始化脚本）")
     fun flywayAppliedAllMigrations() {
         val applied =
             Flyway
@@ -147,7 +147,7 @@ class PostgresStorageIntegrationTest {
                 .load()
                 .info()
                 .applied()
-        assertEquals(27, applied.size)
+        assertEquals(1, applied.size)
     }
 
     @Test
@@ -264,16 +264,15 @@ class PostgresStorageIntegrationTest {
     }
 
     @Test
-    @DisplayName("特征目录：V24 种子数据可读、别名解析链路与新增定义落库")
+    @DisplayName("特征目录：种子数据可读、别名解析链路与新增定义落库")
     fun featureCatalogWithSeedData() {
         transaction {
-            // V24 迁移自带的种子别名：amount -> order_amount（别名解析事实核对）
+            // V1__init 自带的种子别名：amount -> order_amount（别名解析事实核对）
             val viaAlias = featureRepository.resolveCode("amount")!!
             assertEquals("order_amount", viaAlias.code)
             assertEquals("订单金额", viaAlias.name)
             val direct = featureRepository.resolveCode("risk_score")!!
             assertEquals("DERIVED", direct.sourceType)
-            assertEquals("SENSITIVE", direct.sensitivity)
             assertTrue(featureRepository.findAliasesByCanonicalCode("order_amount").map { it.aliasCode }.contains("amount"))
         }
         transaction {

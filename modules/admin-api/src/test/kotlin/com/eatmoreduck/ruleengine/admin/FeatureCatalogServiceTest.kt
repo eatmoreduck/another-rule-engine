@@ -58,7 +58,6 @@ class FeatureCatalogServiceTest {
         val response = service.createDefinition(createRequest())
         assertEquals("order_amount", response.code)
         assertEquals("NUMBER", response.dataType)
-        assertEquals("NORMAL", response.sensitivity)
         assertEquals("ACTIVE", response.status)
         assertEquals(listOf("amt"), response.aliases)
         // 别名可解析到规范编码
@@ -231,7 +230,6 @@ class FeatureCatalogServiceTest {
                 keyword = null,
                 dataType = "number",
                 sourceType = null,
-                sensitivity = null,
                 status = null,
             )
         assertEquals(1, page.totalElements)

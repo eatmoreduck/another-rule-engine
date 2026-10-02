@@ -449,7 +449,6 @@ class H2StorageMappingTest {
                 dataType = "NUMBER",
                 sourceType = "INPUT",
                 exampleValue = "42",
-                sensitivity = "SENSITIVE",
                 status = status,
                 owner = "risk-team",
                 createdAt = instant("2026-06-01T00:00:00Z"),
@@ -542,12 +541,9 @@ class H2StorageMappingTest {
                         FeatureDefinitionQuery(
                             keyword = "h2_fc_def_search",
                             dataType = "NUMBER",
-                            sensitivity = "SENSITIVE",
                         ),
                     )
                 assertTrue(hit.any { it.code == "h2_fc_def_search" })
-                val miss = featureRepository.searchDefinitions(FeatureDefinitionQuery(keyword = "h2_fc_def_search", sensitivity = "NORMAL"))
-                assertTrue(miss.isEmpty())
 
                 assertEquals(1, featureRepository.deleteAliasesByCanonicalCode("H2_FC_DEF_SEARCH"))
                 assertNull(featureRepository.findAliasByCode("h2_fc_alias_search"))

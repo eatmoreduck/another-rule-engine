@@ -160,7 +160,6 @@ class FakeFeatureCatalogRepository : FeatureCatalogRepository {
                 } ?: true
             }.filter { query.dataType == null || it.dataType.equals(query.dataType, ignoreCase = true) }
             .filter { query.sourceType == null || it.sourceType.equals(query.sourceType, ignoreCase = true) }
-            .filter { query.sensitivity == null || it.sensitivity.equals(query.sensitivity, ignoreCase = true) }
             .filter { query.status == null || it.status.equals(query.status, ignoreCase = true) }
             .sortedBy { it.code }
             .drop(query.offset.toInt())

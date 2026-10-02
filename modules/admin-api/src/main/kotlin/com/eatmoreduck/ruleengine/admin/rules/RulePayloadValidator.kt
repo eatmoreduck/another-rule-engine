@@ -5,6 +5,7 @@ import com.eatmoreduck.ruleengine.dsl.DslValidator
 import com.eatmoreduck.ruleengine.dsl.ParseResult
 import com.eatmoreduck.ruleengine.engine.GroovyScriptEngine
 import com.eatmoreduck.ruleengine.engine.ValidationResult
+import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.stereotype.Component
 
 /** 规则定义载荷校验结果 */
@@ -31,6 +32,7 @@ sealed interface PayloadValidation {
  */
 @Component
 class RulePayloadValidator(
+    @Qualifier("groovyScriptEngine")
     private val scriptEngine: GroovyScriptEngine,
 ) {
     private val dslValidator = DslValidator()

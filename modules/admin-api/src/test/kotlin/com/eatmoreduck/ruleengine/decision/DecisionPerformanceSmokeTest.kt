@@ -35,7 +35,10 @@ import java.util.concurrent.TimeUnit
  */
 @Testcontainers(disabledWithoutDocker = true)
 @TestMethodOrder(MethodOrderer.OrderAnnotation::class)
-@SpringBootTest(properties = ["sa-token.auth-enabled=false"])
+@SpringBootTest(
+    classes = [com.eatmoreduck.ruleengine.admin.AdminApiApplication::class],
+    properties = ["sa-token.auth-enabled=false"],
+)
 @DisplayName("decision-api 性能冒烟：1000 次决策的 p50/p95 分位")
 class DecisionPerformanceSmokeTest {
     companion object {

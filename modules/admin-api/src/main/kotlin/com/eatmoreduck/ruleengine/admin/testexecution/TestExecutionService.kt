@@ -5,6 +5,7 @@ import com.eatmoreduck.ruleengine.engine.GroovyScriptEngine
 import com.eatmoreduck.ruleengine.storage.repository.RuleRepository
 import com.eatmoreduck.ruleengine.storage.repository.RuleVersionRepository
 import org.slf4j.LoggerFactory
+import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 
@@ -27,6 +28,7 @@ import org.springframework.transaction.annotation.Transactional
 class TestExecutionService(
     private val ruleRepository: RuleRepository,
     private val versionRepository: RuleVersionRepository,
+    @Qualifier("groovyScriptEngine")
     private val scriptEngine: GroovyScriptEngine,
 ) {
     /** 使用模拟数据测试规则（只读链路：不产生任何持久化副作用） */

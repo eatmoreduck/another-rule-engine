@@ -37,7 +37,7 @@ import java.time.Instant
 /**
  * admin-api 外围接口（阶段 2c）契约测试：决策流管理 + 版本 + 黑白名单 + 审计日志 + 环境管理。
  *
- * 与 AdminApiContractTest 同款设施：Testcontainers PG16（真实 PostgreSQL + Flyway V1..V25
+ * 与 AdminApiContractTest 同款设施：Testcontainers PG16（真实 PostgreSQL + Flyway V1__init
  * 迁移 + 权限种子）+ 完整 Spring 上下文（Sa-Token 拦截链）+ MockMvc；断言口径为前端
  * 消费方（frontend/src/api 与 frontend/src/types）的字段名与解析逻辑；
  * 无 Docker 的环境自动跳过整个类。

@@ -20,12 +20,6 @@ function normalizeText(input: string | undefined): string {
   return (input ?? '').trim().toLowerCase();
 }
 
-function getSensitivityColor(sensitivity: string): string {
-  if (sensitivity === 'HIGHLY_SENSITIVE') return 'red';
-  if (sensitivity === 'SENSITIVE') return 'orange';
-  return 'green';
-}
-
 export default function FeatureFieldInput({
   value,
   onChange,
@@ -154,9 +148,6 @@ export default function FeatureFieldInput({
           <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
             <Tag color="blue" style={{ marginInlineEnd: 0 }}>{item.dataType}</Tag>
             <Tag style={{ marginInlineEnd: 0 }}>{item.sourceType}</Tag>
-            <Tag color={getSensitivityColor(item.sensitivity)} style={{ marginInlineEnd: 0 }}>
-              {item.sensitivity}
-            </Tag>
           </div>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>

@@ -1,6 +1,8 @@
-// 部署物 1：决策服务（50ms 决策链路，无状态，HPA 按 QPS 扩缩）
+// 决策链路组件库：决策执行/特征解析/灰度路由/沙箱引擎装配/执行日志缓冲。
+// 2026-10 起不再是独立部署物——组件由 admin-api（统一部署物）吸入同一上下文；
+// 保留独立模块与包边界是为了将来可低成本拆回双部署物（加回启动类与配置即可）。
 plugins {
-    id("ruleengine.spring-app")
+    id("ruleengine.spring-library")
 }
 
 dependencies {
@@ -50,18 +52,7 @@ dependencies {
     implementation(project(":modules:storage"))
     implementation(project(":modules:shared"))
 
-    // 生产运行时的 JDBC 驱动（storage 的 testImplementation 只覆盖测试类路径）
-    runtimeOnly(libs.postgresql)
-    // JSON 结构化日志（SPRING_PROFILES_ACTIVE=json 时启用，供 Logstash 采集）
-    runtimeOnly(libs.logstash.logback.encoder)
-
+    // 纯 Kotlin 单测（FlowExecutor / ResultMapper）；GrayscaleRouterTest 以 H2 内存库做假仓储
+    // Spring 契约测试随合并迁至 admin-api 的测试源集（需要其启动类）
     testImplementation(libs.h2)
-
-    // 契约测试：Testcontainers PG16 起真实库（Flyway 全量迁移 + 种子数据）
-    testImplementation(libs.postgresql)
-    testImplementation(libs.testcontainers)
-    testImplementation(libs.testcontainers.postgresql)
-    testImplementation(libs.testcontainers.junit.jupiter)
-
-    testImplementation(libs.spring.boot.starter.test)
 }

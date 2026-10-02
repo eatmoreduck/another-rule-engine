@@ -534,6 +534,7 @@
   },
 
   "nodeConfig": {
+    "aliasMappedHint": "Alias {{alias}} is mapped to canonical feature {{canonical}}",
     "nodeProperties": "Node Properties",
     "nodeLabel": "Node Label",
     "featureField": "Feature Field",

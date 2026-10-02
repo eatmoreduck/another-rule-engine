@@ -15,6 +15,7 @@ import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeout
 import org.slf4j.LoggerFactory
+import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.stereotype.Service
 import java.time.Duration
 import java.util.UUID
@@ -37,6 +38,7 @@ class DecisionService(
     private val grayscaleRouter: GrayscaleRouter,
     private val featureResolution: FeatureResolutionService,
     private val flowExecutor: FlowExecutor,
+    @Qualifier("decisionScriptEngine")
     private val scriptEngine: GroovyScriptEngine,
     private val executionLogService: ExecutionLogService,
     private val metrics: DecisionMetrics,

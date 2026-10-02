@@ -19,6 +19,7 @@ import com.eatmoreduck.ruleengine.engine.GroovyScriptEngine
 import com.eatmoreduck.ruleengine.engine.ScriptEngineException
 import com.eatmoreduck.ruleengine.engine.ScriptTimeoutException
 import org.slf4j.LoggerFactory
+import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.stereotype.Component
 import java.time.Duration
 
@@ -46,6 +47,7 @@ fun interface RuleSetPayloadSource {
 @Component
 class FlowExecutor(
     private val nameListLookup: NameListLookup,
+    @Qualifier("decisionScriptEngine")
     private val scriptEngine: GroovyScriptEngine,
     private val ruleSetPayloads: RuleSetPayloadSource,
     private val properties: DecisionProperties,

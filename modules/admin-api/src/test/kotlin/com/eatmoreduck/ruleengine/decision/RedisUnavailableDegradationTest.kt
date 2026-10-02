@@ -22,7 +22,7 @@ import kotlin.test.assertTrue
  * admin-api 侧的同等行为由其现有测试套件隐式回归（全部契约测试在未配 Redis 的
  * localhost:6379 上运行，登录链路经同一降级包装器）。
  */
-@SpringBootTest
+@SpringBootTest(classes = [com.eatmoreduck.ruleengine.admin.AdminApiApplication::class])
 @DisplayName("阶段 5：Redis 不可用时上下文照常启动 + 会话降级内存")
 class RedisUnavailableDegradationTest {
     companion object {

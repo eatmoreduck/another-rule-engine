@@ -3,6 +3,7 @@ package com.eatmoreduck.ruleengine.admin.cache
 import com.eatmoreduck.ruleengine.engine.GroovyScriptEngine
 import com.eatmoreduck.ruleengine.shared.cache.CacheInvalidationType
 import org.slf4j.LoggerFactory
+import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.context.ApplicationEventPublisher
 import org.springframework.stereotype.Service
 
@@ -17,6 +18,7 @@ import org.springframework.stereotype.Service
  */
 @Service
 class CacheManagementService(
+    @Qualifier("groovyScriptEngine")
     private val scriptEngine: GroovyScriptEngine,
     private val eventPublisher: ApplicationEventPublisher,
 ) {

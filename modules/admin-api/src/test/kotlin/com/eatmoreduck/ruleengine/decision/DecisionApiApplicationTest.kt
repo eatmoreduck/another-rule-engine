@@ -11,7 +11,7 @@ import org.springframework.test.context.DynamicPropertySource
  * 上下文含 storage 装配（DataSource/Exposed/Flyway），本测试用 H2 内存库 + 空 Flyway 位置
  * 仅为满足 bean 装配（真实 PostgreSQL 全链路由 Testcontainers 契约测试覆盖）。
  */
-@SpringBootTest
+@SpringBootTest(classes = [com.eatmoreduck.ruleengine.admin.AdminApiApplication::class])
 class DecisionApiApplicationTest {
     companion object {
         @JvmStatic

@@ -28,7 +28,7 @@ import org.testcontainers.junit.jupiter.Testcontainers
  * [DecisionApiContractTest]（auth-enabled=false）承担业务链路。
  */
 @Testcontainers(disabledWithoutDocker = true)
-@SpringBootTest
+@SpringBootTest(classes = [com.eatmoreduck.ruleengine.admin.AdminApiApplication::class])
 @DisplayName("decision-api 认证契约：未登录 401 结构")
 class DecisionApiAuthContractTest {
     companion object {

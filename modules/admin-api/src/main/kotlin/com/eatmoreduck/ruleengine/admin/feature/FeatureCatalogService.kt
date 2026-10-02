@@ -52,7 +52,6 @@ class FeatureCatalogService(
         keyword: String?,
         dataType: String?,
         sourceType: String?,
-        sensitivity: String?,
         status: String?,
     ): PageResponse<FeatureDefinitionResponse> {
         val definitions =
@@ -61,7 +60,6 @@ class FeatureCatalogService(
                     keyword = keyword?.trim()?.takeIf { it.isNotEmpty() },
                     dataType = normalizeEnumFilter(dataType),
                     sourceType = normalizeEnumFilter(sourceType),
-                    sensitivity = normalizeEnumFilter(sensitivity),
                     status = normalizeEnumFilter(status),
                     limit = MAX_SCAN,
                 ),
@@ -99,7 +97,6 @@ class FeatureCatalogService(
                     sourceType = normalizeRequiredEnum(request.sourceType, "特征来源不能为空"),
                     exampleValue = trimToNull(request.exampleValue),
                     description = trimToNull(request.description),
-                    sensitivity = normalizeOptionalEnum(request.sensitivity, "NORMAL"),
                     status = normalizeOptionalEnum(request.status, "ACTIVE"),
                     owner = trimToNull(request.owner),
                     createdAt = now,
@@ -133,7 +130,6 @@ class FeatureCatalogService(
                     sourceType = normalizeRequiredEnum(request.sourceType, "特征来源不能为空"),
                     exampleValue = trimToNull(request.exampleValue),
                     description = trimToNull(request.description),
-                    sensitivity = normalizeOptionalEnum(request.sensitivity, "NORMAL"),
                     status = normalizeOptionalEnum(request.status, "ACTIVE"),
                     owner = trimToNull(request.owner),
                     updatedAt = updatedAt,
@@ -205,7 +201,6 @@ class FeatureCatalogService(
                     matchedAlias = alias?.aliasCode,
                     dataType = definition.dataType,
                     sourceType = definition.sourceType,
-                    sensitivity = definition.sensitivity,
                     warnings = itemWarnings,
                 )
         }
@@ -350,7 +345,6 @@ class FeatureCatalogService(
             sourceType = feature.sourceType,
             exampleValue = feature.exampleValue,
             description = feature.description,
-            sensitivity = feature.sensitivity,
             status = feature.status,
             owner = feature.owner,
             createdAt = feature.createdAt,

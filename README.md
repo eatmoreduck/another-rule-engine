@@ -20,12 +20,12 @@ modules/
 ├── domain/        # 纯 Kotlin 领域模型，零框架依赖
 ├── dsl/           # 规则 DSL 结构模型（与前端 dslGenerator/dslParser 对应）
 ├── engine/        # Groovy 脚本引擎：编译缓存、沙箱校验、类加载隔离
-├── storage/       # Exposed 表定义 + 仓储 + Flyway 迁移（V1..V26）
+├── storage/       # Exposed 表定义 + 仓储 + Flyway 初始化脚本（单一 V1__init）
 ├── shared/        # Kafka 事件契约、缓存抽象、通用设施
-├── decision-api/  # 部署物 1：决策服务（8081，无状态，HPA 按 QPS 扩缩）
-├── admin-api/     # 部署物 2：管理服务（8080，规则 CRUD/版本/灰度/特征目录）
-└── log-consumer/  # 部署物 3：日志消费（Kafka → 批量落库，规划中）
-build-logic/       # Gradle 约定插件（ruleengine.kotlin-library / ruleengine.spring-app）
+├── decision-api/  # 决策链路组件库：经 classpath 并入 admin-api 同进程运行（可拆回）
+├── admin-api/     # 统一部署物：管理面 + 决策面（8080）
+└── log-consumer/  # 日志消费（Kafka → 批量落库，规划中）
+build-logic/       # Gradle 约定插件（kotlin-library / spring-library / spring-app）
 frontend/          # React + TypeScript + Vite（3000 端口）
 deploy/            # docker-compose + K8s manifests + Prometheus/Grafana/Logstash + K6
 ```
@@ -50,10 +50,9 @@ deploy/            # docker-compose + K8s manifests + Prometheus/Grafana/Logstas
 
 ```bash
 ./gradlew build                      # 全量构建 + 测试 + 格式检查
-./gradlew test                       # 全部测试（413 个，集成测试走 Testcontainers）
-./gradlew :modules:admin-api:bootRun     # 管理服务 :8080
-./gradlew :modules:decision-api:bootRun  # 决策服务 :8081
-cd frontend && npx vite --port 3000      # 前端 :3000（dev 代理指向 8080）
+./gradlew test                       # 全部测试（集成测试走 Testcontainers）
+./gradlew :modules:admin-api:bootRun # 统一后端 :8080（管理面 + 决策面同进程）
+cd frontend && npx vite --port 3000  # 前端 :3000（dev 代理指向 8080）
 ```
 
 本地全栈（含 PostgreSQL/Redis/可观测组件）：
@@ -62,7 +61,7 @@ cd frontend && npx vite --port 3000      # 前端 :3000（dev 代理指向 8080�
 docker compose -f deploy/compose.local.yml up -d
 ```
 
-数据源与 Redis 地址经 `DB_URL` / `REDIS_URL` 环境变量覆盖，默认值见各部署物 `application.yml`。首次启动 Flyway 自动执行迁移（V1..V26），初始管理员 `admin / admin123`。
+数据源与 Redis 地址经 `DB_URL` / `REDIS_URL` 环境变量覆盖，默认值见各部署物 `application.yml`。首次启动 Flyway 自动执行初始化脚本（V1__init），初始管理员 `admin / admin123`。
 
 ## 文档
 

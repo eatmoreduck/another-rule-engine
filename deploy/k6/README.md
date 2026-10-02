@@ -53,13 +53,12 @@ curl -s -X POST http://localhost:18080/api/v1/rules \
 
 ### 3. 认证说明
 
-- **关闭认证（compose 默认）**：decision-api 以 `SA_TOKEN_AUTH_ENABLED=false` 启动，`TOKEN` 不传即可。
-- **开启认证时**：token 从 admin-api 登录获取。注意拆分部署下两服务 Sa-Token 会话
-  独立（阶段 5 接入 Redis 会话后才跨服务共享），登录得到的 token 需能被 decision-api
-  校验——同一套 `sys_*` 权限数据下，走 Redis 会话或对 decision-api 单独登录均可：
+- **关闭认证（压测可选）**：给统一后端设 `SA_TOKEN_AUTH_ENABLED=false` 后 `TOKEN` 不传即可
+  （合并部署物该开关覆盖管理面+决策面，压测栈勿暴露公网）。
+- **开启认证时（默认）**：token 从统一后端登录获取：
 
 ```bash
-TOKEN=$(curl -s -X POST http://localhost:18081/api/v1/auth/login \
+TOKEN=$(curl -s -X POST http://localhost:18080/api/v1/auth/login \
   -H 'Content-Type: application/json' \
   -d '{"username":"admin","password":"<密码>"}' | python3 -c 'import json,sys;print(json.load(sys.stdin)["token"])')
 ```
@@ -69,7 +68,7 @@ TOKEN=$(curl -s -X POST http://localhost:18081/api/v1/auth/login \
 **宿主机 k6（需本机安装 k6：`brew install k6`）：**
 
 ```bash
-k6 run deploy/k6/decision-load.js   # 默认 BASE_URL=http://localhost:18081
+k6 run deploy/k6/decision-load.js   # 默认 BASE_URL=http://localhost:18080
 ```
 
 **容器方式（无需本机安装，走 compose 内网）：**

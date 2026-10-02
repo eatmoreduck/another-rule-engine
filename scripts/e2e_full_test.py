@@ -5,7 +5,7 @@
     python3 scripts/e2e_full_test.py
 
 前置：
-    - admin-api(8080) / decision-api(8081) 运行中
+    - 统一后端 admin-api(8080)（合并部署物，含决策面）运行中
     - PostgreSQL 可达（脚本会直插/清理 viewer 测试用户）
     - 初始管理员 admin/admin123
 
@@ -18,7 +18,7 @@ import urllib.error
 import urllib.request
 
 BASE_ADMIN = "http://localhost:8080"
-BASE_DECISION = "http://localhost:8081"
+BASE_DECISION = "http://localhost:8080"
 # 语义化命名（可读优先）：运行前清场 + 运行后删除保证幂等，不用时间戳后缀
 RULE_BIG = "e2e_big_amount_test"
 RULE_ADMIN = "e2e_admin_rule_test"

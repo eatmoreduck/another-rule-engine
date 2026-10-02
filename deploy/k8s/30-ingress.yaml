@@ -1,14 +1,10 @@
 # =============================================================================
-# Ingress：按路径分流（生产网关层）
-#   /api/v1/decide*                       -> decision-api  （决策执行族）
-#   /api/v1/decision-flows/*/execute      -> decision-api  （决策流执行，正则）
-#   其余 /api/*                           -> admin-api     （管理面）
-#   /                                     -> frontend      （SPA 静态站点）
+# Ingress：路径分流（生产网关层）
+#   /api/*    -> admin-api（统一部署物：管理面 + 决策面同进程）
+#   /         -> frontend  （SPA 静态站点）
 #
-# 适用于 ingress-nginx：
-#   - use-regex: "true" 后，ImplementationSpecific 路径按正则评估，
-#     `~ ` 前缀的 execute 正则优先于普通前缀 /api/ 命中
-#   - ingress-nginx 按「最长前缀 / 正则优先」合并 location，decide 用 Prefix 已足够具体
+# 2026-10 合并部署物后不再需要决策族特殊路由（原 /api/v1/decide* 与
+# decision-flows/*/execute 正则分流已无意义，统一后端单后端承接）。
 # 其他 Ingress Controller（Traefik/Envoy Gateway/APISIX）需按各自语法等价改写。
 # =============================================================================
 apiVersion: networking.k8s.io/v1
@@ -19,9 +15,6 @@ metadata:
   labels:
     app.kubernetes.io/part-of: rule-engine
   annotations:
-    nginx.ingress.kubernetes.io/use-regex: "true"
-    nginx.ingress.kubernetes.io/proxy-read-timeout: "10"
-    nginx.ingress.kubernetes.io/proxy-send-timeout: "10"
     # 决策链路 50ms SLA：网关层不缓冲请求/响应体
     nginx.ingress.kubernetes.io/proxy-buffering: "off"
 spec:
@@ -29,22 +22,7 @@ spec:
   rules:
     - http:
         paths:
-          # ---- 决策服务 -----------------------------------------------------
-          - path: /api/v1/decide
-            pathType: Prefix # 覆盖 /api/v1/decide 与 /api/v1/decide/{ruleKey}
-            backend:
-              service:
-                name: decision-api
-                port:
-                  number: 8081
-          - path: ~/api/v1/decision-flows/[^/]+/execute$ # 仅 execute 动作；流图 CRUD 属管理面
-            pathType: ImplementationSpecific
-            backend:
-              service:
-                name: decision-api
-                port:
-                  number: 8081
-          # ---- 管理服务 -----------------------------------------------------
+          # ---- 统一后端 -----------------------------------------------------
           - path: /api
             pathType: Prefix
             backend:

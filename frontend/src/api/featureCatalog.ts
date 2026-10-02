@@ -18,7 +18,6 @@ export async function getFeatureDefinitions(params?: FeatureCatalogQueryParams):
       keyword: params?.keyword,
       dataType: params?.dataType,
       sourceType: params?.sourceType,
-      sensitivity: params?.sensitivity,
       status: params?.status,
     },
   });

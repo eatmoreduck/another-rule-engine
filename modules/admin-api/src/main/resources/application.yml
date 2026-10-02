@@ -1,13 +1,14 @@
-# 管理服务（admin-api）运行时配置
+# 统一部署物（admin-api：管理面 + 决策面）运行时配置
 # 数据源经 ruleengine.storage.* 注入 storage 模块的 StorageProperties（见该类 JavaDoc），
-# Flyway 迁移基线 = 旧后端 V1..V25（随 storage 模块打包在 classpath:db/migration）
+# Flyway：单一初始化脚本 V1__init（随 storage 模块打包在 classpath:db/migration）
 spring:
   application:
     name: admin-api
 
-  # 阶段 5：Redis（跨服务 Sa-Token 会话 + 缓存失效事件发布）。
-  # 优雅降级：Redis 不可用时服务照常启动运行——会话回退本机内存（token 不跨服务但功能正常），
-  # 失效事件发布失败只记日志；断线重连由 Lettuce 自理（REDIS_URL env 可覆盖，默认本地开发实例）
+  # 阶段 5：Redis（Sa-Token 会话共享 + 缓存失效发布/订阅，同进程内闭环）。
+  # 优雅降级：Redis 不可用时服务照常启动运行——会话回退本机内存（token 不跨实例但功能正常），
+  # 缓存回退 TTL 兜底（最长 30s 延迟）；断线重连由 Lettuce 自理，超时收紧为 2s 防止
+  # 网络分区拖垮决策热路径（REDIS_URL env 可覆盖，默认本地开发实例）
   data:
     redis:
       url: ${REDIS_URL:redis://:Joker2025@192.168.5.200:6379}
@@ -15,9 +16,11 @@ spring:
       timeout: 2s
 
 # 持久化：PostgreSQL + Hikari（默认值对齐旧 monolith 的本地开发配置）
+# 注意 URL 携带 stringtype=unspecified：执行日志的 JSONB 列以文本写入，由 PG 服务端隐式转换
+# （见 storage 的 ExecutionLogTables 注释；Testcontainers 契约测试侧同样拼接该参数）
 ruleengine:
   storage:
-    url: ${DB_URL:jdbc:postgresql://192.168.5.200:5432/yare_engine}
+    url: ${DB_URL:jdbc:postgresql://192.168.5.200:5432/yare_engine?stringtype=unspecified}
     username: ${DB_USERNAME:yare_app}
     password: ${DB_PASSWORD:ServBay.dev}
     maximum-pool-size: 20
@@ -25,10 +28,39 @@ ruleengine:
     connection-timeout-ms: 5000
     flyway-locations: classpath:db/migration
 
+  # 决策链路参数（全部配置化；默认面向本地开发，压测前按环境调优）
+  decision:
+    # 规则脚本执行/整体决策预算兜底上限（请求 timeoutMs 可更小，两者取小）
+    execution-timeout-ms: 1000
+    # 特征获取超时（对齐旧 FeatureRequest 默认 20ms）
+    feature-timeout-ms: 20
+    # 外部特征平台（默认禁用：缺失特征走缓存与默认值降级）
+    feature-external-url: ${FEATURE_EXTERNAL_URL:}
+    feature-cache-maximum-size: 5000
+    feature-cache-expire-after-write-seconds: 10
+    feature-code-cache-maximum-size: 2000
+    feature-code-cache-expire-after-write-seconds: 300
+    # 规则/流图快照缓存（(key,version) 与主行两层；短 TTL 兜底发布时效，Redis pub/sub 即时失效）
+    snapshot-cache-maximum-size: 1000
+    main-cache-maximum-size: 500
+    snapshot-expire-after-write-seconds: 30
+    # 灰度配置缓存（分流策略变更需最快生效）
+    grayscale-expire-after-write-seconds: 10
+    # 黑白名单查询缓存
+    name-list-cache-maximum-size: 10000
+    name-list-expire-after-write-seconds: 5
+    # 决策流防环步数上限
+    flow-max-steps: 1000
+    # 执行日志异步缓冲批量刷盘
+    log-buffer-capacity: 10000
+    log-batch-size: 100
+    log-flush-interval-ms: 500
+    # 异步决策结果（旧 AsyncResultStore 语义）
+    async-result-expire-seconds: 300
+    async-cleanup-interval-seconds: 60
+
 # Sa-Token 配置（与旧后端逐项一致：token 从 Authorization 头裸读，无 Bearer 前缀）
-# 阶段 5 起会话经 Redis 共享：本服务登录颁发的 token 在 decision-api 同样有效；
-# Redis 不可用时自动回退本机内存会话（token 仅本实例有效，功能不受影响）
-# 注意：两服务的 Redis 地址必须指向同一实例/库，且 sa-token 会话参数保持逐项一致
+# 会话经 Redis 共享：登录颁发的 token 全服务有效；Redis 不可用时自动回退本机内存会话
 # sa-token.auth-enabled=false 可整体关闭登录拦截（测试环境用）
 sa-token:
   token-name: Authorization
@@ -38,7 +70,7 @@ sa-token:
   is-share: true
   token-style: uuid
   is-log: false
-  auth-enabled: true
+  auth-enabled: ${SA_TOKEN_AUTH_ENABLED:true}
 
 # Actuator（与旧后端一致的暴露面）
 management:
@@ -47,18 +79,22 @@ management:
       exposure:
         include: health,info,metrics,prometheus
       base-path: /actuator
+  endpoint:
+    health:
+      probes:
+        enabled: true # K8s liveness / readiness 探针
   health:
     redis:
       # Redis 在本架构中是可选增强（会话共享 + 即时失效，均有降级路径）：
-      # 不纳入健康探针，避免 Redis 抖动放大为 admin 服务整体不可用
+      # 不纳入健康探针，避免 Redis 抖动经 readiness 放大为服务整体摘流
       enabled: false
   metrics:
     tags:
       application: ${spring.application.name}
 
 server:
-  # 前端 dev 代理（frontend/vite.config.ts）指向 8080，保持一致
-  port: ${ADMIN_API_PORT:8080}
+  # 统一入口端口：前端 dev 代理（frontend/vite.config.ts）与 E2E 脚本同指 8080
+  port: ${SERVER_PORT:8080}
 
 logging:
   level:

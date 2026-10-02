@@ -76,19 +76,13 @@ export default function ConditionNodeEditor({
     return null;
   }, [node.operator, node.threshold, resolvedFeature, t]);
 
-  const sensitivityColor = resolvedFeature?.feature.sensitivity === 'HIGHLY_SENSITIVE'
-    ? 'red'
-    : resolvedFeature?.feature.sensitivity === 'SENSITIVE'
-      ? 'orange'
-      : 'green';
-
   const thresholdPlaceholder = inferThresholdPlaceholder(resolvedFeature?.feature.dataType, t);
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
       <div className="condition-node-row">
         <FeatureFieldInput
-          placeholder={t('ruleConfig.field')}
+          placeholder={t('ruleConfig.fieldName')}
           value={node.fieldName}
           onChange={(value) => onChange({ ...node, fieldName: value })}
           onFeatureResolved={setResolvedFeature}
@@ -121,7 +115,6 @@ export default function ConditionNodeEditor({
         <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap', marginLeft: 2 }}>
           <Tag color="blue" style={{ margin: 0 }}>{resolvedFeature.feature.dataType}</Tag>
           <Tag style={{ margin: 0 }}>{resolvedFeature.feature.sourceType}</Tag>
-          <Tag color={sensitivityColor} style={{ margin: 0 }}>{resolvedFeature.feature.sensitivity}</Tag>
           {resolvedFeature.matchedByAlias && (
             <Text type="warning" style={{ fontSize: 12 }}>
               {t('featureCatalog.aliasMappedHint', {

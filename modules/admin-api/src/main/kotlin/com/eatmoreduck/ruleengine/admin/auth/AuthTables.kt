@@ -8,7 +8,7 @@ import org.jetbrains.exposed.v1.javatime.timestamp
  *
  * 说明：storage 模块的仓储只覆盖规则/版本/灰度/特征目录四个业务域（其聚合建模在
  * modules/domain），用户-角色-权限属于 admin-api 自身的认证职责，故本模块自持表对象
- * 直读既有表（列定义与迁移基线 V15/V16/V17 严格一致），复用 storage 提供的
+ * 直读既有表（列定义与初始化脚本 V1__init 的 sys_* 表严格一致），复用 storage 提供的
  * DataSource 与 SpringTransactionManager，不另建事务设施。
  */
 object SysUsersTable : Table("sys_user") {

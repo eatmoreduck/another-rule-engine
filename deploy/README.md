@@ -1,15 +1,14 @@
 # 部署与可观测（阶段 6）
 
-Kotlin 重写后的容器化部署物：三个镜像、本地 compose 全栈、K8s manifests、
-Prometheus/Grafana/Logstash 可观测栈、K6 压测脚本。
+Kotlin 重写后的容器化部署物：后端统一镜像（admin-api：管理面+决策面，2026-10 合并部署物）、
+前端镜像、本地 compose 全栈、K8s manifests、Prometheus/Grafana/Logstash 可观测栈、K6 压测脚本。
 
 ```
 deploy/
-├── docker/                  # 三个 Dockerfile + 前端 nginx 配置
-│   ├── decision-api.Dockerfile    # 决策服务（8081）
-│   ├── admin-api.Dockerfile       # 管理服务（8080）
+├── docker/                  # 两个 Dockerfile + 前端 nginx 配置
+│   ├── admin-api.Dockerfile       # 统一后端（8080：管理面 + 决策面）
 │   ├── frontend.Dockerfile        # React 静态站点（nginx 分流）
-│   └── nginx-frontend.conf        # API 路径分流 + SPA 回退 + gzip
+│   └── nginx-frontend.conf        # API 统一上游 + SPA 回退 + gzip
 ├── k8s/                     # K8s manifests（apply 顺序 = 文件序号）
 ├── compose.local.yml        # 本地全栈（含可观测）
 ├── observability/
@@ -32,7 +31,6 @@ deploy/
 在**仓库根目录**执行（context 必须是仓库根，Dockerfile 在 deploy/docker/ 下）：
 
 ```bash
-docker build -f deploy/docker/decision-api.Dockerfile -t rule-engine/decision-api:dev .
 docker build -f deploy/docker/admin-api.Dockerfile    -t rule-engine/admin-api:dev .
 docker build -f deploy/docker/frontend.Dockerfile     -t rule-engine/frontend:dev .
 ```
@@ -68,16 +66,15 @@ docker build -f deploy/docker/frontend.Dockerfile -t rule-engine/frontend:dev /t
 docker compose -f deploy/compose.local.yml up -d --build
 
 # 就绪后访问
-#   前端           http://localhost:13000        （nginx 已按路径分流 API）
-#   admin-api      http://localhost:18080
-#   decision-api   http://localhost:18081
+#   前端           http://localhost:13000        （nginx 统一 API 上游）
+#   admin-api      http://localhost:18080        （统一部署物：管理面 + 决策面）
 #   Grafana        http://localhost:13001        （admin/admin）
 #   Prometheus     http://localhost:13002
 #   PostgreSQL     localhost:15432               （yare/yare_secret）
 #   Redis          localhost:16379
 
-# 看日志（决策 JSON 日志走 stdout + 共享卷）
-docker compose -f deploy/compose.local.yml logs -f decision-api
+# 看日志（JSON 日志走 stdout + 共享卷）
+docker compose -f deploy/compose.local.yml logs -f admin-api
 docker compose -f deploy/compose.local.yml logs logstash   # 已解析的 JSON 事件
 
 # 压测（见 deploy/k6/README.md）
@@ -87,23 +84,20 @@ docker compose -f deploy/compose.local.yml --profile loadtest run --rm k6 run /s
 docker compose -f deploy/compose.local.yml down -v
 ```
 
-端口全部避开宿主机已占用的 5432/8080/8081（映射见文件头注释）。
+端口全部避开宿主机已占用的 5432/8080（映射见文件头注释）。
 栈拓扑：
 
 ```
 宿主机 13000 ──> frontend(nginx:80)
-                   ├── /api/v1/decide*            ──> decision-api:8081
-                   ├── /api/v1/decision-flows/*/execute ──> decision-api:8081
-                   ├── 其余 /api/*                ──> admin-api:8080
-                   └── /                          ──> SPA 静态文件
-decision-api:8081 ──> postgres:5432 / redis:6379（阶段 5 生效）
-admin-api:8080    ──> postgres:5432
-prometheus:9090   ──> 抓 decision-api/admin-api /actuator/prometheus
+                   ├── /api/*                ──> admin-api:8080（统一后端）
+                   └── /                     ──> SPA 静态文件
+admin-api:8080    ──> postgres:5432 / redis:6379（阶段 5 生效）
+prometheus:9090   ──> 抓 admin-api /actuator/prometheus
 grafana:3000      ──> 读 prometheus（数据源/仪表盘自动装载）
 logstash          ──> 读共享卷 app-logs(/app/logs ←→ /logs) 的 JSON 滚动日志 → stdout
 ```
 
-两个 Boot 服务均以 `SPRING_PROFILES_ACTIVE=json` 运行：stdout 出 Logstash JSON
+统一后端以 `SPRING_PROFILES_ACTIVE=json` 运行：stdout 出 Logstash JSON
 （容器日志路径），同时写 `/app/logs/*.json` 滚动文件（共享卷 → Logstash 采集路径）。
 
 ## K8s 部署
@@ -122,21 +116,18 @@ kubectl apply -f deploy/k8s/00-namespace.yaml
 kubectl apply -f deploy/k8s/01-configmaps.yaml
 kubectl apply -f deploy/k8s/02-secrets.yaml
 kubectl apply -f deploy/k8s/10-deployment-admin-api.yaml
-kubectl apply -f deploy/k8s/11-deployment-decision-api.yaml
 kubectl apply -f deploy/k8s/12-deployment-frontend.yaml
 kubectl apply -f deploy/k8s/20-services.yaml
 kubectl apply -f deploy/k8s/30-ingress.yaml
-kubectl apply -f deploy/k8s/40-hpa-decision-api.yaml
 ```
 
 清单要点：
 
 | 资源 | 关键配置 |
 |------|---------|
-| Ingress | ingress-nginx：`/api/v1/decide`（Prefix）与 `/api/v1/decision-flows/*/execute`（正则，use-regex）→ decision-api；`/api` → admin-api；`/` → frontend。其他 Ingress Controller 需等价改写 |
-| HPA（decision） | CPU 70%，min 2 / max 10，快速扩/温和缩；按 QPS 扩缩需先部署 prometheus-adapter 或 KEDA（文件内有追加示例） |
+| Ingress | ingress-nginx：`/api` → admin-api（统一后端）；`/` → frontend。其他 Ingress Controller 需等价改写 |
 | 探针 | `/actuator/health/liveness`、`/actuator/health/readiness`（Boot probes，ConfigMap 已显式开启） |
-| 资源 | decision：req 500m/512Mi，limit 1500m/1Gi（MaxRAMPercentage=75 → 堆约 768Mi）；admin：req 250m/512Mi，limit 1/1Gi |
+| 资源 | admin-api（统一后端）：req 250m/512Mi，limit 1/1Gi（MaxRAMPercentage=75 → 堆约 768Mi） |
 | 日志 | 每副本 emptyDir 挂 `/app/logs`（节点侧 DaemonSet 采集），stdout 走集群日志栈 |
 | frontend | nginx:stable master 以 root 绑 80；集群强制 non-root 时换 `nginxinc/nginx-unprivileged`（8080）并调 Service targetPort |
 
@@ -151,8 +142,8 @@ kubectl apply --dry-run=client -f deploy/k8s/*.yaml
 
 ## 可观测
 
-- **Prometheus**：`deploy/observability/prometheus/prometheus.yml`，抓 decision-api:8081、
-  admin-api:8080 与自身，15s 间隔。K8s 下建议换 kube-prometheus-stack + ServiceMonitor。
+- **Prometheus**：`deploy/observability/prometheus/prometheus.yml`，抓 admin-api:8080
+  与自身，15s 间隔。K8s 下建议换 kube-prometheus-stack + ServiceMonitor。
 - **Grafana**：provisioning 自动装载数据源与仪表盘「规则引擎 · 决策链路总览」，
   面板覆盖：决策 QPS、决策延迟 p50/p95/avg（SLA 红线 50ms）、decision.errors、
   HTTP 请求量/延迟、JVM 堆内存、GC、进程 CPU。指标名与运行中服务
@@ -168,21 +159,23 @@ kubectl apply --dry-run=client -f deploy/k8s/*.yaml
 
 1. **前端源码两处缺陷**（阻塞 frontend 镜像干净构建，见上文镜像构建节）：
    `FlowGraphDiff.tsx` computeDiff 缺块、`rule.ts` version 重复。需前端侧修复后重推。
-2. **Sa-Token 会话**：阶段 5 的 Redis 会话共享已在 compose 栈实测通过——admin-api 登录
-   颁发的 token 直打 decision-api（认证开启的实例）返回 200、伪造 token 401。compose 两个
-   服务经 `REDIS_URL=redis://redis:6379` 注入连接；K8s 侧在 02-secrets.yaml 填真实
-   REDIS_URL 即可获得同等行为。压测场景仍用 `SA_TOKEN_AUTH_ENABLED=false` 省去 token 管理。
-3. **Ingress 正则路径**：`~/api/v1/decision-flows/[^/]+/execute$` 依赖 ingress-nginx 的
-   use-regex 语义；换网关需重写，且务必保持「execute 进决策、其余决策流路径进管理」。
-4. **decision.duration 分位数**：多副本下 Prometheus 无法跨副本聚合 quantile，
+2. **Sa-Token 会话**：阶段 5 的 Redis 会话已在 compose 栈实测通过——登录颁发的
+   token 全服务有效（Redis 共享），伪造 token 401。compose 经 `REDIS_URL=redis://redis:6379`
+   注入连接；K8s 侧在 02-secrets.yaml 填真实 REDIS_URL 即可获得同等行为。
+   压测场景可用 `SA_TOKEN_AUTH_ENABLED=false` 省去 token 管理（合并后该开关覆盖
+   管理面+决策面，压测栈勿暴露公网）。
+3. **decision.duration 分位数**：多副本下 Prometheus 无法跨副本聚合 quantile，
    SLA 判定建议用 K6（端到端）+ avg 面板（服务端）；或后续改 histogram 桶
    （需代码/配置层把 summary 换成 percentiles-histogram）。
-5. **首次起栈顺序**：PostgreSQL 健康检查通过后服务才启动；admin/decision 首次启动
-   跑 Flyway 全量迁移（V1..V25），可能 1-2 分钟，健康检查 start-period 已放宽。
-6. **镜像 tag**：manifests 里是本地 dev tag，上集群前改 registry 地址并建议用不可变
+4. **首次起栈顺序**：PostgreSQL 健康检查通过后服务才启动；统一后端首次启动
+   跑 Flyway 初始化脚本（V1__init），通常数十秒，健康检查 start-period 已放宽。
+5. **镜像 tag**：manifests 里是本地 dev tag，上集群前改 registry 地址并建议用不可变
    digest 或版本 tag，别用 :latest/:dev。
-7. **前端镜像 healthcheck 用 curl**：nginx:stable 镜像只有 curl 没有 wget；
+6. **前端镜像 healthcheck 用 curl**：nginx:stable 镜像只有 curl 没有 wget；
    若改用其他 nginx 基础镜像（尤其 alpine 系），同步检查 HEALTHCHECK 的可用命令。
+7. **拆回双部署物**：决策链路组件保留在独立模块 `modules/decision-api`
+   （spring-library 约定，all-open 编译）；需要数据面/管控面物理隔离时，为其
+   加回启动类（收窄扫描范围）与 application.yml 即可拆回，E2E/网关路由同步还原。
 
 ## 阶段 6 已实测通过的关键链路（compose 栈）
 

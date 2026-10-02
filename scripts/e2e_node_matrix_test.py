@@ -17,7 +17,7 @@
 用法：
     python3 scripts/e2e_node_matrix_test.py
 
-前置：admin-api(8080) / decision-api(8081) 运行中；admin/admin123。
+前置：统一后端 admin-api(8080)（合并部署物，含决策面）运行中；admin/admin123。
 幂等：规则/流/名单用固定语义名，运行前清场。
 """
 import json
@@ -26,7 +26,7 @@ import urllib.error
 import urllib.request
 
 BASE_ADMIN = "http://localhost:8080"
-BASE_DECISION = "http://localhost:8081"
+BASE_DECISION = "http://localhost:8080"
 
 results = []
 

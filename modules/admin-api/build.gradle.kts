@@ -1,4 +1,6 @@
 // 部署物 2：管理服务（登录认证/规则 CRUD/版本管理/灰度发布/特征目录）
+import org.gradle.testing.jacoco.tasks.JacocoReport
+
 plugins {
     id("ruleengine.spring-app")
 }
@@ -47,6 +49,8 @@ dependencies {
 
     implementation(project(":modules:domain"))
     implementation(project(":modules:dsl"))
+    // 决策链路组件（合并部署物：决策执行/特征解析/灰度路由由根包扫描吸入同一上下文）
+    implementation(project(":modules:decision-api"))
     implementation(project(":modules:engine"))
     implementation(project(":modules:storage"))
     implementation(project(":modules:shared"))
@@ -65,4 +69,25 @@ dependencies {
     testImplementation(libs.testcontainers.junit.jupiter)
 
     testImplementation(libs.spring.boot.starter.test)
+}
+
+// 合并部署物聚合覆盖率：决策组件（modules/decision-api）的真实执行数据由本模块的
+// 契约测试产生，但 Gradle 的 jacocoTestReport 只统计本模块 sourceSets——
+// 该聚合任务把 decision 的 class/源码纳入统计口径，还原决策链路真实覆盖率。
+val decisionModule = project(":modules:decision-api")
+
+tasks.register<JacocoReport>("jacocoAggregateReport") {
+    dependsOn(tasks.test)
+    executionData(fileTree(layout.buildDirectory.dir("jacoco")) { include("*.exec") })
+    sourceDirectories.from(files("src/main/kotlin", decisionModule.file("src/main/kotlin")))
+    classDirectories.from(
+        files(
+            layout.buildDirectory.dir("classes/kotlin/main"),
+            decisionModule.layout.buildDirectory.dir("classes/kotlin/main"),
+        ),
+    )
+    reports {
+        xml.required.set(true)
+        html.required.set(true)
+    }
 }

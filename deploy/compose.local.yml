@@ -6,12 +6,13 @@
 #   docker compose -f deploy/compose.local.yml --profile loadtest run --rm k6   # 压测
 #   docker compose -f deploy/compose.local.yml down -v           # 销毁
 #
-# 端口约定（避开本机已占用的 5432/8080/8081）：
-#   PostgreSQL 15432 / Redis 16379 / admin-api 18080 / decision-api 18081
+# 端口约定（避开本机已占用的 5432/8080）：
+#   PostgreSQL 15432 / Redis 16379 / admin-api 18080（统一部署物：管理面+决策面）
 #   frontend 13000 / Grafana 13001 / Prometheus 13002 / Logstash 监控 15000
 #
 # 与旧根目录 docker-compose.yml 的关系：旧文件属 legacy 单体（Java 17 monolith），
 # 已弃用，勿再使用；本文件为 Kotlin 重写后的本地全栈。
+# 2026-10 合并部署物：decision-api 不再独立成容器，决策链路随 admin-api 运行。
 # =============================================================================
 name: rule-engine
 
@@ -50,7 +51,7 @@ services:
       timeout: 3s
       retries: 12
 
-  # ─── admin-api（管理服务，容器内 8080）────────────────────
+  # ─── admin-api（统一部署物：管理面 + 决策面，容器内 8080）──
   admin-api:
     build:
       context: ..
@@ -60,49 +61,23 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
-    environment:
-      SPRING_PROFILES_ACTIVE: json # Logstash JSON 结构化日志
-      DB_URL: jdbc:postgresql://postgres:5432/yare_engine
-      DB_USERNAME: yare
-      DB_PASSWORD: yare_secret
-      # Redis（阶段 5：会话共享 + 失效事件发布；同 decision-api 说明）
-      REDIS_URL: redis://redis:6379
-      JVM_OPTS: "-XX:+UseCompactObjectHeaders -XX:+UseZGC -XX:MaxRAMPercentage=75"
-      TZ: Asia/Shanghai
-    ports:
-      - "18080:8080"
-    volumes:
-      - app-logs:/app/logs
-    restart: unless-stopped
-
-  # ─── decision-api（决策服务，容器内 8081，50ms SLA）────────
-  decision-api:
-    build:
-      context: ..
-      dockerfile: deploy/docker/decision-api.Dockerfile
-    image: rule-engine/decision-api:dev
-    container_name: re-local-decision-api
-    depends_on:
-      postgres:
-        condition: service_healthy
       redis:
         condition: service_healthy
     environment:
-      SPRING_PROFILES_ACTIVE: json
+      SPRING_PROFILES_ACTIVE: json # Logstash JSON 结构化日志
       DB_URL: jdbc:postgresql://postgres:5432/yare_engine?stringtype=unspecified
       DB_USERNAME: yare
       DB_PASSWORD: yare_secret
-      # Redis（阶段 5：会话共享 + 缓存失效广播；REDIS_URL 覆盖 spring.data.redis.url）
+      # Redis（阶段 5：会话共享 + 缓存失效发布/订阅）
       REDIS_URL: redis://redis:6379
-      # 压测/本地联调关闭决策侧认证（生产必须开启，经网关注入 token）
-      SA_TOKEN_AUTH_ENABLED: "false"
+      # 压测时可显式设为 "false" 关闭认证（默认开启：合并后认证覆盖管理面+决策面）
       JVM_OPTS: "-XX:+UseCompactObjectHeaders -XX:+UseZGC -XX:MaxRAMPercentage=75"
       # Micrometer 分位数：decision.duration p50/p95/p99（压测 SLA 数据源）
       MANAGEMENT_METRICS_DISTRIBUTION_PERCENTILES_DECISION_DURATION: "0.5,0.95,0.99"
       MANAGEMENT_METRICS_DISTRIBUTION_PERCENTILES_HTTP_SERVER_REQUESTS: "0.95,0.99"
       TZ: Asia/Shanghai
     ports:
-      - "18081:8081"
+      - "18080:8080"
     volumes:
       - app-logs:/app/logs
     restart: unless-stopped
@@ -117,8 +92,6 @@ services:
     depends_on:
       admin-api:
         condition: service_started
-      decision-api:
-        condition: service_started
     ports:
       - "13000:80"
     restart: unless-stopped
@@ -129,8 +102,6 @@ services:
     container_name: re-local-prometheus
     depends_on:
       admin-api:
-        condition: service_started
-      decision-api:
         condition: service_started
     volumes:
       - ./observability/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
@@ -166,8 +137,6 @@ services:
     depends_on:
       admin-api:
         condition: service_started
-      decision-api:
-        condition: service_started
     environment:
       LS_JAVA_OPTS: "-Xms256m -Xmx256m"
       # 监控 API（宿主机 15000 可查 node stats）；pipeline 本身无输入端口
@@ -185,10 +154,10 @@ services:
     container_name: re-local-k6
     profiles: ["loadtest"] # 默认 up 不启动，压测时显式启用
     depends_on:
-      decision-api:
+      admin-api:
         condition: service_started
     environment:
-      BASE_URL: http://decision-api:8081 # 容器网络内直达决策服务
+      BASE_URL: http://admin-api:8080 # 容器网络内直达统一后端（决策面同进程）
       RULE_KEY: ${RULE_KEY:-}
       TOKEN: ${TOKEN:-}
       COLD_VUS: ${COLD_VUS:-5}

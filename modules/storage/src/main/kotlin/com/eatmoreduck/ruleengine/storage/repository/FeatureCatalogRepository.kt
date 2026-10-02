@@ -52,7 +52,6 @@ data class FeatureDefinitionQuery(
     val keyword: String? = null,
     val dataType: String? = null,
     val sourceType: String? = null,
-    val sensitivity: String? = null,
     val status: String? = null,
     val limit: Int = 100,
     val offset: Long = 0,

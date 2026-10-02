@@ -6,8 +6,8 @@ import java.time.Instant
  * 特征目录条目（feature_definition 表的行模型）。
  *
  * 注意：阶段 1 的 modules/domain 未建模特征目录（只有规则/版本/灰度三个聚合），
- * 本类型暂驻 storage 层，字段与 V24 迁移的 feature_definition 列一一对应；
- * dataType / sourceType / sensitivity / status 沿用旧实现的宽松字符串（DDL 无 CHECK 约束），
+ * 本类型暂驻 storage 层，字段与 V1__init 的 feature_definition 列一一对应；
+ * dataType / sourceType / status 沿用旧实现的宽松字符串（DDL 无 CHECK 约束），
  * 待领域模块收编后再收紧为枚举。
  */
 data class FeatureDefinition(
@@ -21,8 +21,6 @@ data class FeatureDefinition(
     val sourceType: String,
     val exampleValue: String? = null,
     val description: String? = null,
-    /** 敏感级别（旧默认 NORMAL） */
-    val sensitivity: String = "NORMAL",
     /** 目录状态（旧默认 ACTIVE） */
     val status: String = "ACTIVE",
     val owner: String? = null,

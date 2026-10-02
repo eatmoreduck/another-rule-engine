@@ -534,6 +534,7 @@
   },
 
   "nodeConfig": {
+    "aliasMappedHint": "别名 {{alias}} 已映射为标准特征 {{canonical}}",
     "nodeProperties": "节点属性",
     "nodeLabel": "节点标签",
     "featureField": "特征字段",

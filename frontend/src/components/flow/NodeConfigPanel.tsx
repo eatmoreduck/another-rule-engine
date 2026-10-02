@@ -55,12 +55,6 @@ function getRecommendedOperators(dataType?: string): Operator[] | null {
   return STRING_OPERATORS;
 }
 
-function getSensitivityColor(sensitivity: string): string {
-  if (sensitivity === 'HIGHLY_SENSITIVE') return 'red';
-  if (sensitivity === 'SENSITIVE') return 'orange';
-  return 'green';
-}
-
 /** 条件节点配置表单 */
 function ConditionConfig({
   data,
@@ -138,9 +132,6 @@ function ConditionConfig({
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 6 }}>
             <Tag color="blue" style={{ marginInlineEnd: 0 }}>{resolvedFeature.feature.dataType}</Tag>
             <Tag style={{ marginInlineEnd: 0 }}>{resolvedFeature.feature.sourceType}</Tag>
-            <Tag color={getSensitivityColor(resolvedFeature.feature.sensitivity)} style={{ marginInlineEnd: 0 }}>
-              {resolvedFeature.feature.sensitivity}
-            </Tag>
             <Tag style={{ marginInlineEnd: 0 }}>{resolvedFeature.feature.status}</Tag>
           </div>
           {resolvedFeature.matchedByAlias && (

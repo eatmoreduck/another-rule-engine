@@ -34,8 +34,8 @@ import java.time.Instant
 import java.util.concurrent.TimeUnit
 
 /**
- * decision-api 全链路契约测试：Testcontainers PG16（真实 PostgreSQL + Flyway V1..V25 迁移 +
- * V15/V16/V17 种子数据）+ 完整 Spring 上下文 + MockMvc。
+ * decision-api 全链路契约测试：Testcontainers PG16（真实 PostgreSQL + Flyway V1__init 初始化脚本 +
+ * 权限种子数据）+ 完整 Spring 上下文 + MockMvc。
  *
  * 断言口径为旧 DecisionController / AsyncDecisionController 的请求响应字段与 fail-safe 行为，
  * 以及执行日志 / 灰度执行日志 / 灰度指标的落库链路。
@@ -46,7 +46,10 @@ import java.util.concurrent.TimeUnit
  */
 @Testcontainers(disabledWithoutDocker = true)
 @TestMethodOrder(MethodOrderer.OrderAnnotation::class)
-@SpringBootTest(properties = ["sa-token.auth-enabled=false"])
+@SpringBootTest(
+    classes = [com.eatmoreduck.ruleengine.admin.AdminApiApplication::class],
+    properties = ["sa-token.auth-enabled=false"],
+)
 @DisplayName("decision-api 契约：同步决策 + 灰度分流 + 决策流 + fail-safe + 异步轮询 + 日志落库")
 class DecisionApiContractTest {
     companion object {

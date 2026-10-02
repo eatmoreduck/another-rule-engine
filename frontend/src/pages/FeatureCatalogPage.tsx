@@ -40,7 +40,6 @@ const { Text } = Typography;
 const DATA_TYPE_OPTIONS = ['STRING', 'NUMBER', 'BOOLEAN', 'DATE'];
 // 来源类型：请求输入 / 派生计算 / 外部平台
 const SOURCE_TYPE_OPTIONS = ['INPUT', 'DERIVED', 'EXTERNAL'];
-const SENSITIVITY_OPTIONS = ['NORMAL', 'SENSITIVE', 'HIGHLY_SENSITIVE'];
 const STATUS_OPTIONS = ['ACTIVE', 'INACTIVE', 'DEPRECATED'];
 
 export default function FeatureCatalogPage() {
@@ -106,7 +105,6 @@ export default function FeatureCatalogPage() {
       name: '',
       dataType: 'STRING',
       sourceType: 'INPUT',
-      sensitivity: 'NORMAL',
       status: 'ACTIVE',
       aliases: [],
     });
@@ -122,7 +120,6 @@ export default function FeatureCatalogPage() {
       sourceType: feature.sourceType,
       exampleValue: feature.exampleValue ?? '',
       description: feature.description ?? '',
-      sensitivity: feature.sensitivity,
       status: feature.status,
       owner: feature.owner ?? '',
       aliases: feature.aliases,
@@ -187,13 +184,6 @@ export default function FeatureCatalogPage() {
       key: 'sourceType',
       width: 120,
       render: (value: string) => <Tag>{value}</Tag>,
-    },
-    {
-      title: t('featureCatalog.sensitivity'),
-      dataIndex: 'sensitivity',
-      key: 'sensitivity',
-      width: 150,
-      render: (value: string) => <Tag color={value === 'HIGHLY_SENSITIVE' ? 'red' : value === 'SENSITIVE' ? 'orange' : 'green'}>{value}</Tag>,
     },
     {
       title: t('common.status'),
@@ -272,9 +262,6 @@ export default function FeatureCatalogPage() {
           <Form.Item name="sourceType">
             <Select allowClear placeholder={t('featureCatalog.sourceType')} style={{ width: 140 }} options={SOURCE_TYPE_OPTIONS.map((value) => ({ value, label: value }))} />
           </Form.Item>
-          <Form.Item name="sensitivity">
-            <Select allowClear placeholder={t('featureCatalog.sensitivity')} style={{ width: 160 }} options={SENSITIVITY_OPTIONS.map((value) => ({ value, label: value }))} />
-          </Form.Item>
           <Form.Item name="status">
             <Select allowClear placeholder={t('common.status')} style={{ width: 140 }} options={STATUS_OPTIONS.map((value) => ({ value, label: value }))} />
           </Form.Item>
@@ -334,11 +321,6 @@ export default function FeatureCatalogPage() {
             <Col span={6}>
               <Form.Item name="sourceType" label={t('featureCatalog.sourceType')} rules={[{ required: true, message: t('featureCatalog.sourceTypeRequired') }]}>
                 <Select options={SOURCE_TYPE_OPTIONS.map((value) => ({ value, label: value }))} />
-              </Form.Item>
-            </Col>
-            <Col span={6}>
-              <Form.Item name="sensitivity" label={t('featureCatalog.sensitivity')}>
-                <Select allowClear options={SENSITIVITY_OPTIONS.map((value) => ({ value, label: value }))} />
               </Form.Item>
             </Col>
             <Col span={6}>

@@ -5,7 +5,7 @@ import jakarta.validation.constraints.NotBlank
 import jakarta.validation.constraints.NotEmpty
 
 /**
- * 特征定义创建/更新请求（对应旧 FeatureDefinitionRequest，字段与默认值逐字一致）。
+ * 特征定义创建/更新请求（对应旧 FeatureDefinitionRequest，已移除旧版 sensitivity 敏感级别字段）。
  */
 data class FeatureDefinitionRequest(
     @field:NotBlank(message = "特征编码不能为空")
@@ -18,7 +18,6 @@ data class FeatureDefinitionRequest(
     val sourceType: String = "",
     val exampleValue: String? = null,
     val description: String? = null,
-    val sensitivity: String = "NORMAL",
     val status: String = "ACTIVE",
     val owner: String? = null,
     val aliases: List<String> = emptyList(),
@@ -35,7 +34,6 @@ data class FeatureDefinitionResponse(
     val sourceType: String,
     val exampleValue: String?,
     val description: String?,
-    val sensitivity: String,
     val status: String,
     val owner: String?,
     val createdAt: java.time.Instant?,
@@ -76,7 +74,6 @@ data class FeatureValidationResponse(
         val matchedAlias: String? = null,
         val dataType: String? = null,
         val sourceType: String? = null,
-        val sensitivity: String? = null,
         val warnings: List<String> = emptyList(),
     )
 }

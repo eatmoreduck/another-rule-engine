@@ -2,10 +2,13 @@
 // 注意：预编译脚本插件内无法使用 libs.* 类型安全访问器，版本号经 VersionCatalogsExtension 读取
 
 import org.gradle.api.artifacts.VersionCatalogsExtension
+import org.gradle.testing.jacoco.plugins.JacocoPluginExtension
+import org.gradle.testing.jacoco.tasks.JacocoReport
 
 plugins {
     kotlin("jvm")
     id("com.diffplug.spotless")
+    id("jacoco")
 }
 
 group = "com.eatmoreduck.ruleengine"
@@ -24,6 +27,20 @@ dependencies {
 
 tasks.withType<Test>().configureEach {
     useJUnitPlatform()
+    finalizedBy("jacocoTestReport")
+}
+
+// 单测覆盖率：每次 test 后出 XML（供汇总解析）+ HTML（供人工查看）
+extensions.configure(JacocoPluginExtension::class.java) {
+    toolVersion = libs.findVersion("jacoco").get().requiredVersion
+}
+
+tasks.jacocoTestReport {
+    dependsOn(tasks.test)
+    reports {
+        xml.required.set(true)
+        html.required.set(true)
+    }
 }
 
 spotless {

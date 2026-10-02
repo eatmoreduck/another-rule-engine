@@ -24,7 +24,7 @@
 | 缓存/会话 | Redis + Caffeine | 阶段 5 引入（pub/sub 缓存失效广播、Sa-Token 会话、ShedLock） |
 | 格式化 | Spotless + ktlint | 8.9.0 / 1.8.0 |
 
-## 架构：一个代码库、三个部署物
+## 架构：一个代码库、两个部署物（2026-10 合并部署物）
 
 ```
 modules/
@@ -33,14 +33,22 @@ modules/
 ├── engine/        # Groovy 脚本引擎：编译缓存、沙箱校验、类加载隔离
 ├── storage/       # Exposed 表定义 + 仓储
 ├── shared/        # Kafka 事件契约、缓存抽象、通用设施
-├── decision-api/  # 部署物 1：决策服务（8080，无状态，HPA 按 QPS 扩缩）
-├── admin-api/     # 部署物 2：管理服务（8081，规则 CRUD/版本/灰度/AI/特征目录）
-└── log-consumer/  # 部署物 3：日志消费（8082，Kafka → 批量落库）
+├── decision-api/  # 决策链路组件库（spring-library 约定）：决策执行/特征解析/灰度路由，
+│                  #   经 classpath 由 admin-api 根包扫描吸入同一上下文（8080）
+├── admin-api/     # 部署物：统一后端（8080，管理面 + 决策面，Sa-Token 认证）
+└── log-consumer/  # 部署物 2（延后）：日志消费（8082，Kafka → 批量落库）
 
-build-logic/      # Gradle 约定插件（ruleengine.kotlin-library / ruleengine.spring-app）
-frontend/         # React + TypeScript + Vite（保留，端口 3000）
+build-logic/      # Gradle 约定插件（kotlin-library / spring-library / spring-app）
+frontend/         # React + TypeScript + Vite（保留，端口 3000，代理统一后端 8080）
 deploy/           # docker-compose（本地联调）+ k8s manifests（阶段 6）
 ```
+
+> **2026-10 合并说明**：原 decision-api（决策服务）与 admin-api（管理服务）双部署物合并为
+> 单一后端（本地开发只起一个 JVM）。决策链路仍保持无状态设计与 Redis pub/sub 失效广播，
+> 将来数据面/管控面需要物理隔离时，为 decision-api 加回启动类与配置即可拆回。
+> 合并时处理的 bean 冲突：双侧 EngineConfiguration（校验链 5s vs 决策热路径 200ms 双引擎，
+> bean 名 `groovyScriptEngine` / `decisionScriptEngine` 以 @Qualifier 区分）、RedisConfiguration
+> （决策侧为超集，保留）、StpInterface（决策侧复用 admin 的 AuthRepository/StpInterfaceImpl）。
 
 分布式关键设计：决策节点完全无状态；规则配置以 PostgreSQL 为唯一事实源；编译脚本缓存本地 Caffeine + Redis pub/sub 即时失效 + 短 TTL 兜底；Kafka 不做实例级广播（consumer group 只投递一份），实例级失效广播走 Redis pub/sub；决策请求全程钉住规则版本号保证灰度一致性。
 
@@ -55,8 +63,7 @@ export JAVA_HOME=~/.sdkman/candidates/java/25.0.1-graalce
 ./gradlew spotlessApply         # 自动格式化（提交前必跑）
 ./gradlew test                  # 全部测试
 ./gradlew :modules:engine:test  # 单模块测试
-./gradlew :modules:decision-api:bootRun   # 启动决策服务
-./gradlew :modules:admin-api:bootRun      # 启动管理服务
+./gradlew :modules:admin-api:bootRun   # 启动统一后端（管理面 + 决策面，8080）
 ```
 
 前端：`cd frontend && npx vite --port 3000`
@@ -64,7 +71,7 @@ export JAVA_HOME=~/.sdkman/candidates/java/25.0.1-graalce
 ## 代码约定
 
 - Kotlin 官方代码风格，ktlint 强制执行（CI 挡板）
-- 库模块约定插件 `ruleengine.kotlin-library`、Boot 应用约定插件 `ruleengine.spring-app`（build-logic）
+- 库模块约定插件 `ruleengine.kotlin-library`、Spring 组件库插件 `ruleengine.spring-library`（all-open）、Boot 应用约定插件 `ruleengine.spring-app`（build-logic）
 - 依赖版本一律进 `gradle/libs.versions.toml`，不在模块里写死版本号；Boot 相关依赖版本由 BOM 管理
 - 领域模型优先 data class + 不可变；对外 DTO 与领域模型分开放
 - 注释中文，类名/方法名/变量名英文
@@ -76,13 +83,14 @@ export JAVA_HOME=~/.sdkman/candidates/java/25.0.1-graalce
 |------|------|------|
 | 0 | 脚手架：多模块 + JDK 25 + 约定插件 + 版本矩阵核实 | ✅ |
 | 1 | domain + dsl + engine：领域模型 / DSL 树 / 沙箱脚本引擎（208 测试） | ✅ |
-| 2a | storage：Exposed 表映射 + 仓储 + Flyway 基线（44 测试） | ✅ |
+| 2a | storage：Exposed 表映射 + 仓储 + Flyway 基线（44 测试；2026-10 重启后收敛为单一 V1__init） | ✅ |
 | 2b | admin-api 核心：认证 + 规则 + 版本 + 灰度 + 特征目录（53 测试，契约对齐旧 API） | ✅ |
 | 2c | admin-api 外围：决策流管理、黑白名单、审计查询、环境管理 | ✅ |
 | 3 | decision-api：决策链路 + 协程并发取特征 + 灰度分流（p50≈1ms，SLA 余量 50 倍） | ✅ |
-| 4 | 最小化：V26 旧数据回填 + JSON 日志（Logstash 采集）；log-consumer 延后、Kafka 仅留 ExecutionLogBuffer.flush 切换点 | ✅ |
+| 4 | 最小化：JSON 日志（Logstash 采集）；log-consumer 延后、Kafka 仅留 ExecutionLogBuffer.flush 切换点（原 V26 回填随 V1__init 收敛移除） | ✅ |
 | 5 | Redis：Sa-Token 跨服务会话（断级降级+熔断）+ 缓存失效广播（AFTER_COMMIT 发布） | ✅ |
-| 6 | deploy/：三镜像 + K8s manifests + compose 全栈 + Prometheus/Grafana/Logstash + K6（端到端 warm p95=18.3ms） | ✅ |
+| 6 | deploy/：镜像 + K8s manifests + compose 全栈 + Prometheus/Grafana/Logstash + K6（端到端 warm p95=18.3ms） | ✅ |
+| 7 | 合并部署物：decision-api 组件并入 admin-api 单进程（双脚本引擎/单 StpInterface/单 RedisConfiguration），单端口 8080 | ✅ |
 
 ### 收尾尾巴（后续批次候选）
 - log-consumer + Kafka 日志流（切换点已预留）/ ES 日志检索

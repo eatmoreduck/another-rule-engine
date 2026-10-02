@@ -44,7 +44,7 @@ import java.time.format.DateTimeFormatter
 /**
  * admin-api 查询面（监控指标 + 执行日志 + 效果分析 + 冲突检测 + 功能开关 + 系统管理 + 404 兜底）契约测试。
  *
- * 与 AdminApiContractTest 同款设施：Testcontainers PG16（真实 PostgreSQL + Flyway V1..V26
+ * 与 AdminApiContractTest 同款设施：Testcontainers PG16（真实 PostgreSQL + Flyway V1__init
  * 迁移 + 权限种子）+ 完整 Spring 上下文（Sa-Token 拦截链）+ MockMvc；断言口径为前端消费方
  * （frontend/src/api 与 frontend/src/types）的字段名与解析逻辑；无 Docker 的环境自动跳过。
  *
@@ -587,7 +587,7 @@ class AdminApiInsightContractTest {
         assertEquals("API", userView.get("resourceType").asText())
         assertEquals("/api/v1/system/users", userView.get("resourcePath").asText())
         assertEquals("GET", userView.get("method").asText())
-        assertEquals(9L, userView.get("parentId").asLong())
+        assertEquals(10L, userView.get("parentId").asLong())
         assertEquals(1, userView.get("sortOrder").asInt())
         val menu = permissions.single { it.get("permissionCode").asText() == "menu:rules" }
         assertEquals("MENU", menu.get("resourceType").asText())

@@ -2,7 +2,6 @@ import type { PageResponse } from './rule';
 
 export type FeatureDataType = 'STRING' | 'NUMBER' | 'BOOLEAN' | 'TEXT' | 'LIST' | 'ARRAY' | 'INTEGER' | 'LONG' | 'DOUBLE' | 'DECIMAL';
 export type FeatureSourceType = 'INPUT' | 'DERIVED' | 'EXTERNAL' | 'MODEL';
-export type FeatureSensitivity = 'NORMAL' | 'SENSITIVE' | 'HIGHLY_SENSITIVE';
 export type FeatureStatus = 'ACTIVE' | 'INACTIVE' | 'DEPRECATED';
 
 export interface FeatureDefinition {
@@ -13,7 +12,6 @@ export interface FeatureDefinition {
   sourceType: string;
   exampleValue: string | null;
   description: string | null;
-  sensitivity: string;
   status: string;
   owner: string | null;
   createdAt: string;
@@ -25,7 +23,6 @@ export interface FeatureCatalogQueryParams {
   keyword?: string;
   dataType?: string;
   sourceType?: string;
-  sensitivity?: string;
   status?: string;
   page?: number;
   size?: number;
@@ -38,7 +35,6 @@ export interface FeatureDefinitionRequest {
   sourceType: string;
   exampleValue?: string;
   description?: string;
-  sensitivity?: string;
   status?: string;
   owner?: string;
   aliases?: string[];
@@ -58,7 +54,6 @@ export interface FeatureValidationItemResult {
   matchedAlias?: string;
   dataType?: string;
   sourceType?: string;
-  sensitivity?: string;
   warnings: string[];
 }
 

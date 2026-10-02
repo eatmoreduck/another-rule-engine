@@ -48,7 +48,10 @@ import kotlin.test.assertTrue
  * 无 Docker 环境自动跳过整个类。
  */
 @Testcontainers(disabledWithoutDocker = true)
-@SpringBootTest(properties = ["sa-token.auth-enabled=false"])
+@SpringBootTest(
+    classes = [com.eatmoreduck.ruleengine.admin.AdminApiApplication::class],
+    properties = ["sa-token.auth-enabled=false"],
+)
 @DisplayName("阶段 5：缓存失效广播——admin 变更 → decision 缓存即时失效")
 class CacheInvalidationBroadcastTest {
     companion object {

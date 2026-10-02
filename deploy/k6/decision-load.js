@@ -8,7 +8,7 @@
 //      快照缓存命中路径，50ms SLA 的真正载体（阈值 p95 < 50ms）
 //
 // 运行方式见 deploy/k6/README.md。常用环境变量：
-//   BASE_URL   决策服务地址（默认 http://localhost:18081，compose 栈映射端口）
+//   BASE_URL   统一后端地址（默认 http://localhost:18080，compose 栈映射端口；决策面同进程）
 //   TOKEN      Sa-Token 值（决策服务开启认证时必填；关闭认证时忽略）
 //   RULE_KEY   warm 场景使用的规则 key（默认 k6-warm-rule，需先在库中存在）
 //   COLD_VUS / WARM_VUS / DURATION  两场景的虚拟用户数与持续时长
@@ -18,7 +18,7 @@ import { check, group, sleep } from 'k6';
 import { Trend, Rate, Counter } from 'k6/metrics';
 import { textSummary } from 'https://jslib.k6.io/k6-summary/0.1.0/index.js';
 
-const BASE_URL = __ENV.BASE_URL || 'http://localhost:18081';
+const BASE_URL = __ENV.BASE_URL || 'http://localhost:18080';
 const TOKEN = __ENV.TOKEN || '';
 const RULE_KEY = __ENV.RULE_KEY || 'k6-warm-rule';
 const COLD_VUS = Number(__ENV.COLD_VUS || 5);
