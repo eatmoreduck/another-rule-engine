@@ -52,8 +52,14 @@ def call(method, url, token=None, body=None, timeout=15):
 
 
 def psql(sql):
+    """直连后端实际使用的库执行 SQL（造数/清场）。
+    host 默认 localhost（统一后端 DB_URL 的默认本机库），跨环境用 E2E_DB_HOST 覆盖。
+    ⚠️ 不可硬编码固定网段：后端连哪个库，本函数就必须连哪个库——
+    曾因硬编码旧网段把 viewer 用户插进另一个库，导致 B5-B7 全线 401。"""
+    import os
     import subprocess
-    cmd = ["/opt/homebrew/opt/postgresql@18/bin/psql", "-h", "192.168.5.200",
+    host = os.environ.get("E2E_DB_HOST", "localhost")
+    cmd = ["/opt/homebrew/opt/postgresql@18/bin/psql", "-h", host,
            "-U", "yare_app", "-d", "yare_engine", "-t", "-A", "-c", sql]
     env = {"PGPASSWORD": "ServBay.dev", "PATH": "/usr/bin:/bin:/opt/homebrew/bin"}
     return subprocess.run(cmd, capture_output=True, text=True, env=env).stdout.strip()
@@ -174,8 +180,11 @@ def scenario_rbac(admin_token):
     psql(f"insert into sys_user (username, password, nickname, status) "
          f"values ('e2e_viewer', '{admin_hash}', 'E2E只读用户', 'ACTIVE')")
     psql("insert into sys_user_role (user_id, role_id) "
-         "select id, 4 from sys_user where username='e2e_viewer'")
-    check("B4 造 viewer 用户（VIEWER 角色）", True)
+         "select u.id, r.id from sys_user u, sys_role r "
+         "where u.username='e2e_viewer' and r.role_code='VIEWER'")
+    # 造数有效性必须核验：曾因 psql 指错库导致 B5-B7 全线 401，此处断言兜底
+    viewer_rows = psql("select count(*) from sys_user where username='e2e_viewer'")
+    check("B4 造 viewer 用户（VIEWER 角色）", viewer_rows.strip() == "1", f"viewer 行数={viewer_rows!r}")
 
     status, r = call("POST", f"{BASE_ADMIN}/api/v1/auth/login",
                      body={"username": "e2e_viewer", "password": "admin123"})
@@ -208,7 +217,10 @@ def scenario_rbac(admin_token):
 
     psql("delete from sys_user_role where user_id in (select id from sys_user where username='e2e_viewer')")
     psql("delete from sys_user where username='e2e_viewer'")
-    check("B9 清理 viewer 用户", True)
+    psql("delete from sys_user_role where user_id in (select id from sys_user where username='e2e_viewer')")
+    psql("delete from sys_user where username='e2e_viewer'")
+    left = psql("select count(*) from sys_user where username='e2e_viewer'")
+    check("B9 清理 viewer 用户", left.strip() == "0", f"残留={left!r}")
 
 
 def scenario_cleanup(admin_token):
