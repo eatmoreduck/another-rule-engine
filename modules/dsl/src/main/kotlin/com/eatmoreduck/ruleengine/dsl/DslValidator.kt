@@ -136,6 +136,7 @@ class DslValidator(
      * - 外层 `type` 与 `data.nodeType` 不一致 → ERROR（前后端读取口径不同，不一致会导致行为分裂）；
      * - 边引用不存在的节点 → ERROR；
      * - start 节点必须有出边，end 节点不应有出边；
+     * - 存在环 → ERROR（必须是 DAG；执行期另有步数上限兜底，保存期前置拦截）；
      * - 条件节点出边未覆盖 conditionMet=true/false → WARNING；
      * - 条件节点缺 fieldName/阈值 → ERROR；
      * - 规则集节点 ruleKeys 为空 → WARNING（运行时走通过分支）；
@@ -234,6 +235,43 @@ class DslValidator(
                         )
                 }
             }
+
+        // DAG 检测：三色 DFS 找回边（back edge），命中即存在环（含自环），
+        // 且直接给出从回边目标到当前节点的精确环路径，便于定位
+        val outTargets = HashMap<String, MutableList<String>>()
+        graph.edges.forEach { edge ->
+            if (edge.source in nodesById && edge.target in nodesById) {
+                outTargets.getOrPut(edge.source) { mutableListOf() }.add(edge.target)
+            }
+        }
+        val color = HashMap<String, Int>()
+        graph.nodes.forEach { color[it.id] = 0 } // 0 未访问 / 1 在递归栈 / 2 已完成
+        val stack = ArrayDeque<String>()
+
+        fun findCycle(id: String): List<String>? {
+            color[id] = 1
+            stack.addLast(id)
+            for (next in outTargets[id].orEmpty()) {
+                when (color[next]) {
+                    1 -> {
+                        val path = stack.toList()
+                        return path.subList(path.indexOf(next), path.size) + next
+                    }
+
+                    0 -> {
+                        findCycle(next)?.let { return it }
+                    }
+                }
+            }
+            stack.removeLast()
+            color[id] = 2
+            return null
+        }
+
+        val cycle = graph.nodes.firstNotNullOfOrNull { node -> if (color.getValue(node.id) == 0) findCycle(node.id) else null }
+        if (cycle != null) {
+            issues += error("$", "流程图存在环，必须是有向无环图（DAG）: ${cycle.joinToString(" → ")}")
+        }
 
         // 可达性：从 start 沿边遍历，标记可达节点
         starts.firstOrNull()?.let { start ->

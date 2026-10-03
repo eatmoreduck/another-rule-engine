@@ -328,4 +328,89 @@ class DslValidatorTest {
         assertTrue(result.isValid)
         assertTrue(result.warnings.any { "不可达" in it.message && "orphan-1" in it.path })
     }
+
+    @Test
+    fun `两节点环报错并给出环路径`() {
+        val graph =
+            validGraph().let {
+                it.copy(edges = it.edges + FlowEdge(id = "e-back", source = "action-1", target = "cond-1"))
+            }
+
+        val result = validator.validate(graph)
+
+        assertFalse(result.isValid)
+        val cycle = result.errors.single { "环" in it.message }
+        assertTrue("cond-1" in cycle.message && "action-1" in cycle.message, "应给出环中节点: ${cycle.message}")
+    }
+
+    @Test
+    fun `自环报错`() {
+        val graph =
+            validGraph().let {
+                it.copy(edges = it.edges + FlowEdge(id = "e-self", source = "cond-1", target = "cond-1"))
+            }
+
+        val result = validator.validate(graph)
+
+        assertFalse(result.isValid)
+        assertTrue(result.errors.any { "DAG" in it.message && "cond-1" in it.message })
+    }
+
+    @Test
+    fun `菱形汇合不是环`() {
+        val graph =
+            FlowGraph(
+                nodes =
+                    listOf(
+                        node("start-1", StartNodeData("开始")),
+                        node(
+                            "cond-1",
+                            ConditionNodeData(
+                                "金额",
+                                fieldName = "amount",
+                                operator = ConditionOperator.GT,
+                                threshold = ThresholdValue.of(100),
+                            ),
+                        ),
+                        node("merge-1", MergeNodeData("合并")),
+                        node("end-1", EndNodeData("结束", defaultAction = RuleAction.PASS, defaultReason = "默认通过")),
+                    ),
+                edges =
+                    listOf(
+                        FlowEdge(id = "e1", source = "start-1", target = "cond-1"),
+                        FlowEdge(
+                            id = "e2",
+                            source = "cond-1",
+                            target = "merge-1",
+                            sourceHandle = "true",
+                            data = ConditionEdgeData(label = "满足", conditionMet = true),
+                        ),
+                        FlowEdge(
+                            id = "e3",
+                            source = "cond-1",
+                            target = "merge-1",
+                            sourceHandle = "false",
+                            data = ConditionEdgeData(label = "不满足", conditionMet = false),
+                        ),
+                        FlowEdge(id = "e4", source = "merge-1", target = "end-1"),
+                    ),
+            )
+
+        val result = validator.validate(graph)
+
+        assertTrue(result.errors.isEmpty(), "多路径汇合不应判为环: ${result.errors}")
+    }
+
+    @Test
+    fun `非结束节点缺出边给出断头路警告`() {
+        val graph =
+            validGraph().let {
+                it.copy(edges = it.edges.filterNot { e -> e.id == "e4" })
+            }
+
+        val result = validator.validate(graph)
+
+        assertTrue(result.isValid, "断头路是 WARNING 不阻断保存: ${result.errors}")
+        assertTrue(result.warnings.any { "出边" in it.message && "action-1" in it.path })
+    }
 }

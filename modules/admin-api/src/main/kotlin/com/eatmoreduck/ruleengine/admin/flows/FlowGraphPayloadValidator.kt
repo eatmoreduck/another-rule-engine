@@ -25,7 +25,7 @@ sealed interface FlowGraphValidation {
  * 1. 解析——modules/dsl 的 DslParser.parseFlowGraph 解析 `{ nodes, edges }`
  *    （前端 React Flow 导出形状），JSON 非法即拒绝；
  * 2. 结构——DslValidator.validate 做图结构校验（唯一 start / 边引用完整 /
- *    条件节点字段完整等），存在 ERROR 级问题即拒绝（WARNING 不阻断，运行时有兜底）。
+ *    DAG 无环 / 条件节点字段完整等），存在 ERROR 级问题即拒绝（WARNING 不阻断，运行时有兜底）。
  *
  * 旧后端保存流程图不做任何校验（坏图到执行期才失败），此处按本批任务约定前移为
  * 保存/发布时拒绝；失败统一收敛为 [FlowGraphValidation.Invalid]，由服务层映射为
