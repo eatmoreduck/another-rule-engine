@@ -1,6 +1,7 @@
 import { memo } from 'react';
 import { Handle, Position, type NodeProps, type Node } from '@xyflow/react';
 import { Tag } from 'antd';
+import { SafetyCertificateOutlined } from '@ant-design/icons';
 import type { WhitelistNodeData } from '../../../types/flowConfig';
 import { KEY_TYPE_LABELS } from '../../../types/flowConfig';
 
@@ -9,7 +10,10 @@ export default memo(function WhitelistNode({ data }: NodeProps<Node<WhitelistNod
     <div className="custom-node custom-node-whitelist">
       <Handle type="target" position={Position.Left}
         style={{ background: '#52c41a', width: 10, height: 10 }} />
-      <div className="custom-node-title">{data.label}</div>
+      <div className="custom-node-title">
+        <SafetyCertificateOutlined style={{ color: '#52c41a' }} />
+        {data.label}
+      </div>
       <Tag color="green">白名单</Tag>
       <div className="custom-node-detail">
         {KEY_TYPE_LABELS[data.keyType] ?? data.keyType ?? '未配置'}

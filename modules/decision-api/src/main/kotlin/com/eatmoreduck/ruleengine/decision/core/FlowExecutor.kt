@@ -39,6 +39,8 @@ fun interface RuleSetPayloadSource {
  * 与旧实现的差异点：
  * - 递归遍历改为迭代 + 步数上限（[DecisionProperties.flowMaxSteps]，默认 1000），
  *   防止流图成环导致栈溢出/死循环（无后续节点的拒绝文案按节点类型区分，逐字对齐旧实现）；
+ * - 动作节点收口：产生决策后沿出边走到结束节点输出（结束节点优先输出携带结果，
+ *   不被默认动作覆盖），无出边的存量旧图保持直接终止；
  * - 规则集内引用规则走快照缓存（生效版本载荷），不重复解析；
  * - 全部结果携带 executionContext（旧流节点构造的响应不含该字段，统一后前端多读一个字段不破坏契约）。
  *
@@ -72,53 +74,84 @@ class FlowExecutor(
         val start = graph.nodes.firstOrNull { it.data is StartNodeData } ?: return rejected("决策流没有开始节点")
         var current: FlowNode = start
         var steps = 0
+        // 动作节点收口后携带的锁定决策：余下节点不再执行，沿出边走完图，由结束节点输出
+        var locked: DecisionResult? = null
 
         while (true) {
             if (++steps > properties.flowMaxSteps) {
                 return rejected("决策流执行步数超限(${properties.flowMaxSteps})，疑似流图成环")
             }
+            val settled = locked
             val outcome =
-                when (val data = current.data) {
-                    is StartNodeData -> {
-                        advance(nextNode(current.id, graph, null), "无后续节点")
-                    }
+                if (settled != null && current.data !is EndNodeData) {
+                    // 决策已锁定：中间节点直接跳过，只沿出边推进
+                    val next = nextNode(current.id, graph, null)
+                    if (next == null) return settled
+                    advance(next, "决策已产生但路径中断")
+                } else {
+                    when (val data = current.data) {
+                        is StartNodeData -> {
+                            advance(nextNode(current.id, graph, null), "无后续节点")
+                        }
 
-                    is ConditionNodeData -> {
-                        advance(
-                            nextNode(current.id, graph, evaluateOperator(features[data.fieldName], data.operator.name, data.threshold)),
-                            "条件分支无后续节点",
-                        )
-                    }
+                        is ConditionNodeData -> {
+                            advance(
+                                nextNode(current.id, graph, evaluateOperator(features[data.fieldName], data.operator.name, data.threshold)),
+                                "条件分支无后续节点",
+                            )
+                        }
 
-                    is ActionNodeData -> {
-                        return decisionOf(data.action.name, data.reason, features)
-                    }
+                        is ActionNodeData -> {
+                            actionOutcome(data, current, graph, features)
+                        }
 
-                    is EndNodeData -> {
-                        return decisionOf(data.defaultAction.name, data.defaultReason, features)
-                    }
+                        is EndNodeData -> {
+                            return settled ?: decisionOf(data.defaultAction.name, data.defaultReason, features)
+                        }
 
-                    is RuleSetNodeData -> {
-                        ruleSetOutcome(data, current, graph, features, executionTimeoutMs)
-                    }
+                        is RuleSetNodeData -> {
+                            ruleSetOutcome(data, current, graph, features, executionTimeoutMs)
+                        }
 
-                    is BlacklistNodeData -> {
-                        blacklistOutcome(data, current, graph, features)
-                    }
+                        is BlacklistNodeData -> {
+                            blacklistOutcome(data, current, graph, features)
+                        }
 
-                    is WhitelistNodeData -> {
-                        whitelistOutcome(data, current, graph, features)
-                    }
+                        is WhitelistNodeData -> {
+                            whitelistOutcome(data, current, graph, features)
+                        }
 
-                    is MergeNodeData -> {
-                        advance(nextNode(current.id, graph, null), "合并节点无后续节点")
+                        is MergeNodeData -> {
+                            advance(nextNode(current.id, graph, null), "合并节点无后续节点")
+                        }
                     }
                 }
             when (outcome) {
-                is NodeOutcome.Reject -> return outcome.result
-                is NodeOutcome.Advance -> current = outcome.next ?: return rejected(outcome.missingNextReason)
+                is NodeOutcome.Reject -> {
+                    return outcome.result
+                }
+
+                is NodeOutcome.Advance -> {
+                    outcome.lockedResult?.let { locked = it }
+                    current = outcome.next ?: return rejected(outcome.missingNextReason)
+                }
             }
         }
+    }
+
+    /**
+     * 动作节点：产生决策后沿出边走到结束节点输出（图上所有路径收口到 end）；
+     * 无出边视为存量旧图，保持原语义直接以动作结果终止。
+     */
+    private fun actionOutcome(
+        data: ActionNodeData,
+        node: FlowNode,
+        graph: FlowGraph,
+        features: Map<String, Any?>,
+    ): NodeOutcome {
+        val result = decisionOf(data.action.name, data.reason, features)
+        val next = nextNode(node.id, graph, null) ?: return NodeOutcome.Reject(result)
+        return NodeOutcome.Advance(next, "动作节点未能到达结束节点", lockedResult = result)
     }
 
     /** 规则集节点：拒绝优先（一票否决）；通过/无引用规则继续流程 */
@@ -320,11 +353,12 @@ class FlowExecutor(
 
     private fun rejected(reason: String): DecisionResult = DecisionResult.rejected(reason, executionTimeMs = 0)
 
-    /** 节点处理结果：推进到下一节点（携带缺边时的拒绝文案），或以给定结果终止 */
+    /** 节点处理结果：推进到下一节点（携带缺边时的拒绝文案与可选的锁定决策），或以给定结果终止 */
     private sealed interface NodeOutcome {
         data class Advance(
             val next: FlowNode?,
             val missingNextReason: String,
+            val lockedResult: DecisionResult? = null,
         ) : NodeOutcome
 
         data class Reject(

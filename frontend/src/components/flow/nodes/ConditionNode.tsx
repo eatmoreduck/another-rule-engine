@@ -7,6 +7,7 @@
 import { memo } from 'react';
 import { Handle, Position } from '@xyflow/react';
 import type { NodeProps, Node } from '@xyflow/react';
+import { QuestionCircleOutlined } from '@ant-design/icons';
 import type { ConditionNodeData } from '../../../types/flowConfig';
 
 type ConditionNodeProps = NodeProps<Node<ConditionNodeData, 'condition'>>;
@@ -37,7 +38,10 @@ function ConditionNodeComponent({ data, isConnectable }: ConditionNodeProps) {
         style={{ background: '#1890ff', width: 10, height: 10 }}
       />
 
-      <div className="custom-node-title">{data.label}</div>
+      <div className="custom-node-title">
+        <QuestionCircleOutlined style={{ color: '#1890ff' }} />
+        {data.label}
+      </div>
       <div className="custom-node-detail">
         {data.fieldName
           ? `${data.fieldName} ${opSymbol} ${data.threshold}`

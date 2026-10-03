@@ -6,6 +6,7 @@
 import { memo } from 'react';
 import { Handle, Position } from '@xyflow/react';
 import type { NodeProps, Node } from '@xyflow/react';
+import { CaretRightOutlined } from '@ant-design/icons';
 import type { StartNodeData } from '../../../types/flowConfig';
 
 type StartNodeProps = NodeProps<Node<StartNodeData, 'start'>>;
@@ -19,7 +20,10 @@ function StartNodeComponent({ data, isConnectable }: StartNodeProps) {
         isConnectable={isConnectable}
         style={{ background: '#52c41a', width: 10, height: 10 }}
       />
-      <div className="custom-node-title">{data.label}</div>
+      <div className="custom-node-title">
+        <CaretRightOutlined style={{ color: '#52c41a' }} />
+        {data.label}
+      </div>
     </div>
   );
 }

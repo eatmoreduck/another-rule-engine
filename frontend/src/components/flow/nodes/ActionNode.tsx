@@ -7,6 +7,7 @@
 import { memo } from 'react';
 import { Handle, Position } from '@xyflow/react';
 import type { NodeProps, Node } from '@xyflow/react';
+import { ThunderboltOutlined } from '@ant-design/icons';
 import type { ActionNodeData } from '../../../types/flowConfig';
 
 type ActionNodeProps = NodeProps<Node<ActionNodeData, 'action'>>;
@@ -41,7 +42,19 @@ function ActionNodeComponent({ data, isConnectable }: ActionNodeProps) {
         style={{ background: colors.handle, width: 10, height: 10 }}
       />
 
-      <div className="custom-node-title">{data.label}</div>
+      {/* 动作结果沿出边走到结束节点输出（收口） */}
+      <Handle
+        type="source"
+        position={Position.Right}
+        id="pass"
+        isConnectable={isConnectable}
+        style={{ background: colors.handle, width: 10, height: 10 }}
+      />
+
+      <div className="custom-node-title">
+        <ThunderboltOutlined style={{ color: colors.handle }} />
+        {data.label}
+      </div>
       <div className="custom-node-detail">
         {DECISION_LABELS[data.action] ?? data.action}
         {data.reason ? `: ${data.reason}` : ''}

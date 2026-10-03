@@ -109,14 +109,21 @@
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
 }
 
+/* 开始/结束为终局端口，用胶囊形与业务节点区分 */
 .custom-node-start {
   border-color: #52c41a;
   background: #f6ffed;
+  border-radius: 999px;
+  padding: 8px 22px;
+  min-width: 96px;
 }
 
 .custom-node-end {
   border-color: #ff4d4f;
   background: #fff2f0;
+  border-radius: 999px;
+  padding: 8px 22px;
+  min-width: 96px;
 }
 
 .custom-node-condition {
@@ -148,8 +155,18 @@
 }
 
 .custom-node-title {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
   font-weight: 600;
   margin-bottom: 4px;
+}
+
+/* 节点标题行的类型图标（与左侧节点面板图标一致） */
+.custom-node-title .anticon {
+  font-size: 14px;
+  flex-shrink: 0;
 }
 
 .custom-node-detail {

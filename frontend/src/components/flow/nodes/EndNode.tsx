@@ -6,6 +6,7 @@
 import { memo } from 'react';
 import { Handle, Position } from '@xyflow/react';
 import type { NodeProps, Node } from '@xyflow/react';
+import { PoweroffOutlined } from '@ant-design/icons';
 import type { EndNodeData } from '../../../types/flowConfig';
 
 type EndNodeProps = NodeProps<Node<EndNodeData, 'end'>>;
@@ -19,7 +20,10 @@ function EndNodeComponent({ data, isConnectable }: EndNodeProps) {
         isConnectable={isConnectable}
         style={{ background: '#ff4d4f', width: 10, height: 10 }}
       />
-      <div className="custom-node-title">{data.label}</div>
+      <div className="custom-node-title">
+        <PoweroffOutlined style={{ color: '#ff4d4f' }} />
+        {data.label}
+      </div>
       <div className="custom-node-detail">
         默认: {data.defaultAction}
       </div>

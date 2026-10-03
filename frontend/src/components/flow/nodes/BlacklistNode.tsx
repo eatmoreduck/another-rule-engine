@@ -1,6 +1,7 @@
 import { memo } from 'react';
 import { Handle, Position, type NodeProps, type Node } from '@xyflow/react';
 import { Tag } from 'antd';
+import { StopOutlined } from '@ant-design/icons';
 import type { BlacklistNodeData } from '../../../types/flowConfig';
 import { KEY_TYPE_LABELS } from '../../../types/flowConfig';
 
@@ -9,7 +10,10 @@ export default memo(function BlacklistNode({ data }: NodeProps<Node<BlacklistNod
     <div className="custom-node custom-node-blacklist">
       <Handle type="target" position={Position.Left}
         style={{ background: '#ff4d4f', width: 10, height: 10 }} />
-      <div className="custom-node-title">{data.label}</div>
+      <div className="custom-node-title">
+        <StopOutlined style={{ color: '#ff4d4f' }} />
+        {data.label}
+      </div>
       <Tag color="red">黑名单</Tag>
       <div className="custom-node-detail">
         {KEY_TYPE_LABELS[data.keyType] ?? data.keyType ?? '未配置'}

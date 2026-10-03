@@ -53,16 +53,28 @@ def call(method, url, token=None, body=None, timeout=15):
 
 def psql(sql):
     """直连后端实际使用的库执行 SQL（造数/清场）。
-    host 默认 localhost（统一后端 DB_URL 的默认本机库），跨环境用 E2E_DB_HOST 覆盖。
+    本机有 psql 时 host 默认 localhost，跨环境用 E2E_DB_HOST 覆盖；
+    本机 psql 已随本地 PG 清理移除（库统一在 mini 的 Docker），经 SSH 用
+    PG 容器内 psql 执行（容器名 E2E_DB_CONTAINER，主机 E2E_DB_SSH）。
     ⚠️ 不可硬编码固定网段：后端连哪个库，本函数就必须连哪个库——
     曾因硬编码旧网段把 viewer 用户插进另一个库，导致 B5-B7 全线 401。"""
     import os
+    import shutil
     import subprocess
-    host = os.environ.get("E2E_DB_HOST", "localhost")
-    cmd = ["/opt/homebrew/opt/postgresql@18/bin/psql", "-h", host,
-           "-U", "yare_app", "-d", "yare_engine", "-t", "-A", "-c", sql]
-    env = {"PGPASSWORD": "ServBay.dev", "PATH": "/usr/bin:/bin:/opt/homebrew/bin"}
-    return subprocess.run(cmd, capture_output=True, text=True, env=env).stdout.strip()
+    local_psql = shutil.which("psql") or "/opt/homebrew/opt/postgresql@18/bin/psql"
+    if os.path.exists(local_psql):
+        host = os.environ.get("E2E_DB_HOST", "localhost")
+        cmd = [local_psql, "-h", host,
+               "-U", "yare_app", "-d", "yare_engine", "-t", "-A", "-c", sql]
+        env = {"PGPASSWORD": os.environ.get("E2E_DB_PASSWORD", "ServBay.dev"),
+               "PATH": "/usr/bin:/bin:/opt/homebrew/bin"}
+        return subprocess.run(cmd, capture_output=True, text=True, env=env).stdout.strip()
+    ssh_target = os.environ.get("E2E_DB_SSH", "luna@192.168.5.200")
+    container = os.environ.get("E2E_DB_CONTAINER", "postgres")
+    cmd = ["ssh", "-o", "BatchMode=yes", ssh_target,
+           "/usr/local/bin/docker", "exec", "-i", container,
+           "psql", "-U", "yare_app", "-d", "yare_engine", "-t", "-A"]
+    return subprocess.run(cmd, input=sql, capture_output=True, text=True).stdout.strip()
 
 
 def scenario_full_chain():

@@ -7,6 +7,7 @@ import { memo } from 'react';
 import { Handle, Position } from '@xyflow/react';
 import type { NodeProps, Node } from '@xyflow/react';
 import { Tag } from 'antd';
+import { ApartmentOutlined } from '@ant-design/icons';
 import type { RuleSetNodeData } from '../../../types/flowConfig';
 
 type RuleSetNodeProps = NodeProps<Node<RuleSetNodeData, 'ruleset'>>;
@@ -24,6 +25,7 @@ function RuleSetNodeComponent({ data, isConnectable }: RuleSetNodeProps) {
       />
 
       <div className="custom-node-title">
+        <ApartmentOutlined style={{ color: '#722ed1' }} />
         {data.label}
         <Tag
           color="red"

@@ -300,4 +300,79 @@ class FlowExecutorTest {
         assertEquals("MANUAL_REVIEW", result.action.name)
         assertEquals("转人工", result.reason)
     }
+
+    // ---------- 动作节点收口 ----------
+
+    @Test
+    fun `action reject travels to end node and keeps action result`() {
+        val graph =
+            """
+            {"nodes":[
+              {"id":"s","type":"start","data":{"label":"开始","nodeType":"start"}},
+              {"id":"act","type":"action","data":{"label":"拒绝","nodeType":"action","action":"REJECT","reason":"高风险地区拦截"}},
+              {"id":"e","type":"end","data":{"label":"结束","nodeType":"end","defaultAction":"PASS","defaultReason":"默认通过"}}
+            ],"edges":[
+              {"id":"e1","source":"s","target":"act"},
+              {"id":"e2","source":"act","target":"e"}
+            ]}
+            """.trimIndent()
+        val result = run(graph, emptyMap())
+        assertEquals("REJECT", result.action.name)
+        assertEquals("高风险地区拦截", result.reason)
+    }
+
+    @Test
+    fun `end node does not override locked action result`() {
+        val graph =
+            """
+            {"nodes":[
+              {"id":"s","type":"start","data":{"label":"开始","nodeType":"start"}},
+              {"id":"act","type":"action","data":{"label":"放行","nodeType":"action","action":"PASS","reason":"动作放行"}},
+              {"id":"e","type":"end","data":{"label":"结束","nodeType":"end","defaultAction":"REJECT","defaultReason":"结束拒绝"}}
+            ],"edges":[
+              {"id":"e1","source":"s","target":"act"},
+              {"id":"e2","source":"act","target":"e"}
+            ]}
+            """.trimIndent()
+        val result = run(graph, emptyMap())
+        assertEquals("PASS", result.action.name)
+        assertEquals("动作放行", result.reason)
+    }
+
+    @Test
+    fun `action without outgoing edge terminates directly for legacy graphs`() {
+        val graph =
+            """
+            {"nodes":[
+              {"id":"s","type":"start","data":{"label":"开始","nodeType":"start"}},
+              {"id":"act","type":"action","data":{"label":"拒绝","nodeType":"action","action":"REJECT","reason":"存量直停"}},
+              {"id":"e","type":"end","data":{"label":"结束","nodeType":"end","defaultAction":"PASS","defaultReason":"默认通过"}}
+            ],"edges":[
+              {"id":"e1","source":"s","target":"act"}
+            ]}
+            """.trimIndent()
+        val result = run(graph, emptyMap())
+        assertEquals("REJECT", result.action.name)
+        assertEquals("存量直停", result.reason)
+    }
+
+    @Test
+    fun `locked result skips intermediate nodes until end`() {
+        val graph =
+            """
+            {"nodes":[
+              {"id":"s","type":"start","data":{"label":"开始","nodeType":"start"}},
+              {"id":"act","type":"action","data":{"label":"拒绝","nodeType":"action","action":"REJECT","reason":"动作拒绝"}},
+              {"id":"m","type":"merge","data":{"label":"合并","nodeType":"merge"}},
+              {"id":"e","type":"end","data":{"label":"结束","nodeType":"end","defaultAction":"PASS","defaultReason":"默认通过"}}
+            ],"edges":[
+              {"id":"e1","source":"s","target":"act"},
+              {"id":"e2","source":"act","target":"m"},
+              {"id":"e3","source":"m","target":"e"}
+            ]}
+            """.trimIndent()
+        val result = run(graph, emptyMap())
+        assertEquals("REJECT", result.action.name)
+        assertEquals("动作拒绝", result.reason)
+    }
 }

@@ -215,6 +215,12 @@ class DslValidator(
             .filter { !outEdgesBySource[it.id].isNullOrEmpty() }
             .forEach { issues += warning("$.nodes[id=${it.id}]", "结束节点不应有出边") }
 
+        // 断头路：除开始（缺出边已是 ERROR）与结束外的节点没有出边，路径无法收口到结束节点
+        graph.nodes
+            .filter { it.data !is StartNodeData && it.data !is EndNodeData }
+            .filter { outEdgesBySource[it.id].isNullOrEmpty() }
+            .forEach { issues += warning("$.nodes[id=${it.id}]", "节点没有出边，流程在此中断，建议连接到结束节点") }
+
         // 条件节点分支覆盖：出边需同时覆盖 conditionMet=true / false
         graph.nodes
             .filter { it.data is ConditionNodeData }
