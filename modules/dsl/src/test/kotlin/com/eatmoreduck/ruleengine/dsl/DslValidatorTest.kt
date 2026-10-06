@@ -232,7 +232,7 @@ class DslValidatorTest {
     }
 
     @Test
-    fun `缺少结束节点告警`() {
+    fun `缺少结束节点报错`() {
         val graph =
             validGraph().let {
                 it.copy(
@@ -243,8 +243,8 @@ class DslValidatorTest {
 
         val result = validator.validate(graph)
 
-        assertTrue(result.isValid, "缺 end 仅为 WARNING，不阻断")
-        assertTrue(result.warnings.any { "结束节点" in it.message })
+        assertFalse(result.isValid, "缺 end 为 ERROR，保存应被拒绝")
+        assertTrue(result.errors.any { "结束节点" in it.message && it.path == "$" })
     }
 
     @Test

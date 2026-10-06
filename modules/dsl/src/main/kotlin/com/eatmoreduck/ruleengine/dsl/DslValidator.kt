@@ -132,7 +132,7 @@ class DslValidator(
      *
      * 规则：
      * - 必须恰好一个 start 节点 → 否则 ERROR；
-     * - 缺少 end 节点 → WARNING（旧后端运行时以「无后续节点」兜底）；
+     * - 缺少 end 节点 → ERROR（结束节点是必备终局，所有路径收口到它）；
      * - 外层 `type` 与 `data.nodeType` 不一致 → ERROR（前后端读取口径不同，不一致会导致行为分裂）；
      * - 边引用不存在的节点 → ERROR；
      * - start 节点必须有出边，end 节点不应有出边；
@@ -152,7 +152,7 @@ class DslValidator(
         if (starts.isEmpty()) issues += error("$", "流程图缺少开始节点（nodeType=start）")
         if (starts.size > 1) issues += error("$", "流程图存在 ${starts.size} 个开始节点，仅允许一个")
         if (graph.nodes.none { it.data is EndNodeData }) {
-            issues += warning("$", "流程图缺少结束节点（nodeType=end）")
+            issues += error("$", "流程图缺少结束节点（nodeType=end），所有路径必须收口到结束节点")
         }
 
         // 节点级检查（路径以节点 id 定位，与 JSON 内容直接对应）
