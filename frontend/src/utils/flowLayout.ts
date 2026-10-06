@@ -63,6 +63,29 @@ export async function getLayoutedElements(
     waypointsById.set(edge.id ?? '', bends);
   }
 
+  // 旁路分支统一向下展开（流程图惯例）：偏离主链层（开始节点所在高度）超过
+  // 半个节点高的节点若全部位于上方，以主链层为轴整体垂直镜像——节点与连线
+  // 路点同步翻转，布局等价
+  const BRANCH_AXIS_THRESHOLD = FALLBACK_NODE_HEIGHT / 2;
+  const startNode = nodes.find((n) => (n.data as { nodeType?: string }).nodeType === 'start');
+  const mainY = startNode ? (positionsById.get(startNode.id)?.y ?? null) : null;
+  if (mainY !== null) {
+    const deviants = (layout.children ?? []).filter(
+      (c) => Math.abs((c.y ?? mainY) - mainY) > BRANCH_AXIS_THRESHOLD,
+    );
+    const hasAbove = deviants.some((c) => (c.y ?? mainY) < mainY - BRANCH_AXIS_THRESHOLD);
+    const hasBelow = deviants.some((c) => (c.y ?? mainY) > mainY + BRANCH_AXIS_THRESHOLD);
+    if (hasAbove && !hasBelow) {
+      // 注意 positionsById 存的是拷贝值，必须翻转它本身（改 layout.children 无效）
+      for (const pos of positionsById.values()) {
+        pos.y = 2 * mainY - pos.y;
+      }
+      for (const points of waypointsById.values()) {
+        for (const p of points) p.y = 2 * mainY - p.y;
+      }
+    }
+  }
+
   const laidOut = nodes.map((node) => ({
     ...node,
     position: positionsById.get(node.id) ? { ...positionsById.get(node.id)! } : node.position,
