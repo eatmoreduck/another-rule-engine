@@ -112,7 +112,7 @@ function ConditionConfig({
           style={{ marginTop: 4, width: '100%' }}
         />
       </div>
-      {resolvingFeature && (
+      {resolvingFeature && !resolvedFeature && (
         <div style={{ marginBottom: 12, fontSize: 12, color: '#8c8c8c' }}>
           {t('nodeConfig.resolvingFeature')}
         </div>

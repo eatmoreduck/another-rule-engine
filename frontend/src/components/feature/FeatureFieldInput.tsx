@@ -66,6 +66,7 @@ export default function FeatureFieldInput({
     const input = value?.trim() ?? '';
     if (!input) {
       onFeatureResolved?.(null);
+      onResolvingChange?.(false);
       return;
     }
 
@@ -76,6 +77,7 @@ export default function FeatureFieldInput({
         feature: direct,
         matchedByAlias: false,
       });
+      onResolvingChange?.(false);
       return;
     }
 
@@ -88,6 +90,7 @@ export default function FeatureFieldInput({
         matchedByAlias: true,
         matchedAlias,
       });
+      onResolvingChange?.(false);
       return;
     }
 
