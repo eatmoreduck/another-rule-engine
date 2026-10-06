@@ -514,6 +514,14 @@
 
   "nodePalette": {
     "title": "节点面板",
+    "start": {
+      "label": "开始节点",
+      "description": "流程入口（必有）"
+    },
+    "end": {
+      "label": "结束节点",
+      "description": "流程终点，默认通过（必有）"
+    },
     "condition": {
       "label": "条件节点",
       "description": "条件判断分支"

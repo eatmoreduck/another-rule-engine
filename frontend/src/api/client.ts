@@ -35,7 +35,10 @@ apiClient.interceptors.response.use(
     }
 
     console.error('API Error:', message);
-    return Promise.reject(error);
+    // 用后端可读信息构造错误，调用方 toast 展示具体原因而非裸状态码
+    const readable = new Error(message) as Error & { response?: typeof error.response };
+    readable.response = error.response;
+    return Promise.reject(readable);
   },
 );
 

@@ -514,6 +514,14 @@
 
   "nodePalette": {
     "title": "Node Palette",
+    "start": {
+      "label": "Start Node",
+      "description": "Flow entry (required)"
+    },
+    "end": {
+      "label": "End Node",
+      "description": "Flow exit, default PASS (required)"
+    },
     "condition": {
       "label": "Condition Node",
       "description": "Conditional branch"

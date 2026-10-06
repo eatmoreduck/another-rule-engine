@@ -121,7 +121,21 @@ export default function FlowCanvas({
         y: event.clientY,
       });
       let newNode: FlowNode;
-      if (type === 'condition') {
+      if (type === 'start') {
+        newNode = {
+          id: genId(),
+          type: 'start',
+          position,
+          data: { label: '开始', nodeType: 'start' },
+        };
+      } else if (type === 'end') {
+        newNode = {
+          id: genId(),
+          type: 'end',
+          position,
+          data: { label: '结束', nodeType: 'end', defaultAction: 'PASS', defaultReason: '默认通过' },
+        };
+      } else if (type === 'condition') {
         newNode = {
           id: genId(),
           type: 'condition',

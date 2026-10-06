@@ -4,13 +4,25 @@
  */
 
 import { useCallback, type DragEvent } from 'react';
-import { QuestionCircleOutlined, ThunderboltOutlined, ApartmentOutlined, StopOutlined, SafetyCertificateOutlined, MergeCellsOutlined } from '@ant-design/icons';
+import { CaretRightOutlined, PoweroffOutlined, QuestionCircleOutlined, ThunderboltOutlined, ApartmentOutlined, StopOutlined, SafetyCertificateOutlined, MergeCellsOutlined } from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
 
 export default function NodePalette() {
   const { t } = useTranslation();
 
   const NODE_TYPES = [
+    {
+      type: 'start',
+      label: t('nodePalette.start.label'),
+      description: t('nodePalette.start.description'),
+      icon: <CaretRightOutlined style={{ color: '#52c41a', fontSize: 20 }} />,
+    },
+    {
+      type: 'end',
+      label: t('nodePalette.end.label'),
+      description: t('nodePalette.end.description'),
+      icon: <PoweroffOutlined style={{ color: '#ff4d4f', fontSize: 20 }} />,
+    },
     {
       type: 'condition',
       label: t('nodePalette.condition.label'),
