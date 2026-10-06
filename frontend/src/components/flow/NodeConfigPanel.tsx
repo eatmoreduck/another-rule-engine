@@ -129,10 +129,8 @@ function ConditionConfig({
       {resolvedFeature && (
         <div style={{ marginBottom: 12, padding: '8px 10px', background: '#fafafa', border: '1px solid #f0f0f0', borderRadius: 6 }}>
           <div style={{ fontSize: 12, fontWeight: 600, marginBottom: 6 }}>{t('nodeConfig.featureMetadata')}</div>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 6 }}>
+          <div style={{ marginBottom: 6 }}>
             <Tag color="blue" style={{ marginInlineEnd: 0 }}>{resolvedFeature.feature.dataType}</Tag>
-            <Tag style={{ marginInlineEnd: 0 }}>{resolvedFeature.feature.sourceType}</Tag>
-            <Tag style={{ marginInlineEnd: 0 }}>{resolvedFeature.feature.status}</Tag>
           </div>
           {resolvedFeature.matchedByAlias && (
             <div style={{ fontSize: 12, color: '#ad6800', marginBottom: 4 }}>
