@@ -11,8 +11,8 @@ const FALLBACK_NODE_WIDTH = 160;
 const FALLBACK_NODE_HEIGHT = 60;
 
 /** 层内节点间距与层间距离 */
-const NODE_SEPARATION = 60;
-const LAYER_SEPARATION = 130;
+const NODE_SEPARATION = 80;
+const LAYER_SEPARATION = 170;
 
 const elk = new ELK();
 
@@ -39,7 +39,13 @@ export async function getLayoutedElements(
       width: node.measured?.width ?? FALLBACK_NODE_WIDTH,
       height: node.measured?.height ?? FALLBACK_NODE_HEIGHT,
     })),
-    edges: edges.map((edge) => ({ id: edge.id, sources: [edge.source], targets: [edge.target] })),
+    edges: edges.map((edge) => ({
+      id: edge.id,
+      sources: [edge.source],
+      targets: [edge.target],
+      // 长边尽量拉直，减少 zigzag 与局部线纠缠
+      layoutOptions: { 'elk.layered.priority.straightness': '10' },
+    })),
   });
 
   const positionsById = new Map(
