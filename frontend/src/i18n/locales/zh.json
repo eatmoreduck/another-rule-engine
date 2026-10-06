@@ -577,7 +577,11 @@
       "blacklist": "黑名单节点",
       "whitelist": "白名单节点",
       "merge": "合并节点"
-    }
+    },
+    "resolvingFeature": "正在解析特征…",
+    "featureMetadata": "特征元数据",
+    "exampleValueHint": "示例值",
+    "thresholdNumberHint": "请输入数值"
   },
   "scriptPreview": {
     "title": "Groovy 脚本预览",

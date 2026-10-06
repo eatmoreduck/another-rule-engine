@@ -9,9 +9,9 @@ export default memo(function BlacklistNode({ data }: NodeProps<Node<BlacklistNod
   return (
     <div className="custom-node custom-node-blacklist">
       <Handle type="target" position={Position.Left}
-        style={{ background: '#ff4d4f', width: 10, height: 10 }} />
+        style={{ background: '#eb2f96', width: 10, height: 10 }} />
       <div className="custom-node-title">
-        <StopOutlined style={{ color: '#ff4d4f' }} />
+        <StopOutlined style={{ color: '#eb2f96' }} />
         {data.label}
       </div>
       <Tag color="red">黑名单</Tag>

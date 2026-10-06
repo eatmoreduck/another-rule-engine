@@ -45,13 +45,13 @@ export default function NodePalette() {
       type: 'blacklist',
       label: t('nodePalette.blacklist.label'),
       description: t('nodePalette.blacklist.description'),
-      icon: <StopOutlined style={{ color: '#ff4d4f', fontSize: 20 }} />,
+      icon: <StopOutlined style={{ color: '#eb2f96', fontSize: 20 }} />,
     },
     {
       type: 'whitelist',
       label: t('nodePalette.whitelist.label'),
       description: t('nodePalette.whitelist.description'),
-      icon: <SafetyCertificateOutlined style={{ color: '#52c41a', fontSize: 20 }} />,
+      icon: <SafetyCertificateOutlined style={{ color: '#13c2c2', fontSize: 20 }} />,
     },
     {
       type: 'merge',

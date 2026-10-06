@@ -31,6 +31,7 @@ import RuleSetNodeComponent from './nodes/RuleSetNode';
 import BlacklistNodeComponent from './nodes/BlacklistNode';
 import WhitelistNodeComponent from './nodes/WhitelistNode';
 import MergeNodeComponent from './nodes/MergeNode';
+import WaypointEdgeComponent from './edges/WaypointEdge';
 
 const nodeTypes: NodeTypes = {
   start: StartNodeComponent,
@@ -42,6 +43,8 @@ const nodeTypes: NodeTypes = {
   whitelist: WhitelistNodeComponent,
   merge: MergeNodeComponent,
 };
+
+const edgeTypes = { waypoint: WaypointEdgeComponent };
 
 function getDefaultConditionData() {
   return {
@@ -99,7 +102,7 @@ interface FlowCanvasProps {
   onEdgesChange: OnEdgesChange<FlowEdge>;
   onConnect: (connection: Connection) => void;
   onNodeDoubleClick: (event: React.MouseEvent, node: FlowNode) => void;
-  /** 一键排版：携带 dagre 计算后的节点与连线回调父页面（受控状态在父层） */
+  /** 一键排版：携带 ELK 计算后的节点与连线回调父页面（受控状态在父层） */
   onAutoLayout?: (nodes: FlowNode[], edges: FlowEdge[]) => void;
 }
 
@@ -117,10 +120,13 @@ export default function FlowCanvas({
 
   const handleAutoLayout = useCallback(() => {
     if (!onAutoLayout) return;
-    const laidOut = getLayoutedElements(nodes, edges);
-    onAutoLayout(laidOut.nodes, laidOut.edges);
-    // 受控 nodes 更新进 store 后再缩放到全图
-    window.setTimeout(() => fitView({ duration: 300, padding: 0.15 }), 60);
+    getLayoutedElements(nodes, edges)
+      .then((laidOut) => {
+        onAutoLayout(laidOut.nodes, laidOut.edges);
+        // 受控 nodes 更新进 store 后再缩放到全图
+        window.setTimeout(() => fitView({ duration: 300, padding: 0.15 }), 60);
+      })
+      .catch((err) => console.error('自动布局失败:', err));
   }, [nodes, edges, onAutoLayout, fitView]);
   const onDragOver = useCallback((event: DragEvent) => {
     event.preventDefault();
@@ -211,6 +217,8 @@ export default function FlowCanvas({
       onDragOver={onDragOver}
       onNodeDoubleClick={onNodeDoubleClick as never}
       nodeTypes={nodeTypes}
+      edgeTypes={edgeTypes}
+      defaultEdgeOptions={{ type: 'waypoint' }}
       fitView
       fitViewOptions={{ minZoom: 0.3, maxZoom: 0.8 }}
       minZoom={0.2}

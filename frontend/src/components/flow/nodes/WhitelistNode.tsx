@@ -9,9 +9,9 @@ export default memo(function WhitelistNode({ data }: NodeProps<Node<WhitelistNod
   return (
     <div className="custom-node custom-node-whitelist">
       <Handle type="target" position={Position.Left}
-        style={{ background: '#52c41a', width: 10, height: 10 }} />
+        style={{ background: '#13c2c2', width: 10, height: 10 }} />
       <div className="custom-node-title">
-        <SafetyCertificateOutlined style={{ color: '#52c41a' }} />
+        <SafetyCertificateOutlined style={{ color: '#13c2c2' }} />
         {data.label}
       </div>
       <Tag color="green">白名单</Tag>

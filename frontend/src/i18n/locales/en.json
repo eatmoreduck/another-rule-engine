@@ -577,7 +577,11 @@
       "blacklist": "Blacklist Node",
       "whitelist": "Whitelist Node",
       "merge": "Merge Node"
-    }
+    },
+    "resolvingFeature": "Resolving feature…",
+    "featureMetadata": "Feature Metadata",
+    "exampleValueHint": "Example",
+    "thresholdNumberHint": "Enter a number"
   },
   "scriptPreview": {
     "title": "Groovy Script Preview",

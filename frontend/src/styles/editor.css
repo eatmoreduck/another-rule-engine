@@ -122,6 +122,7 @@
   border-color: #ff4d4f;
   background: #fff2f0;
   border-radius: 999px;
+  border-width: 3px;
   padding: 8px 22px;
   min-width: 96px;
 }
@@ -130,7 +131,7 @@
   border-color: #1890ff;
   background: #e6f7ff;
   transform: rotate(0deg);
-  border-radius: 8px;
+  border-radius: 0;
 }
 
 .custom-node-action {
@@ -140,18 +141,22 @@
 .custom-node-ruleset {
   border-color: #722ed1;
   background: #f9f0ff;
+  border-radius: 16px;
 }
 .custom-node-blacklist {
-  border-color: #ff4d4f;
-  background: #fff2f0;
+  border-color: #eb2f96;
+  background: #fff0f6;
+  border-width: 3px;
 }
 .custom-node-whitelist {
-  border-color: #52c41a;
-  background: #f6ffed;
+  border-color: #13c2c2;
+  background: #e6fffb;
+  border-style: dashed;
 }
 .custom-node-merge {
   border-color: #8c8c8c;
   background: #fafafa;
+  border-style: dotted;
 }
 
 .custom-node-title {
