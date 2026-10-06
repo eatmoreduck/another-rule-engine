@@ -7,6 +7,7 @@ import { useCallback, type DragEvent } from 'react';
 import {
   ReactFlow,
   Controls,
+  ControlButton,
   Background,
   useReactFlow,
   type Connection,
@@ -15,9 +16,12 @@ import {
   type OnEdgesChange,
   BackgroundVariant,
 } from '@xyflow/react';
+import { PartitionOutlined } from '@ant-design/icons';
+import { useTranslation } from 'react-i18next';
 import type { FlowNode, FlowEdge } from '../../types/flowConfig';
 
 import { genId } from '../../types/flowConfig';
+import { getLayoutedElements } from '../../utils/flowLayout';
 
 import StartNodeComponent from './nodes/StartNode';
 import EndNodeComponent from './nodes/EndNode';
@@ -95,6 +99,8 @@ interface FlowCanvasProps {
   onEdgesChange: OnEdgesChange<FlowEdge>;
   onConnect: (connection: Connection) => void;
   onNodeDoubleClick: (event: React.MouseEvent, node: FlowNode) => void;
+  /** 一键排版：携带 dagre 计算后的节点与连线回调父页面（受控状态在父层） */
+  onAutoLayout?: (nodes: FlowNode[], edges: FlowEdge[]) => void;
 }
 
 export default function FlowCanvas({
@@ -104,8 +110,18 @@ export default function FlowCanvas({
   onEdgesChange,
   onConnect: onConnectProp,
   onNodeDoubleClick,
+  onAutoLayout,
 }: FlowCanvasProps) {
-  const { screenToFlowPosition, addNodes } = useReactFlow();
+  const { screenToFlowPosition, addNodes, fitView } = useReactFlow();
+  const { t } = useTranslation();
+
+  const handleAutoLayout = useCallback(() => {
+    if (!onAutoLayout) return;
+    const laidOut = getLayoutedElements(nodes, edges);
+    onAutoLayout(laidOut.nodes, laidOut.edges);
+    // 受控 nodes 更新进 store 后再缩放到全图
+    window.setTimeout(() => fitView({ duration: 300, padding: 0.15 }), 60);
+  }, [nodes, edges, onAutoLayout, fitView]);
   const onDragOver = useCallback((event: DragEvent) => {
     event.preventDefault();
     event.dataTransfer.dropEffect = 'move';
@@ -203,7 +219,11 @@ export default function FlowCanvas({
       snapGrid={[15, 15] as [number, number]}
       deleteKeyCode={['Backspace', 'Delete']}
     >
-      <Controls />
+      <Controls>
+        <ControlButton onClick={handleAutoLayout} title={t('flowCanvas.autoLayout')}>
+          <PartitionOutlined />
+        </ControlButton>
+      </Controls>
       <Background variant={BackgroundVariant.Dots} gap={16} size={1} />
     </ReactFlow>
   );

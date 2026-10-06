@@ -4,7 +4,6 @@
     "subtitle": "Low-code Risk Control Rule Engine",
     "loading": "Loading..."
   },
-
   "menu": {
     "rules": "Rules",
     "decisionFlows": "Decision Flows",
@@ -20,7 +19,6 @@
     "roleManagement": "Roles",
     "auditLog": "Audit Log"
   },
-
   "common": {
     "create": "Create",
     "edit": "Edit",
@@ -82,14 +80,12 @@
     "notExist": "Not found or failed to load",
     "returnList": "Back to List"
   },
-
   "user": {
     "logout": "Logout",
     "logoutConfirm": "Are you sure you want to logout?",
     "logoutTitle": "Confirm Logout",
     "defaultName": "User"
   },
-
   "featureCatalog": {
     "pageTitle": "Feature Catalog",
     "pageDescription": "Manage reusable feature assets shared by rules, flow editors, and later operations workflows",
@@ -145,7 +141,6 @@
     "thresholdPlaceholderBoolean": "Enter true / false",
     "thresholdPlaceholderText": "Enter string or list value"
   },
-
   "login": {
     "title": "Rule Engine",
     "subtitle": "Low-code Risk Control Rule Engine",
@@ -160,7 +155,6 @@
     "loginFailed": "Invalid username or password",
     "defaultAccount": "Default: admin / admin123"
   },
-
   "rules": {
     "pageTitle": "Rules",
     "ruleManagement": "Rule Management",
@@ -216,7 +210,6 @@
     "createRuleNameRequired": "Please enter a rule name",
     "createRuleDescOptional": "Optional: describe rule purpose"
   },
-
   "ruleConfig": {
     "condition": "Condition",
     "clearCondition": "Clear Condition",
@@ -255,7 +248,6 @@
       "MANUAL_REVIEW": "Manual Review"
     }
   },
-
   "flows": {
     "pageTitle": "Decision Flows",
     "createFlow": "New Decision Flow",
@@ -293,7 +285,6 @@
       "ARCHIVED": "Archived"
     }
   },
-
   "flowTest": {
     "title": "Test Decision Flow",
     "testParams": "Test Parameters (JSON)",
@@ -308,7 +299,6 @@
     "typeWarningNumber": "\"{{name}}\" expects number, got string \"{{value}}\"",
     "typeWarningString": "\"{{name}}\" expects string, got number {{value}}"
   },
-
   "ruleTest": {
     "title": "Test Rule",
     "testParams": "Test Parameters (JSON)",
@@ -325,7 +315,6 @@
     "execFailedTitle": "Execution Failed",
     "unknownError": "Unknown error"
   },
-
   "nameList": {
     "pageTitle": "Name List Management",
     "addEntry": "Add Name List Entry",
@@ -359,7 +348,6 @@
       "WHITE": "Whitelist"
     }
   },
-
   "monitoring": {
     "pageTitle": "Monitoring Dashboard",
     "totalExecutions": "Total Executions",
@@ -393,7 +381,6 @@
       "ERROR": "Error"
     }
   },
-
   "analytics": {
     "pageTitle": "Analytics Center",
     "effectAnalysis": "Effect Analysis",
@@ -447,7 +434,6 @@
     "featureDependency": "Feature Dependency",
     "failureDetailTitle": "Failure Details"
   },
-
   "importExport": {
     "pageTitle": "Rule Import / Export",
     "exportTitle": "Export Rules",
@@ -493,7 +479,6 @@
       "DELETED": "Deleted"
     }
   },
-
   "environment": {
     "pageTitle": "Environment Management",
     "loadFailed": "Failed to load environments",
@@ -511,7 +496,6 @@
     "overwriteFalse": "Skip existing rules",
     "overwriteTrue": "Overwrite existing rules"
   },
-
   "nodePalette": {
     "title": "Node Palette",
     "start": {
@@ -547,7 +531,6 @@
       "description": "Merge multiple branches"
     }
   },
-
   "nodeConfig": {
     "aliasMappedHint": "Alias {{alias}} is mapped to canonical feature {{canonical}}",
     "nodeProperties": "Node Properties",
@@ -596,7 +579,6 @@
       "merge": "Merge Node"
     }
   },
-
   "scriptPreview": {
     "title": "Groovy Script Preview",
     "validateScript": "Validate Script",
@@ -606,13 +588,11 @@
     "validatePassedDesc": "The Groovy script is syntactically correct and safe to execute.",
     "validateFailedDesc": "The script contains syntax errors"
   },
-
   "system": {
     "systemManagement": "System Management",
     "loadFailed": "Failed to load data",
     "saveFailed": "Save failed"
   },
-
   "users": {
     "pageTitle": "User Management",
     "createUser": "New User",
@@ -648,7 +628,6 @@
     "disableLabel": "Disabled",
     "resetPassword": "Reset Password"
   },
-
   "roles": {
     "pageTitle": "Role Management",
     "roleList": "Role List",
@@ -660,7 +639,6 @@
     "permissionCount": "{{count}} permissions",
     "otherPermissions": "Other Permissions"
   },
-
   "auditLog": {
     "pageTitle": "Audit Log",
     "operator": "Operator",
@@ -706,7 +684,6 @@
       "SYSTEM_LOGOUT": "System Logout"
     }
   },
-
   "keyTypes": {
     "ID_NO": "ID Number",
     "DEVICE_ID": "Device ID",
@@ -714,13 +691,11 @@
     "PHONE_NO": "Phone Number",
     "MAC_ADDR": "MAC Address"
   },
-
   "flowNodes": {
     "start": "Start",
     "end": "End",
     "defaultPass": "Default Pass"
   },
-
   "grayscale": {
     "pageTitle": "Grayscale Release",
     "createGrayscale": "New Grayscale",
@@ -734,41 +709,33 @@
     "statusFilter": "Filter by Status",
     "grayscaleDescription": "Description",
     "descriptionPlaceholder": "Enter grayscale description (optional)",
-
     "rule": "Rule",
     "decisionFlow": "Decision Flow",
-
     "strategy": {
       "title": "Strategy",
       "percentage": "Percentage",
       "feature": "Feature Match",
       "whitelist": "Whitelist"
     },
-
     "percentageLabel": "Grayscale Percentage",
     "percentagePlaceholder": "Enter grayscale percentage",
     "percentageExtra": "Proportion of grayscale traffic to total traffic (0-100)",
     "percentageRequired": "Please enter grayscale percentage",
-
     "featureRulesLabel": "Feature Match Rules",
     "featureRulesPlaceholder": "Enter feature match rules",
     "featureRulesExtra": "JSON format, e.g.: {{example}}",
-
     "whitelistLabel": "Whitelist User IDs",
     "whitelistPlaceholder": "Enter user ID and press Enter",
     "whitelistExtra": "Separate multiple user IDs with commas",
     "whitelistRequired": "Please enter whitelist user IDs",
-
     "grayscaleVersionLabel": "Grayscale Version",
     "grayscaleVersionRequired": "Please select a grayscale version",
     "grayscaleVersionCount": "{{count}} versions available",
     "selectTargetFirst": "Select a target first",
-
     "ruleSelectPlaceholder": "Search and select a rule",
     "ruleRequired": "Please select a rule",
     "flowSelectPlaceholder": "Search and select a decision flow",
     "flowRequired": "Please select a decision flow",
-
     "versionComparison": "Version Comparison",
     "sameVersionWarning": "Note: Grayscale version is the same as current version, please select a different version",
     "changeReason": "Change Reason",
@@ -777,12 +744,10 @@
     "currentVersionTitle": "Current Version",
     "grayscaleVersionTitle": "Grayscale Version",
     "noContentToCompare": "No script content to compare",
-
     "ruleLogicComparison": "Rule Logic Comparison",
     "visualComparison": "Visual Comparison",
     "groovyCodeComparison": "Groovy Code Comparison",
     "jsonComparison": "JSON Comparison",
-
     "startGrayscale": "Start Grayscale",
     "pauseGrayscale": "Pause Grayscale",
     "resumeGrayscale": "Resume Grayscale",
@@ -791,10 +756,8 @@
     "viewReport": "View Comparison Report",
     "viewLogs": "View Execution Logs",
     "viewDiff": "View Rule Comparison",
-
     "confirmComplete": "Confirm completing grayscale? The grayscale version will be fully released.",
     "confirmRollback": "Confirm rollback? Will revert to the current stable version.",
-
     "reportTitle": "Grayscale Comparison Report",
     "executionCount": "Executions",
     "hitCount": "Hits",
@@ -804,7 +767,6 @@
     "errorCount": "Errors",
     "ruleKey": "Rule Key",
     "noReportData": "No report data available",
-
     "executionLogTitle": "Grayscale Execution Logs",
     "traceId": "Trace ID",
     "versionField": "Version",
@@ -817,7 +779,6 @@
     "normal": "Normal",
     "noLogs": "No execution logs",
     "noVersionInfo": "Version info not found",
-
     "loadOptionsFailed": "Failed to load options",
     "loadVersionsFailed": "Failed to load version list",
     "loadListFailed": "Failed to load grayscale list",
@@ -833,7 +794,6 @@
     "rollbackFailed": "Failed to rollback grayscale",
     "loadReportFailed": "Failed to load grayscale report",
     "loadLogsFailed": "Failed to load execution logs",
-
     "status": {
       "DRAFT": "Draft",
       "RUNNING": "Running",
@@ -841,23 +801,22 @@
       "COMPLETED": "Completed",
       "ROLLED_BACK": "Rolled Back"
     },
-
     "targetTypeLabel": {
       "RULE": "Rule",
       "DECISION_FLOW": "Decision Flow"
     },
-
     "strategyTypeLabel": {
       "PERCENTAGE": "Percentage",
       "FEATURE": "Feature Match",
       "WHITELIST": "Whitelist"
     },
-
     "versionComparisonTitle": "Version Comparison"
   },
-
   "language": {
     "zh": "中文",
     "en": "English"
+  },
+  "flowCanvas": {
+    "autoLayout": "Auto Layout"
   }
 }

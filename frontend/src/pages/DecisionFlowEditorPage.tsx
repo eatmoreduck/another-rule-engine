@@ -248,7 +248,8 @@ function FlowEditorInner() {
           <NodePalette />
           <div style={{ flex: 1, position: 'relative', border: '1px solid #e8e8e8', borderRadius: 8, overflow: 'hidden' }}>
             <FlowCanvas nodes={nodes} edges={edges} onNodesChange={handleNodesChange}
-              onEdgesChange={handleEdgesChange} onConnect={onConnect} onNodeDoubleClick={handleNodeDoubleClick} />
+              onEdgesChange={handleEdgesChange} onConnect={onConnect} onNodeDoubleClick={handleNodeDoubleClick}
+              onAutoLayout={(n, e) => { setNodes(n); setEdges(e); setDirty(true); }} />
           </div>
           {selectedNode && (
             <div style={{ width: 280, flexShrink: 0, display: 'flex', flexDirection: 'column' }}>
