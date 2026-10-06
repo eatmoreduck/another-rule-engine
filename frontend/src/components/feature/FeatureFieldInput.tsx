@@ -147,7 +147,6 @@ export default function FeatureFieldInput({
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
             <Tag color="blue" style={{ marginInlineEnd: 0 }}>{item.dataType}</Tag>
-            <Tag style={{ marginInlineEnd: 0 }}>{item.sourceType}</Tag>
           </div>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
