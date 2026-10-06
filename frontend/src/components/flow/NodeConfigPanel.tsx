@@ -109,7 +109,7 @@ function ConditionConfig({
           onFeatureResolved={setResolvedFeature}
           onResolvingChange={setResolvingFeature}
           placeholder={t('nodeConfig.featureFieldPlaceholder')}
-          style={{ marginTop: 4 }}
+          style={{ marginTop: 4, width: '100%' }}
         />
       </div>
       {resolvingFeature && (
