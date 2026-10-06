@@ -52,25 +52,14 @@ export async function getLayoutedElements(
   const positionsById = new Map(
     (layout.children ?? []).map((child) => [child.id, { x: child.x ?? 0, y: child.y ?? 0 }]),
   );
-  const sizeById = new Map(
-    nodes.map((node) => [node.id, { width: node.measured?.width ?? FALLBACK_NODE_WIDTH, height: node.measured?.height ?? FALLBACK_NODE_HEIGHT }]),
-  );
 
   const waypointsById = new Map<string, { x: number; y: number }[]>();
   for (const edge of layout.edges ?? []) {
     const section = edge.sections?.[0];
     const bends = [...(section?.bendPoints ?? [])];
     if (bends.length === 0) continue;
-    // 首尾对齐 handle 高度（左右中点）：先水平出手柄再拐进通道，尾段同理，
-    // 消除 handle 与通道折点不同高产生的斜线段。
-    // 条件节点的 true/false 出线 handle 偏上/偏下属于已知近似，中点对齐已消除主斜线。
-    const sourceId = edge.sources?.[0] ?? '';
-    const targetId = edge.targets?.[0] ?? '';
-    const sourceY = (positionsById.get(sourceId)?.y ?? 0) + (sizeById.get(sourceId)?.height ?? 0) / 2;
-    const targetY = (positionsById.get(targetId)?.y ?? 0) + (sizeById.get(targetId)?.height ?? 0) / 2;
-    const last = bends[bends.length - 1];
-    bends.unshift({ x: bends[0].x, y: sourceY });
-    bends.push({ x: last.x, y: targetY });
+    // 仅存通道折点；首尾与真实 handle 高度的对齐在 WaypointEdge 内完成
+    // （那里才有 React Flow 传入的精确 handle 坐标，条件节点是/否 handle 偏上/下）
     waypointsById.set(edge.id ?? '', bends);
   }
 
