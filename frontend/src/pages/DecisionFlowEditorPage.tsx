@@ -197,7 +197,20 @@ function FlowEditorInner() {
       }
     } catch (err) {
       if (err instanceof Error) {
-        message.error(`${t('rules.saveFailed')}: ${err.message}`);
+        // 校验错误按 "; " 拆为多行展示；固定 key 使连点保存时替换而非堆叠
+        const lines = err.message.split('; ').filter(Boolean);
+        message.error({
+          key: 'flow-save-error',
+          duration: 8,
+          content: (
+            <div style={{ maxWidth: 640, whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
+              <div style={{ fontWeight: 600 }}>{t('rules.saveFailed')}</div>
+              {lines.map((line, i) => (
+                <div key={i} style={{ marginTop: i === 0 ? 6 : 2 }}>{line}</div>
+              ))}
+            </div>
+          ),
+        });
       }
     } finally {
       setSaving(false);
