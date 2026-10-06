@@ -413,4 +413,91 @@ class DslValidatorTest {
         assertTrue(result.isValid, "断头路是 WARNING 不阻断保存: ${result.errors}")
         assertTrue(result.warnings.any { "出边" in it.message && "action-1" in it.path })
     }
+
+    @Test
+    fun `普通节点多条入边报错`() {
+        val graph =
+            validGraph().let {
+                it.copy(edges = it.edges + FlowEdge(id = "e-extra", source = "start-1", target = "action-1"))
+            }
+
+        val result = validator.validate(graph)
+
+        assertFalse(result.isValid)
+        assertTrue(result.errors.any { "入边" in it.message && "action-1" in it.path })
+    }
+
+    @Test
+    fun `普通节点多条出边报错`() {
+        val graph =
+            validGraph().let {
+                it.copy(edges = it.edges + FlowEdge(id = "e-extra", source = "action-1", target = "start-1"))
+            }
+
+        val result = validator.validate(graph)
+
+        assertFalse(result.isValid)
+        assertTrue(result.errors.any { "出边" in it.message && "action-1" in it.path })
+    }
+
+    @Test
+    fun `条件节点同分支重复出边报错`() {
+        val graph =
+            validGraph().let {
+                it.copy(
+                    edges =
+                        it.edges +
+                            FlowEdge(
+                                id = "e-dup",
+                                source = "cond-1",
+                                target = "end-1",
+                                sourceHandle = "true",
+                                data = ConditionEdgeData(label = "重复", conditionMet = true),
+                            ),
+                )
+            }
+
+        val result = validator.validate(graph)
+
+        assertFalse(result.isValid)
+        assertTrue(result.errors.any { "同一分支" in it.message && "cond-1" in it.path })
+    }
+
+    @Test
+    fun `重复平行线报错`() {
+        val graph =
+            validGraph().let {
+                it.copy(edges = it.edges + FlowEdge(id = "e-dup2", source = "start-1", target = "cond-1"))
+            }
+
+        val result = validator.validate(graph)
+
+        assertFalse(result.isValid)
+        assertTrue(result.errors.any { "重复连线" in it.message })
+    }
+
+    @Test
+    fun `结束与合并节点允许多条入边`() {
+        val graph =
+            FlowGraph(
+                nodes =
+                    listOf(
+                        node("s", StartNodeData("开始")),
+                        node("m1", MergeNodeData("合并1")),
+                        node("m2", MergeNodeData("合并2")),
+                        node("e", EndNodeData("结束", defaultAction = RuleAction.PASS, defaultReason = "通过")),
+                    ),
+                edges =
+                    listOf(
+                        FlowEdge(id = "e1", source = "s", target = "m1"),
+                        FlowEdge(id = "e2", source = "s", target = "m2"),
+                        FlowEdge(id = "e3", source = "m1", target = "e"),
+                        FlowEdge(id = "e4", source = "m2", target = "e"),
+                    ),
+            )
+
+        val result = validator.validate(graph)
+
+        assertTrue(result.errors.isEmpty(), "结束/合并多入应合法: ${result.errors}")
+    }
 }

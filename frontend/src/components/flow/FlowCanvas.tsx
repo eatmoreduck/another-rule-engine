@@ -46,6 +46,9 @@ const nodeTypes: NodeTypes = {
 
 const edgeTypes = { waypoint: WaypointEdgeComponent };
 
+/** 允许多条入边的节点类型（多路径汇入/合并分支） */
+const MULTI_INLET_TYPES = new Set(['end', 'merge']);
+
 function getDefaultConditionData() {
   return {
     label: '条件判断',
@@ -128,6 +131,36 @@ export default function FlowCanvas({
       })
       .catch((err) => console.error('自动布局失败:', err));
   }, [nodes, edges, onAutoLayout, fitView]);
+
+  // 连线规则：禁自连/重复平行线；入边仅 end/merge 允许多条；
+  // 出边仅 condition 允许两条（是/否各一），其余节点一条。
+  const isValidConnection = useCallback(
+    (conn: Connection) => {
+      if (!conn.source || !conn.target || conn.source === conn.target) return false;
+      const sameHandle = (a: string | null | undefined, b: string | null | undefined) => (a ?? null) === (b ?? null);
+      if (
+        edges.some(
+          (e) =>
+            e.source === conn.source &&
+            sameHandle(e.sourceHandle, conn.sourceHandle) &&
+            e.target === conn.target &&
+            sameHandle(e.targetHandle, conn.targetHandle),
+        )
+      ) {
+        return false;
+      }
+      const typeOf = (id?: string | null) => nodes.find((n) => n.id === id)?.data?.nodeType ?? '';
+      if (!MULTI_INLET_TYPES.has(typeOf(conn.target)) && edges.some((e) => e.target === conn.target)) {
+        return false;
+      }
+      if (typeOf(conn.source) === 'condition') {
+        return !edges.some((e) => e.source === conn.source && sameHandle(e.sourceHandle, conn.sourceHandle));
+      }
+      return !edges.some((e) => e.source === conn.source);
+    },
+    [edges, nodes],
+  );
+
   const onDragOver = useCallback((event: DragEvent) => {
     event.preventDefault();
     event.dataTransfer.dropEffect = 'move';
@@ -215,6 +248,7 @@ export default function FlowCanvas({
       onConnect={onConnectProp}
       onDrop={onDrop}
       onDragOver={onDragOver}
+      isValidConnection={isValidConnection}
       onNodeDoubleClick={onNodeDoubleClick as never}
       nodeTypes={nodeTypes}
       edgeTypes={edgeTypes}

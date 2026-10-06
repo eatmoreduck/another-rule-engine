@@ -136,6 +136,8 @@ class DslValidator(
      * - 外层 `type` 与 `data.nodeType` 不一致 → ERROR（前后端读取口径不同，不一致会导致行为分裂）；
      * - 边引用不存在的节点 → ERROR；
      * - start 节点必须有出边，end 节点不应有出边；
+     * - 连接语义 → ERROR：入边仅结束/合并节点允许多条；出边仅条件节点允许两条
+     *   （是/否各一），其余一条；重复平行线拒绝；
      * - 存在环 → ERROR（必须是 DAG；执行期另有步数上限兜底，保存期前置拦截）；
      * - 条件节点出边未覆盖 conditionMet=true/false → WARNING；
      * - 条件节点缺 fieldName/阈值 → ERROR；
@@ -203,6 +205,40 @@ class DslValidator(
             val edgePath = "$.edges[$index]"
             if (edge.source !in nodesById) issues += error(edgePath, "边 ${edge.id} 的 source='${edge.source}' 不存在")
             if (edge.target !in nodesById) issues += error(edgePath, "边 ${edge.id} 的 target='${edge.target}' 不存在")
+        }
+
+        // 连接语义：入度/出度约束（结束/合并节点多入是本职；条件节点是/否各限一条出边）
+        graph.nodes.forEach { node ->
+            val outs = outEdgesBySource[node.id].orEmpty()
+            val ins = graph.edges.count { it.target == node.id }
+            when (node.data) {
+                is ConditionNodeData -> {
+                    if (ins > 1) issues += error("$.nodes[id=${node.id}]", "条件节点只允许一条入边（当前 $ins 条）")
+                    if (outs.size > 2) issues += error("$.nodes[id=${node.id}]", "条件节点最多两条出边（是/否，当前 ${outs.size} 条）")
+                    val handles = outs.map { it.sourceHandle }
+                    if (handles.distinct().size < handles.size) {
+                        issues += error("$.nodes[id=${node.id}]", "条件节点的同一分支（是/否）只允许一条出边")
+                    }
+                }
+
+                is EndNodeData, is MergeNodeData -> Unit
+
+                is StartNodeData -> Unit
+
+                else -> {
+                    if (ins > 1) issues += error("$.nodes[id=${node.id}]", "节点只允许一条入边（当前 $ins 条）")
+                    if (outs.size > 1) issues += error("$.nodes[id=${node.id}]", "节点只允许一条出边（当前 ${outs.size} 条）")
+                }
+            }
+        }
+
+        // 重复平行线：同 source + sourceHandle + target 只允许一条
+        val seenConnections = HashSet<Triple<String, String?, String>>()
+        graph.edges.forEachIndexed { index, edge ->
+            val key = Triple(edge.source, edge.sourceHandle, edge.target)
+            if (!seenConnections.add(key)) {
+                issues += error("$.edges[$index]", "重复连线：${edge.source} → ${edge.target} 已存在相同连线")
+            }
         }
 
         // start/end 与出边
