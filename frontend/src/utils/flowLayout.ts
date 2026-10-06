@@ -90,9 +90,45 @@ export async function getLayoutedElements(
     ...node,
     position: positionsById.get(node.id) ? { ...positionsById.get(node.id)! } : node.position,
   }));
+
+  // 多入口节点（end/merge，各有 上/中/下 三个入点）：入边按来源高度排序分配入口，
+  // 汇入线在节点前保持分散、只在入口处收拢；单入口节点清除 targetHandle（匹配无 id handle）
+  const MULTI_INLET_TYPES = new Set(['end', 'merge']);
+  const INLET_IDS = ['in-top', 'in-mid', 'in-bottom'];
+  const nodeTypeOf = (node: FlowNode) => (node.data as { nodeType?: string }).nodeType ?? '';
+  const laidOutById = new Map(laidOut.map((n) => [n.id, n]));
+  const inletByEdgeId = new Map<string, string>();
+  const incomingByTarget = new Map<string, FlowEdge[]>();
+  for (const edge of edges) {
+    if (!MULTI_INLET_TYPES.has(nodeTypeOf(laidOutById.get(edge.target) ?? ({} as FlowNode)))) continue;
+    const group = incomingByTarget.get(edge.target) ?? [];
+    group.push(edge);
+    incomingByTarget.set(edge.target, group);
+  }
+  for (const [targetId, group] of incomingByTarget) {
+    group.sort((a, b) => {
+      const ya = laidOutById.get(a.source)?.position.y ?? 0;
+      const yb = laidOutById.get(b.source)?.position.y ?? 0;
+      return ya - yb;
+    });
+    group.forEach((edge, index) => {
+      const inlet =
+        group.length === 1
+          ? INLET_IDS[1]
+          : INLET_IDS[Math.round((index * (INLET_IDS.length - 1)) / (group.length - 1))];
+      inletByEdgeId.set(edge.id, inlet);
+    });
+  }
+
   const laidOutEdges = edges.map((edge) => {
     const waypoints = waypointsById.get(edge.id);
-    return waypoints ? { ...edge, data: { ...edge.data, waypoints } } : edge;
+    const withWaypoints = waypoints ? { ...edge, data: { ...edge.data, waypoints } } : edge;
+    const inlet = inletByEdgeId.get(edge.id);
+    return inlet
+      ? { ...withWaypoints, targetHandle: inlet }
+      : withWaypoints.targetHandle
+        ? { ...withWaypoints, targetHandle: undefined }
+        : withWaypoints;
   });
 
   return { nodes: laidOut, edges: laidOutEdges };

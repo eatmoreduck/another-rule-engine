@@ -6,8 +6,12 @@ import type { MergeNodeData } from '../../../types/flowConfig';
 export default memo(function MergeNode({ data }: NodeProps<Node<MergeNodeData, 'merge'>>) {
   return (
     <div className="custom-node custom-node-merge">
-      <Handle type="target" position={Position.Left}
+      <Handle type="target" position={Position.Left} id="in-top"
+        style={{ background: '#8c8c8c', width: 10, height: 10, top: '25%' }} />
+      <Handle type="target" position={Position.Left} id="in-mid"
         style={{ background: '#8c8c8c', width: 10, height: 10 }} />
+      <Handle type="target" position={Position.Left} id="in-bottom"
+        style={{ background: '#8c8c8c', width: 10, height: 10, top: '75%' }} />
       <div className="custom-node-title">
         <MergeCellsOutlined style={{ color: '#8c8c8c' }} />
         {data.label}
