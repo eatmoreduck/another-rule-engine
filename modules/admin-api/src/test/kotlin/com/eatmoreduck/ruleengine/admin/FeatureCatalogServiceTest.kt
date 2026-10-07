@@ -66,6 +66,34 @@ class FeatureCatalogServiceTest {
     }
 
     @Test
+    fun `衍生特征表达式创建并回显`() {
+        val response =
+            service.createDefinition(
+                FeatureDefinitionRequest(
+                    code = "derived_score",
+                    name = "衍生评分",
+                    dataType = "NUMBER",
+                    sourceType = "DERIVED",
+                    expression = "amount * 2 + 100",
+                ),
+            )
+        assertEquals("amount * 2 + 100", response.expression)
+        // 更新表达式后回显新值
+        val updated =
+            service.updateDefinition(
+                "derived_score",
+                FeatureDefinitionRequest(
+                    code = "derived_score",
+                    name = "衍生评分",
+                    dataType = "NUMBER",
+                    sourceType = "DERIVED",
+                    expression = "amount * 3",
+                ),
+            )
+        assertEquals("amount * 3", updated.expression)
+    }
+
+    @Test
     fun `重复编码与大小写变体都被拒绝`() {
         service.createDefinition(createRequest())
         val error =
