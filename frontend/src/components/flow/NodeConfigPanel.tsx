@@ -4,7 +4,7 @@
  */
 
 import { useCallback, useState, useEffect } from 'react';
-import { Select, Input, Divider, Typography, Tag, message, Alert, Button } from 'antd';
+import { Select, Input, Divider, Typography, Tag, message, Alert, Button, Segmented } from 'antd';
 import { useTranslation } from 'react-i18next';
 import type {
   FlowNode,
@@ -15,7 +15,7 @@ import type {
   BlacklistNodeData,
   WhitelistNodeData,
 } from '../../types/flowConfig';
-import { KEY_TYPE_LABELS, normalizeConditionBranches, type ConditionBranch } from '../../types/flowConfig';
+import { KEY_TYPE_LABELS, normalizeConditionBranches, normalizeBranchConditions, type ConditionBranch, type ConditionItem } from '../../types/flowConfig';
 import { DeleteOutlined, PlusOutlined } from '@ant-design/icons';
 import { OPERATOR_LABELS, ACTION_LABELS, type Operator, type Action } from '../../types/ruleConfig';
 import { getRulesForSelect } from '../../api/rules';
@@ -71,11 +71,36 @@ function ConditionConfig({
   const updateBranch = (id: string, patch: Partial<ConditionBranch>) => {
     onUpdate({ branches: branches.map((b) => (b.id === id ? { ...b, ...patch } : b)) });
   };
+  const setConditions = (id: string, conditions: ConditionItem[]) => {
+    onUpdate({ branches: branches.map((b) => (b.id === id ? { ...b, conditions } : b)) });
+  };
+  const updateCondition = (branchId: string, index: number, patch: Partial<ConditionItem>) => {
+    const branch = branches.find((b) => b.id === branchId);
+    if (!branch) return;
+    setConditions(
+      branchId,
+      normalizeBranchConditions(branch).map((c, i) => (i === index ? { ...c, ...patch } : c)),
+    );
+  };
+  const addCondition = (branchId: string) => {
+    const branch = branches.find((b) => b.id === branchId);
+    if (!branch) return;
+    setConditions(branchId, [...normalizeBranchConditions(branch), { fieldName: '', operator: 'GT', threshold: 0 }]);
+  };
+  const removeCondition = (branchId: string, index: number) => {
+    const branch = branches.find((b) => b.id === branchId);
+    if (!branch) return;
+    const conds = normalizeBranchConditions(branch);
+    if (conds.length <= 1) return;
+    setConditions(branchId, conds.filter((_, i) => i !== index));
+  };
   const addBranch = () => {
     let n = branches.length + 1;
     let id = `b${n}`;
     while (branches.some((b) => b.id === id)) id = `b${++n}`;
-    onUpdate({ branches: [...branches, { id, fieldName: '', operator: 'GT', threshold: 0 }] });
+    onUpdate({
+      branches: [...branches, { id, match: 'ALL', conditions: [{ fieldName: '', operator: 'GT', threshold: 0 }] }],
+    });
   };
   const removeBranch = (id: string) => {
     if (branches.length <= 1) return;
@@ -98,21 +123,7 @@ function ConditionConfig({
         <Text type="secondary" style={{ fontSize: 12 }}>{t('nodeConfig.branchListHint')}</Text>
       </div>
       {branches.map((branch, index) => {
-        const resolved = resolvedByBranch[branch.id] ?? null;
-        const recommendedOperators = getRecommendedOperators(resolved?.feature.dataType);
-        const operatorOptions = Object.entries(OPERATOR_LABELS).map(([key, label]) => {
-          const operatorKey = key as Operator;
-          const disabled = !!recommendedOperators && !recommendedOperators.includes(operatorKey);
-          const suffix = disabled ? ` (${t('nodeConfig.operatorNotRecommended')})` : '';
-          return { value: key, label: `${label}${suffix}`, disabled };
-        });
-        const thresholdPlaceholder = (() => {
-          const dataType = resolved?.feature.dataType;
-          if (!dataType) return t('nodeConfig.thresholdPlaceholder');
-          if (isNumericDataType(dataType)) return t('nodeConfig.thresholdNumberHint');
-          if (isBooleanDataType(dataType)) return t('nodeConfig.thresholdBooleanHint');
-          return t('nodeConfig.thresholdTextHint');
-        })();
+        const conditions = normalizeBranchConditions(branch);
 
         return (
           <div key={branch.id} style={{ border: '1px solid #f0f0f0', borderRadius: 6, padding: 8, marginBottom: 8 }}>
@@ -127,40 +138,60 @@ function ConditionConfig({
                 onClick={() => removeBranch(branch.id)}
               />
             </div>
-            <Text type="secondary" style={{ fontSize: 12 }}>{t('nodeConfig.featureField')}</Text>
-            <FeatureFieldInput
-              value={branch.fieldName}
-              onChange={(value) => updateBranch(branch.id, { fieldName: value })}
-              onFeatureResolved={(info) => setResolvedByBranch((prev) => ({ ...prev, [branch.id]: info }))}
-              placeholder={t('nodeConfig.featureFieldPlaceholder')}
-              size="small"
-              style={{ width: '100%', marginTop: 4 }}
-            />
-            <div style={{ marginTop: 6 }}>
-              <Text type="secondary" style={{ fontSize: 12 }}>{t('nodeConfig.comparisonOperator')}</Text>
-              <Select
-                value={branch.operator}
-                onChange={(v: Operator) => updateBranch(branch.id, { operator: v })}
+            <div style={{ marginBottom: 8 }}>
+              <Segmented
+                block
                 size="small"
-                style={{ width: '100%', marginTop: 4 }}
-                options={operatorOptions}
+                value={branch.match ?? 'ALL'}
+                onChange={(v) => updateBranch(branch.id, { match: v as 'ALL' | 'ANY' })}
+                options={[
+                  { label: t('nodeConfig.matchAll'), value: 'ALL' },
+                  { label: t('nodeConfig.matchAny'), value: 'ANY' },
+                ]}
               />
             </div>
-            {resolved && !recommendedOperators?.includes(branch.operator) && (
-              <div style={{ marginTop: 4, fontSize: 12, color: '#ad6800' }}>
-                {t('nodeConfig.operatorMismatchHint', { dataType: resolved.feature.dataType })}
+            {conditions.map((cond, ci) => (
+              <div key={ci} style={{ background: '#fafafa', borderRadius: 4, padding: 6, marginBottom: 6 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+                  <Text type="secondary" style={{ fontSize: 12 }}>{t('nodeConfig.conditionItemN', { n: ci + 1 })}</Text>
+                  <Button
+                    size="small"
+                    type="text"
+                    danger
+                    icon={<DeleteOutlined />}
+                    disabled={conditions.length <= 1}
+                    onClick={() => removeCondition(branch.id, ci)}
+                  />
+                </div>
+                <FeatureFieldInput
+                  value={cond.fieldName}
+                  onChange={(value) => updateCondition(branch.id, ci, { fieldName: value })}
+                  onFeatureResolved={(info) => setResolvedByBranch((prev) => ({ ...prev, [`${branch.id}#${ci}`]: info }))}
+                  placeholder={t('nodeConfig.featureFieldPlaceholder')}
+                  size="small"
+                  style={{ width: '100%', marginBottom: 4 }}
+                />
+                <div style={{ display: 'flex', gap: 4 }}>
+                  <Select
+                    value={cond.operator}
+                    onChange={(v: Operator) => updateCondition(branch.id, ci, { operator: v })}
+                    size="small"
+                    style={{ width: 96 }}
+                    options={Object.entries(OPERATOR_LABELS).map(([key, label]) => ({ value: key, label }))}
+                  />
+                  <Input
+                    value={String(cond.threshold)}
+                    onChange={(e) => updateCondition(branch.id, ci, { threshold: e.target.value })}
+                    placeholder={t('nodeConfig.thresholdPlaceholder')}
+                    size="small"
+                    style={{ flex: 1 }}
+                  />
+                </div>
               </div>
-            )}
-            <div style={{ marginTop: 6 }}>
-              <Text type="secondary" style={{ fontSize: 12 }}>{t('nodeConfig.threshold')}</Text>
-              <Input
-                value={String(branch.threshold)}
-                onChange={(e) => updateBranch(branch.id, { threshold: e.target.value })}
-                placeholder={thresholdPlaceholder}
-                size="small"
-                style={{ marginTop: 4 }}
-              />
-            </div>
+            ))}
+            <Button block size="small" type="text" icon={<PlusOutlined />} onClick={() => addCondition(branch.id)}>
+              {t('nodeConfig.addCondition')}
+            </Button>
           </div>
         );
       })}

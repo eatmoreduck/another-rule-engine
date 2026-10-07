@@ -27,12 +27,26 @@ export interface EndNodeData {
   defaultReason: string;
 }
 
-/** 条件节点的单个分支：命中走 sourceHandle=id 的出边，全不命中走兜底（elseHandle） */
-export interface ConditionBranch {
-  id: string;
+/** 分支内单个子条件 */
+export interface ConditionItem {
   fieldName: string;
   operator: Operator;
   threshold: string | number;
+}
+
+/**
+ * 条件节点的单个分支：组内子条件按 match(ALL=全部满足/ANY=任一满足)聚合，
+ * 命中走 sourceHandle=id 的出边，全不命中走兜底(elseHandle)。
+ * 旧契约兼容:conditions 为空时由 fieldName/operator/threshold 归一化为单条件。
+ */
+export interface ConditionBranch {
+  id: string;
+  match?: 'ALL' | 'ANY';
+  conditions?: ConditionItem[];
+  /** 旧单条件契约字段，仅旧图加载时存在 */
+  fieldName?: string;
+  operator?: Operator;
+  threshold?: string | number;
 }
 
 export interface ConditionNodeData {
@@ -46,17 +60,43 @@ export interface ConditionNodeData {
   threshold?: string | number;
 }
 
+/** 分支内子条件归一化：conditions 为空时由旧单条件字段构造 */
+export function normalizeBranchConditions(branch: ConditionBranch): ConditionItem[] {
+  if (branch.conditions?.length) return branch.conditions;
+  if (branch.fieldName) {
+    return [
+      {
+        fieldName: branch.fieldName,
+        operator: branch.operator ?? 'GT',
+        threshold: branch.threshold ?? 0,
+      },
+    ];
+  }
+  return [];
+}
+
 /** 旧单条件图归一化：无 branches 时由 fieldName/operator/threshold 构造单分支（id=true） */
 export function normalizeConditionBranches(data?: ConditionNodeData): ConditionBranch[] {
   if (!data) return [];
-  if (data.branches?.length) return data.branches;
+  if (data.branches?.length) {
+    return data.branches.map((b) => ({
+      ...b,
+      match: b.match ?? 'ALL',
+      conditions: normalizeBranchConditions(b),
+    }));
+  }
   if (data.fieldName) {
     return [
       {
         id: 'true',
-        fieldName: data.fieldName,
-        operator: data.operator ?? 'GT',
-        threshold: data.threshold ?? 0,
+        match: 'ALL',
+        conditions: [
+          {
+            fieldName: data.fieldName,
+            operator: data.operator ?? 'GT',
+            threshold: data.threshold ?? 0,
+          },
+        ],
       },
     ];
   }

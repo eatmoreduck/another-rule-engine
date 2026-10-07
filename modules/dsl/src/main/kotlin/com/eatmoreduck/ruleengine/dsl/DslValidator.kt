@@ -175,12 +175,19 @@ class DslValidator(
                     val branches = data.effectiveBranches
                     if (branches.isEmpty()) issues += error("$nodePath.data", "条件节点没有任何条件分支")
                     branches.forEach { branch ->
-                        if (branch.fieldName.isBlank()) {
-                            issues += error("$nodePath.data", "条件分支 ${branch.id} 缺少字段名 fieldName")
+                        if (branch.match != null && branch.match.uppercase() !in listOf("ALL", "ANY")) {
+                            issues += error("$nodePath.data", "条件分支 ${branch.id} 的匹配方式非法（应为 ALL/ANY）: ${branch.match}")
                         }
-                        val threshold = branch.threshold
-                        if (threshold is ThresholdValue.Text && threshold.value.isBlank()) {
-                            issues += error("$nodePath.data", "条件分支 ${branch.id} 缺少阈值 threshold")
+                        val conds = branch.effectiveConditions
+                        if (conds.isEmpty()) issues += error("$nodePath.data", "条件分支 ${branch.id} 没有任何子条件")
+                        conds.forEachIndexed { i, cond ->
+                            if (cond.fieldName.isBlank()) {
+                                issues += error("$nodePath.data", "条件分支 ${branch.id} 的子条件 ${i + 1} 缺少字段名 fieldName")
+                            }
+                            val threshold = cond.threshold
+                            if (threshold is ThresholdValue.Text && threshold.value.isBlank()) {
+                                issues += error("$nodePath.data", "条件分支 ${branch.id} 的子条件 ${i + 1} 缺少阈值 threshold")
+                            }
                         }
                     }
                     val branchIds = branches.map { it.id }

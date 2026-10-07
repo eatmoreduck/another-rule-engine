@@ -585,7 +585,11 @@
     "branchListHint": "Condition branches (evaluated top-down, first match wins)",
     "branchN": "Condition {{n}}",
     "addBranch": "Add Branch",
-    "branchMatchHint": "Branches are evaluated top-down: the first match routes to its outlet; if none match, the fallback outlet is taken."
+    "branchMatchHint": "Branches are evaluated top-down: the first match routes to its outlet; if none match, the fallback outlet is taken.",
+    "matchAll": "ALL (and)",
+    "matchAny": "ANY (or)",
+    "conditionItemN": "Condition {{n}}",
+    "addCondition": "Add Condition"
   },
   "scriptPreview": {
     "title": "Groovy Script Preview",

@@ -304,6 +304,41 @@ class FlowExecutorTest {
     // ---------- 动作节点收口 ----------
 
     @Test
+    fun `branch condition group aggregates with ALL and ANY`() {
+        val graph =
+            """
+            {"nodes":[
+              {"id":"s","type":"start","data":{"label":"开始","nodeType":"start"}},
+              {"id":"c","type":"condition","data":{"label":"组合条件","nodeType":"condition","branches":[
+                {"id":"b1","match":"ALL","conditions":[
+                  {"fieldName":"amount","operator":"GT","threshold":1000},
+                  {"fieldName":"region","operator":"CONTAINS","threshold":"US"}
+                ]},
+                {"id":"b2","match":"ANY","conditions":[
+                  {"fieldName":"region","operator":"CONTAINS","threshold":"新疆"},
+                  {"fieldName":"region","operator":"CONTAINS","threshold":"西藏"}
+                ]}
+              ]}},
+              {"id":"a1","type":"action","data":{"label":"组合命中","nodeType":"action","action":"REJECT","reason":"组合命中"}},
+              {"id":"a2","type":"action","data":{"label":"任一命中","nodeType":"action","action":"REJECT","reason":"任一命中"}},
+              {"id":"e","type":"end","data":{"label":"结束","nodeType":"end","defaultAction":"PASS","defaultReason":"通过"}}
+            ],"edges":[
+              {"id":"e0","source":"s","target":"c"},
+              {"id":"eb1","source":"c","target":"a1","sourceHandle":"b1"},
+              {"id":"eb2","source":"c","target":"a2","sourceHandle":"b2"},
+              {"id":"ee","source":"c","target":"e","sourceHandle":"else"}
+            ]}
+            """.trimIndent()
+        // ALL:两条件都满足才走 b1
+        assertEquals("组合命中", run(graph, mapOf("amount" to 2000, "region" to "US East")).reason)
+        // ALL 不满足(amount 高但 region 无 US)→ b2 ANY:region 含"新疆"命中
+        assertEquals("任一命中", run(graph, mapOf("amount" to 2000, "region" to "CN 新疆")).reason)
+        // ANY:命中任一即走 b2
+        assertEquals("任一命中", run(graph, mapOf("amount" to 500, "region" to "西藏")).reason)
+        assertEquals("通过", run(graph, mapOf("amount" to 500, "region" to "CN")).reason)
+    }
+
+    @Test
     fun `multi branch condition routes by first match with else fallback`() {
         val graph =
             """

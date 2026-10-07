@@ -84,22 +84,54 @@ data class EndNodeData(
     val defaultReason: String,
 ) : FlowNodeData
 
-/**
- * 条件节点的单个分支：命中（fieldName 对 threshold 取 [operator]）走 sourceHandle=id 的出边。
- * 兜底出口的 sourceHandle 固定为 `false`（旧单条件图）或 `else`（新多分支图）。
- */
-data class ConditionBranch(
-    val id: String,
+/** 分支内单个子条件 */
+data class ConditionItem(
     val fieldName: String,
     val operator: ConditionOperator,
     val threshold: ThresholdValue,
 )
 
 /**
+ * 条件节点的单个分支：组内子条件按 [match]（ALL=全部满足 / ANY=任一满足）聚合，
+ * 命中走 sourceHandle=id 的出边。兜底出口的 sourceHandle 固定为 `false`（旧单条件图）
+ * 或 `else`（新多分支图）。
+ *
+ * 旧契约兼容：conditions 为空时由 fieldName/operator/threshold 归一化为单条件（[effectiveConditions]）。
+ */
+data class ConditionBranch(
+    val id: String,
+    val match: String? = null,
+    val conditions: List<ConditionItem> = emptyList(),
+    // 旧单条件契约字段，仅旧图反序列化承载；新图不再写入
+    val fieldName: String? = null,
+    val operator: ConditionOperator? = null,
+    val threshold: ThresholdValue? = null,
+) {
+    /** 聚合方式：ALL（全部满足，默认）/ ANY（任一满足） */
+    val effectiveMatch: String
+        get() = match?.uppercase() ?: "ALL"
+
+    /** 归一化子条件列表：显式 conditions 优先，旧单条件迁移为单元素列表 */
+    val effectiveConditions: List<ConditionItem>
+        get() =
+            conditions.ifEmpty {
+                listOfNotNull(
+                    fieldName?.takeIf { it.isNotBlank() }?.let {
+                        ConditionItem(
+                            fieldName = it,
+                            operator = operator ?: ConditionOperator.GT,
+                            threshold = threshold ?: ThresholdValue.of(0),
+                        )
+                    },
+                )
+            }
+}
+
+/**
  * 条件节点数据。
  *
- * 新图：`{ label, nodeType: 'condition', branches: [{ id, fieldName, operator, threshold }, ...] }`
- * —— 顺序匹配，第一个命中走对应分支；全不命中走兜底（sourceHandle=`else`）。
+ * 新图：`{ label, nodeType: 'condition', branches: [{ id, match, conditions: [...] }, ...] }`
+ * —— 顺序匹配，第一个命中（组内按 match 聚合）走对应分支；全不命中走兜底（sourceHandle=`else`）。
  *
  * 旧图（单条件）：`{ fieldName, operator, threshold }` 经 [effectiveBranches] 归一化为
  * 单分支（id=`true`），兜底 handle 为 `false`，旧边与新执行语义完全兼容。

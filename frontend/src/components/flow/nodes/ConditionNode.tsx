@@ -32,8 +32,12 @@ function ConditionNodeComponent({ data, isConnectable }: ConditionNodeProps) {
   const total = branches.length + 1;
   const slotTop = (index: number) => `${((index + 1) / (total + 1)) * 100}%`;
   const summary = (b: (typeof branches)[number]) => {
-    const op = OPERATOR_SYMBOLS[b.operator] ?? b.operator;
-    return `${b.fieldName || '?'} ${op} ${b.threshold}`;
+    const parts = b.conditions.map(
+      (c) => `${c.fieldName || '?'} ${OPERATOR_SYMBOLS[c.operator] ?? c.operator} ${c.threshold}`,
+    );
+    const joiner = b.match === 'ANY' ? ' 或 ' : ' 且 ';
+    const prefix = parts.length > 1 ? (b.match === 'ANY' ? '任一: ' : '全部: ') : '';
+    return prefix + parts.join(joiner);
   };
 
   return (

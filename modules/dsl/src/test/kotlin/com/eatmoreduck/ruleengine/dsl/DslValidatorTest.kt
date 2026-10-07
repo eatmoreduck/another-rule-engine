@@ -489,8 +489,22 @@ class DslValidatorTest {
                                 "多分支",
                                 branches =
                                     listOf(
-                                        ConditionBranch("b1", "amount", ConditionOperator.GT, ThresholdValue.of(1000)),
-                                        ConditionBranch("b2", "region", ConditionOperator.CONTAINS, ThresholdValue.Text("US")),
+                                        ConditionBranch(
+                                            id = "b1",
+                                            conditions =
+                                                listOf(
+                                                    ConditionItem("amount", ConditionOperator.GT, ThresholdValue.of(1000)),
+                                                ),
+                                        ),
+                                        ConditionBranch(
+                                            id = "b2",
+                                            match = "ANY",
+                                            conditions =
+                                                listOf(
+                                                    ConditionItem("region", ConditionOperator.CONTAINS, ThresholdValue.Text("US")),
+                                                    ConditionItem("region", ConditionOperator.CONTAINS, ThresholdValue.Text("UK")),
+                                                ),
+                                        ),
                                     ),
                             ),
                         ),
@@ -523,7 +537,13 @@ class DslValidatorTest {
                                 "多分支",
                                 branches =
                                     listOf(
-                                        ConditionBranch("b1", "  ", ConditionOperator.GT, ThresholdValue.of(1)),
+                                        ConditionBranch(
+                                            id = "b1",
+                                            conditions =
+                                                listOf(
+                                                    ConditionItem("  ", ConditionOperator.GT, ThresholdValue.of(1)),
+                                                ),
+                                        ),
                                     ),
                             ),
                         ),
@@ -541,6 +561,46 @@ class DslValidatorTest {
 
         assertFalse(result.isValid)
         assertTrue(result.errors.any { "缺少字段名" in it.message && "b1" in it.message })
+    }
+
+    @Test
+    fun `分支内多条件聚合方式非法报错`() {
+        val graph =
+            FlowGraph(
+                nodes =
+                    listOf(
+                        node("s", StartNodeData("开始")),
+                        node(
+                            "c",
+                            ConditionNodeData(
+                                "多分支",
+                                branches =
+                                    listOf(
+                                        ConditionBranch(
+                                            id = "b1",
+                                            match = "MAYBE",
+                                            conditions =
+                                                listOf(
+                                                    ConditionItem("amount", ConditionOperator.GT, ThresholdValue.of(1)),
+                                                ),
+                                        ),
+                                    ),
+                            ),
+                        ),
+                        node("e", EndNodeData("结束", defaultAction = RuleAction.PASS, defaultReason = "通过")),
+                    ),
+                edges =
+                    listOf(
+                        FlowEdge(id = "e0", source = "s", target = "c"),
+                        FlowEdge(id = "eb1", source = "c", target = "e", sourceHandle = "b1"),
+                        FlowEdge(id = "ee", source = "c", target = "e", sourceHandle = "else"),
+                    ),
+            )
+
+        val result = validator.validate(graph)
+
+        assertFalse(result.isValid)
+        assertTrue(result.errors.any { "匹配方式非法" in it.message })
     }
 
     @Test

@@ -95,10 +95,18 @@ class FlowExecutor(
                         }
 
                         is ConditionNodeData -> {
-                            // 多分支顺序匹配：第一个命中的条件走对应分支，全不命中走兜底
+                            // 多分支顺序匹配：分支内子条件按 ALL/ANY 聚合（短路求值），
+                            // 第一个命中的分支走对应出口，全不命中走兜底
                             val matched =
-                                data.effectiveBranches.firstOrNull {
-                                    evaluateOperator(features[it.fieldName], it.operator.name, it.threshold)
+                                data.effectiveBranches.firstOrNull { branch ->
+                                    val hits =
+                                        branch.effectiveConditions.map {
+                                            evaluateOperator(features[it.fieldName], it.operator.name, it.threshold)
+                                        }
+                                    when (branch.effectiveMatch) {
+                                        "ANY" -> hits.any { it }
+                                        else -> hits.all { it }
+                                    }
                                 }
                             val handle = matched?.id ?: data.elseHandle
                             advance(nextNodeByHandle(current.id, graph, handle), "条件分支无后续节点")
