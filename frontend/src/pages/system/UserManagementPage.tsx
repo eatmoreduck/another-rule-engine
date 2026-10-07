@@ -235,7 +235,7 @@ export default function UserManagementPage() {
           createForm.resetFields();
         }}
         onOk={() => createForm.submit()}
-        destroyOnClose
+        destroyOnHidden
       >
         <Form form={createForm} layout="vertical" onFinish={handleCreate}>
           <Form.Item name="username" label={t('users.username')} rules={[{ required: true, message: t('users.usernameRequired') }, { min: 3, message: t('users.usernameMinLength') }]}>
@@ -273,7 +273,7 @@ export default function UserManagementPage() {
           editForm.resetFields();
         }}
         onOk={() => editForm.submit()}
-        destroyOnClose
+        destroyOnHidden
       >
         <Form form={editForm} layout="vertical" onFinish={handleEdit}>
           <Form.Item name="nickname" label={t('users.nickname')}>

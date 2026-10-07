@@ -141,7 +141,13 @@
     "thresholdPlaceholderBoolean": "输入 true / false",
     "thresholdPlaceholderText": "输入字符串或列表值",
     "expression": "计算表达式(Aviator)",
-    "expressionTooltip": "衍生特征公式,变量为请求特征;决策时惰性求值,失败按缺失处理"
+    "expressionTooltip": "衍生特征公式,变量为请求特征;决策时惰性求值,失败按缺失处理",
+    "testExpressionHint": "输入表达式后自动提取变量，填入采样值可试算（未填的变量按缺失处理）",
+    "testExpressionRun": "试算",
+    "testExpressionResult": "试算结果",
+    "testExpressionFailed": "试算请求失败",
+    "testExpressionInvalid": "表达式语法错误",
+    "sampleValuePlaceholder": "采样值"
   },
   "login": {
     "title": "规则引擎",

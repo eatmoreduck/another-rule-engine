@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import type { FormInstance } from 'antd';
 import {
   App,
   Breadcrumb,
@@ -27,6 +28,7 @@ import {
   deleteFeatureDefinition,
   getFeatureDefinitions,
   getFeatureReferences,
+  testFeatureExpression,
   updateFeatureDefinition,
 } from '../api/featureCatalog';
 import type {
@@ -270,7 +272,7 @@ export default function FeatureCatalogPage() {
         </Space>
       ),
     },
-  ], [canManage, t]);
+  ], [canManage, t, openReferences, openEditModal, handleDelete]);
 
   return (
     <>
@@ -341,7 +343,7 @@ export default function FeatureCatalogPage() {
         open={modalOpen}
         onCancel={() => setModalOpen(false)}
         onOk={handleSubmit}
-        destroyOnClose
+        destroyOnHidden
         width={720}
       >
         <Form form={editForm} layout="vertical">
@@ -399,6 +401,7 @@ export default function FeatureCatalogPage() {
               />
             </Form.Item>
           )}
+          {watchSourceType === 'DERIVED' && <ExpressionTester form={editForm} />}
           <Form.Item name="aliases" label={t('featureCatalog.aliases')}>
             <Select mode="tags" tokenSeparators={[',']} placeholder={t('featureCatalog.aliasesPlaceholder')} />
           </Form.Item>
@@ -437,5 +440,94 @@ export default function FeatureCatalogPage() {
         )}
       </Drawer>
     </>
+  );
+}
+
+/** 衍生公式试算区块：表达式变化防抖提取变量 → 动态渲染采样输入 → 试算展示结果/错误 */
+function ExpressionTester({ form }: { form: FormInstance<FeatureDefinitionRequest> }) {
+  const { t } = useTranslation();
+  const expression = Form.useWatch('expression', form);
+  const [variables, setVariables] = useState<string[]>([]);
+  const [sampleValues, setSampleValues] = useState<Record<string, string>>({});
+  const [output, setOutput] = useState<{ ok: boolean; text: string } | null>(null);
+  const [testing, setTesting] = useState(false);
+
+  // 表达式变化 → 防抖提取变量（不带采样值，仅做语法检查与变量分析）
+  useEffect(() => {
+    setOutput(null);
+    const expr = (expression ?? '').trim();
+    if (!expr) {
+      setVariables([]);
+      return;
+    }
+    const timer = window.setTimeout(async () => {
+      try {
+        const resp = await testFeatureExpression(expr);
+        if (resp.ok) {
+          setVariables(resp.variables);
+        } else {
+          setVariables([]);
+          setOutput({ ok: false, text: resp.error ?? t('featureCatalog.testExpressionInvalid') });
+        }
+      } catch {
+        // 网络失败静默（保存时后端仍会校验）
+      }
+    }, 600);
+    return () => window.clearTimeout(timer);
+  }, [expression, t]);
+
+  const runTest = async () => {
+    const expr = (expression ?? '').trim();
+    if (!expr) return;
+    setTesting(true);
+    try {
+      // 数字字符串转数值，让数值公式按数值语义求值
+      const values: Record<string, unknown> = {};
+      for (const [key, raw] of Object.entries(sampleValues)) {
+        const trimmed = raw.trim();
+        if (!trimmed) continue;
+        const num = Number(trimmed);
+        values[key] = trimmed !== '' && !Number.isNaN(num) && /^-?\d+(\.\d+)?$/.test(trimmed) ? num : trimmed;
+      }
+      const resp = await testFeatureExpression(expr, values);
+      setOutput(
+        resp.ok
+          ? { ok: true, text: `${t('featureCatalog.testExpressionResult')}: ${String(resp.result)}` }
+          : { ok: false, text: resp.error ?? t('featureCatalog.testExpressionFailed') },
+      );
+    } catch {
+      setOutput({ ok: false, text: t('featureCatalog.testExpressionFailed') });
+    } finally {
+      setTesting(false);
+    }
+  };
+
+  return (
+    <div style={{ margin: '-8px 0 16px', padding: 10, background: '#fafafa', border: '1px dashed #d9d9d9', borderRadius: 6 }}>
+      <div style={{ fontSize: 12, color: '#8c8c8c', marginBottom: 6 }}>{t('featureCatalog.testExpressionHint')}</div>
+      {variables.length > 0 && (
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 8 }}>
+          {variables.map((name) => (
+            <Input
+              key={name}
+              size="small"
+              addonBefore={name}
+              placeholder={t('featureCatalog.sampleValuePlaceholder')}
+              style={{ width: 220 }}
+              value={sampleValues[name] ?? ''}
+              onChange={(e) => setSampleValues((prev) => ({ ...prev, [name]: e.target.value }))}
+            />
+          ))}
+        </div>
+      )}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+        <Button size="small" type="primary" ghost loading={testing} disabled={!(expression ?? '').trim()} onClick={runTest}>
+          {t('featureCatalog.testExpressionRun')}
+        </Button>
+        {output && (
+          <span style={{ fontSize: 12, color: output.ok ? '#389e0d' : '#cf1322', wordBreak: 'break-all' }}>{output.text}</span>
+        )}
+      </div>
+    </div>
   );
 }

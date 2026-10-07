@@ -4,6 +4,7 @@ import type {
   FeatureCatalogQueryParams,
   FeatureDefinition,
   FeatureDefinitionRequest,
+  FeatureExpressionTestResponse,
   FeatureReference,
   FeatureResolvedInfo,
   FeatureValidationItem,
@@ -46,6 +47,14 @@ export async function deleteFeatureDefinition(code: string): Promise<void> {
 
 export async function validateFeatureDefinitions(items: FeatureValidationItem[]): Promise<FeatureValidationResponse> {
   const { data } = await apiClient.post<FeatureValidationResponse>('/api/v1/features/catalog/validate', { items });
+  return data;
+}
+
+export async function testFeatureExpression(expression: string, sampleValues: Record<string, unknown> = {}): Promise<FeatureExpressionTestResponse> {
+  const { data } = await apiClient.post<FeatureExpressionTestResponse>('/api/v1/features/catalog/test-expression', {
+    expression,
+    sampleValues,
+  });
   return data;
 }
 

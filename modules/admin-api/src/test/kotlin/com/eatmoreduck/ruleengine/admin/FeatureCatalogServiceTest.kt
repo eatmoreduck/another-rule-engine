@@ -1,8 +1,7 @@
 package com.eatmoreduck.ruleengine.admin
 
-import com.eatmoreduck.ruleengine.admin.dto.FeatureExpressionTestRequest
-import com.eatmoreduck.ruleengine.engine.expression.AviatorExpressionService
 import com.eatmoreduck.ruleengine.admin.dto.FeatureDefinitionRequest
+import com.eatmoreduck.ruleengine.admin.dto.FeatureExpressionTestRequest
 import com.eatmoreduck.ruleengine.admin.dto.FeatureValidationRequest
 import com.eatmoreduck.ruleengine.admin.feature.FeatureCatalogService
 import com.eatmoreduck.ruleengine.admin.grayscale.DecisionFlowMain
@@ -10,6 +9,7 @@ import com.eatmoreduck.ruleengine.admin.rules.RuleAssembler
 import com.eatmoreduck.ruleengine.admin.rules.RulePayloadValidator
 import com.eatmoreduck.ruleengine.admin.rules.RuleService
 import com.eatmoreduck.ruleengine.engine.GroovyScriptEngine
+import com.eatmoreduck.ruleengine.engine.expression.AviatorExpressionService
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNull
@@ -41,7 +41,15 @@ class FeatureCatalogServiceTest {
         ruleRepository = FakeRuleRepository()
         versionRepository = FakeRuleVersionRepository()
         flowSupport = FakeDecisionFlowSupportRepository()
-        service = FeatureCatalogService(featureRepository, ruleRepository, versionRepository, flowSupport, eventPublisher, AviatorExpressionService())
+        service =
+            FeatureCatalogService(
+                featureRepository,
+                ruleRepository,
+                versionRepository,
+                flowSupport,
+                eventPublisher,
+                AviatorExpressionService(),
+            )
     }
 
     private fun createRequest(

@@ -141,7 +141,13 @@
     "thresholdPlaceholderBoolean": "Enter true / false",
     "thresholdPlaceholderText": "Enter string or list value",
     "expression": "Expression (Aviator)",
-    "expressionTooltip": "Derived feature formula; variables are request features; evaluated lazily at decision time, failures degrade to missing"
+    "expressionTooltip": "Derived feature formula; variables are request features; evaluated lazily at decision time, failures degrade to missing",
+    "testExpressionHint": "Variables are extracted automatically; fill sample values to test (missing variables treated as absent)",
+    "testExpressionRun": "Test",
+    "testExpressionResult": "Result",
+    "testExpressionFailed": "Test request failed",
+    "testExpressionInvalid": "Invalid expression syntax",
+    "sampleValuePlaceholder": "Sample"
   },
   "login": {
     "title": "Rule Engine",

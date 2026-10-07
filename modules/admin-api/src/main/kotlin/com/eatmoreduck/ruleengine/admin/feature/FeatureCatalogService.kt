@@ -1,19 +1,19 @@
 package com.eatmoreduck.ruleengine.admin.feature
 
 import com.eatmoreduck.ruleengine.admin.cache.publishInvalidation
-import com.eatmoreduck.ruleengine.admin.dto.FeatureExpressionTestRequest
-import com.eatmoreduck.ruleengine.admin.dto.FeatureExpressionTestResponse
 import com.eatmoreduck.ruleengine.admin.dto.FeatureDefinitionRequest
 import com.eatmoreduck.ruleengine.admin.dto.FeatureDefinitionResponse
+import com.eatmoreduck.ruleengine.admin.dto.FeatureExpressionTestRequest
+import com.eatmoreduck.ruleengine.admin.dto.FeatureExpressionTestResponse
 import com.eatmoreduck.ruleengine.admin.dto.FeatureValidationRequest
 import com.eatmoreduck.ruleengine.admin.dto.FeatureValidationResponse
 import com.eatmoreduck.ruleengine.admin.dto.PageResponse
 import com.eatmoreduck.ruleengine.admin.dto.RuleReferenceResponse
 import com.eatmoreduck.ruleengine.admin.grayscale.DecisionFlowSupportRepository
 import com.eatmoreduck.ruleengine.dsl.ConditionNodeData
-import com.eatmoreduck.ruleengine.engine.expression.AviatorExpressionService
 import com.eatmoreduck.ruleengine.dsl.DslParser
 import com.eatmoreduck.ruleengine.dsl.ParseResult
+import com.eatmoreduck.ruleengine.engine.expression.AviatorExpressionService
 import com.eatmoreduck.ruleengine.shared.cache.CacheInvalidationType
 import com.eatmoreduck.ruleengine.storage.feature.FeatureAlias
 import com.eatmoreduck.ruleengine.storage.feature.FeatureDefinition
@@ -171,8 +171,6 @@ class FeatureCatalogService(
         return toResponse(saved, listAliases(saved.code))
     }
 
-    /** 批量字段校验（告警文案与 valid 判定照搬旧实现） */
-    @Transactional(readOnly = true)
     /**
      * 衍生特征公式试算：提取表达式变量名；提供采样值时执行求值。
      * 语法/求值错误以 ok=false + 可读 error 返回（不抛异常，供前端直接展示）。
@@ -195,6 +193,8 @@ class FeatureCatalogService(
         }
     }
 
+    /** 批量字段校验（告警文案与 valid 判定照搬旧实现） */
+    @Transactional(readOnly = true)
     fun validate(request: FeatureValidationRequest): FeatureValidationResponse {
         val itemResults = mutableListOf<FeatureValidationResponse.ItemResult>()
         val warnings = mutableListOf<String>()

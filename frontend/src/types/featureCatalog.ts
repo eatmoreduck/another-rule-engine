@@ -44,6 +44,14 @@ export interface FeatureDefinitionRequest {
   aliases?: string[];
 }
 
+/** 衍生特征公式试算响应 */
+export interface FeatureExpressionTestResponse {
+  ok: boolean;
+  variables: string[];
+  result?: unknown;
+  error?: string | null;
+}
+
 export interface FeatureValidationItem {
   fieldName: string;
   operator?: string;
