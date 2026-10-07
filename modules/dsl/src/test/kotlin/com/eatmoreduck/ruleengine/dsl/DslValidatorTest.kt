@@ -285,7 +285,7 @@ class DslValidatorTest {
         val result = validator.validate(graph)
 
         assertTrue(result.isValid, "缺 false 分支运行时可兜底，应为 WARNING")
-        assertTrue(result.warnings.any { "conditionMet" in it.message && "cond-1" in it.path })
+        assertTrue(result.warnings.any { "分支缺少出边" in it.message && "cond-1" in it.path && "false" in it.message })
     }
 
     @Test
@@ -474,6 +474,73 @@ class DslValidatorTest {
 
         assertFalse(result.isValid)
         assertTrue(result.errors.any { "重复连线" in it.message })
+    }
+
+    @Test
+    fun `多分支条件图合法`() {
+        val graph =
+            FlowGraph(
+                nodes =
+                    listOf(
+                        node("s", StartNodeData("开始")),
+                        node(
+                            "c",
+                            ConditionNodeData(
+                                "多分支",
+                                branches =
+                                    listOf(
+                                        ConditionBranch("b1", "amount", ConditionOperator.GT, ThresholdValue.of(1000)),
+                                        ConditionBranch("b2", "region", ConditionOperator.CONTAINS, ThresholdValue.Text("US")),
+                                    ),
+                            ),
+                        ),
+                        node("e", EndNodeData("结束", defaultAction = RuleAction.PASS, defaultReason = "通过")),
+                    ),
+                edges =
+                    listOf(
+                        FlowEdge(id = "e0", source = "s", target = "c"),
+                        FlowEdge(id = "eb1", source = "c", target = "e", sourceHandle = "b1"),
+                        FlowEdge(id = "eb2", source = "c", target = "e", sourceHandle = "b2"),
+                        FlowEdge(id = "ee", source = "c", target = "e", sourceHandle = "else"),
+                    ),
+            )
+
+        val result = validator.validate(graph)
+
+        assertTrue(result.errors.isEmpty(), "多分支条件图应合法: ${result.errors}")
+    }
+
+    @Test
+    fun `条件分支缺字段名报错`() {
+        val graph =
+            FlowGraph(
+                nodes =
+                    listOf(
+                        node("s", StartNodeData("开始")),
+                        node(
+                            "c",
+                            ConditionNodeData(
+                                "多分支",
+                                branches =
+                                    listOf(
+                                        ConditionBranch("b1", "  ", ConditionOperator.GT, ThresholdValue.of(1)),
+                                    ),
+                            ),
+                        ),
+                        node("e", EndNodeData("结束", defaultAction = RuleAction.PASS, defaultReason = "通过")),
+                    ),
+                edges =
+                    listOf(
+                        FlowEdge(id = "e0", source = "s", target = "c"),
+                        FlowEdge(id = "eb1", source = "c", target = "e", sourceHandle = "b1"),
+                        FlowEdge(id = "ee", source = "c", target = "e", sourceHandle = "else"),
+                    ),
+            )
+
+        val result = validator.validate(graph)
+
+        assertFalse(result.isValid)
+        assertTrue(result.errors.any { "缺少字段名" in it.message && "b1" in it.message })
     }
 
     @Test

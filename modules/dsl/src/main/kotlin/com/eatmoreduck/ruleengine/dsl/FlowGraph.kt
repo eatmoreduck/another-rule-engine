@@ -84,14 +84,55 @@ data class EndNodeData(
     val defaultReason: String,
 ) : FlowNodeData
 
-/** 条件节点数据：`{ label, nodeType: 'condition', fieldName, operator, threshold }` */
-data class ConditionNodeData(
-    override val label: String,
-    override val nodeType: FlowNodeKind = FlowNodeKind.CONDITION,
+/**
+ * 条件节点的单个分支：命中（fieldName 对 threshold 取 [operator]）走 sourceHandle=id 的出边。
+ * 兜底出口的 sourceHandle 固定为 `false`（旧单条件图）或 `else`（新多分支图）。
+ */
+data class ConditionBranch(
+    val id: String,
     val fieldName: String,
     val operator: ConditionOperator,
     val threshold: ThresholdValue,
-) : FlowNodeData
+)
+
+/**
+ * 条件节点数据。
+ *
+ * 新图：`{ label, nodeType: 'condition', branches: [{ id, fieldName, operator, threshold }, ...] }`
+ * —— 顺序匹配，第一个命中走对应分支；全不命中走兜底（sourceHandle=`else`）。
+ *
+ * 旧图（单条件）：`{ fieldName, operator, threshold }` 经 [effectiveBranches] 归一化为
+ * 单分支（id=`true`），兜底 handle 为 `false`，旧边与新执行语义完全兼容。
+ */
+data class ConditionNodeData(
+    override val label: String,
+    override val nodeType: FlowNodeKind = FlowNodeKind.CONDITION,
+    val branches: List<ConditionBranch> = emptyList(),
+    // 旧单条件契约字段，仅旧图反序列化承载；新图不再写入
+    val fieldName: String? = null,
+    val operator: ConditionOperator? = null,
+    val threshold: ThresholdValue? = null,
+) : FlowNodeData {
+    /** 归一化分支列表：显式 branches 优先，旧单条件迁移为 id=`true` 的单分支 */
+    val effectiveBranches: List<ConditionBranch>
+        get() =
+            branches.ifEmpty {
+                listOfNotNull(
+                    fieldName?.takeIf { it.isNotBlank() }?.let {
+                        ConditionBranch(
+                            id = "true",
+                            fieldName = it,
+                            operator = operator ?: ConditionOperator.GT,
+                            threshold = threshold ?: ThresholdValue.of(0),
+                        )
+                    },
+                )
+            }
+
+    /** 兜底出口的 sourceHandle：旧单条件图为 `false`，多分支图为 `else` */
+    val elseHandle: String
+        get() = if (branches.isEmpty()) "false" else "else"
+}
 
 /** 决策节点数据：`{ label, nodeType: 'action', action, reason }` */
 data class ActionNodeData(

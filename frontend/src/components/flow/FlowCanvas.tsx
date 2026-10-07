@@ -18,7 +18,8 @@ import {
 } from '@xyflow/react';
 import { PartitionOutlined } from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
-import type { FlowNode, FlowEdge } from '../../types/flowConfig';
+import type { FlowNode, FlowEdge, ConditionNodeData } from '../../types/flowConfig';
+import { normalizeConditionBranches } from '../../types/flowConfig';
 
 import { genId } from '../../types/flowConfig';
 import { getLayoutedElements } from '../../utils/flowLayout';
@@ -53,9 +54,7 @@ function getDefaultConditionData() {
   return {
     label: '条件判断',
     nodeType: 'condition' as const,
-    fieldName: '',
-    operator: 'GT' as const,
-    threshold: 0,
+    branches: [{ id: 'b1', fieldName: '', operator: 'GT' as const, threshold: 0 as const }],
   };
 }
 
@@ -154,7 +153,12 @@ export default function FlowCanvas({
         return false;
       }
       if (typeOf(conn.source) === 'condition') {
-        return !edges.some((e) => e.source === conn.source && sameHandle(e.sourceHandle, conn.sourceHandle));
+        // 出边上限 = 分支数 + 兜底，且同一分支只允许一条
+        const srcNode = nodes.find((n) => n.id === conn.source);
+        const branchCount = normalizeConditionBranches(srcNode?.data as ConditionNodeData | undefined)?.length ?? 1;
+        const outs = edges.filter((e) => e.source === conn.source);
+        if (outs.length >= branchCount + 1) return false;
+        return !outs.some((e) => e.source === conn.source && sameHandle(e.sourceHandle, conn.sourceHandle));
       }
       return !edges.some((e) => e.source === conn.source);
     },

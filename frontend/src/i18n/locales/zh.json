@@ -581,7 +581,11 @@
     "resolvingFeature": "正在解析特征…",
     "featureMetadata": "特征元数据",
     "exampleValueHint": "示例值",
-    "thresholdNumberHint": "请输入数值"
+    "thresholdNumberHint": "请输入数值",
+    "branchListHint": "条件分支（从上到下依次匹配，命中即走对应出口）",
+    "branchN": "条件 {{n}}",
+    "addBranch": "添加分支",
+    "branchMatchHint": "以上条件从上到下依次匹配，第一个命中的走对应出口；全部不命中走「兜底」出口。"
   },
   "scriptPreview": {
     "title": "Groovy 脚本预览",

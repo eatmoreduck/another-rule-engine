@@ -27,13 +27,45 @@ export interface EndNodeData {
   defaultReason: string;
 }
 
+/** 条件节点的单个分支：命中走 sourceHandle=id 的出边，全不命中走兜底（elseHandle） */
+export interface ConditionBranch {
+  id: string;
+  fieldName: string;
+  operator: Operator;
+  threshold: string | number;
+}
+
 export interface ConditionNodeData {
   [key: string]: unknown;
   label: string;
   nodeType: 'condition';
-  fieldName: string;
-  operator: Operator;
-  threshold: string | number;
+  branches: ConditionBranch[];
+  /** 旧单条件契约字段，仅旧图加载时存在 */
+  fieldName?: string;
+  operator?: Operator;
+  threshold?: string | number;
+}
+
+/** 旧单条件图归一化：无 branches 时由 fieldName/operator/threshold 构造单分支（id=true） */
+export function normalizeConditionBranches(data?: ConditionNodeData): ConditionBranch[] {
+  if (!data) return [];
+  if (data.branches?.length) return data.branches;
+  if (data.fieldName) {
+    return [
+      {
+        id: 'true',
+        fieldName: data.fieldName,
+        operator: data.operator ?? 'GT',
+        threshold: data.threshold ?? 0,
+      },
+    ];
+  }
+  return [];
+}
+
+/** 条件节点的兜底出边 handle：旧单条件图为 false，多分支图为 else */
+export function conditionElseHandle(data?: ConditionNodeData): string {
+  return data?.branches?.length ? 'else' : 'false';
 }
 
 export interface ActionNodeData {

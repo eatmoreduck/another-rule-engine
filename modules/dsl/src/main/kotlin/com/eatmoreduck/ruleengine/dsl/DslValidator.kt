@@ -172,10 +172,20 @@ class DslValidator(
             }
             when (val data = node.data) {
                 is ConditionNodeData -> {
-                    if (data.fieldName.isBlank()) issues += error("$nodePath.data", "条件节点缺少字段名 fieldName")
-                    val threshold = data.threshold
-                    if (threshold is ThresholdValue.Text && threshold.value.isBlank()) {
-                        issues += error("$nodePath.data", "条件节点缺少阈值 threshold")
+                    val branches = data.effectiveBranches
+                    if (branches.isEmpty()) issues += error("$nodePath.data", "条件节点没有任何条件分支")
+                    branches.forEach { branch ->
+                        if (branch.fieldName.isBlank()) {
+                            issues += error("$nodePath.data", "条件分支 ${branch.id} 缺少字段名 fieldName")
+                        }
+                        val threshold = branch.threshold
+                        if (threshold is ThresholdValue.Text && threshold.value.isBlank()) {
+                            issues += error("$nodePath.data", "条件分支 ${branch.id} 缺少阈值 threshold")
+                        }
+                    }
+                    val branchIds = branches.map { it.id }
+                    if (branchIds.distinct().size < branchIds.size) {
+                        issues += error("$nodePath.data", "条件分支 id 重复: ${branchIds.groupBy { it }.filterValues { it.size > 1 }.keys}")
                     }
                 }
 
@@ -207,23 +217,34 @@ class DslValidator(
             if (edge.target !in nodesById) issues += error(edgePath, "边 ${edge.id} 的 target='${edge.target}' 不存在")
         }
 
-        // 连接语义：入度/出度约束（结束/合并节点多入是本职；条件节点是/否各限一条出边）
+        // 连接语义：入度/出度约束（结束/合并节点多入是本职；条件节点每分支+兜底各限一条出边）
         graph.nodes.forEach { node ->
             val outs = outEdgesBySource[node.id].orEmpty()
             val ins = graph.edges.count { it.target == node.id }
-            when (node.data) {
+            when (val data = node.data) {
                 is ConditionNodeData -> {
                     if (ins > 1) issues += error("$.nodes[id=${node.id}]", "条件节点只允许一条入边（当前 $ins 条）")
-                    if (outs.size > 2) issues += error("$.nodes[id=${node.id}]", "条件节点最多两条出边（是/否，当前 ${outs.size} 条）")
+                    val maxOuts = data.effectiveBranches.size + 1
+                    if (outs.size > maxOuts) {
+                        issues +=
+                            error(
+                                "$.nodes[id=${node.id}]",
+                                "条件节点最多 $maxOuts 条出边（每分支一条 + 兜底，当前 ${outs.size} 条）",
+                            )
+                    }
                     val handles = outs.map { it.sourceHandle }
                     if (handles.distinct().size < handles.size) {
-                        issues += error("$.nodes[id=${node.id}]", "条件节点的同一分支（是/否）只允许一条出边")
+                        issues += error("$.nodes[id=${node.id}]", "条件节点的同一分支只允许一条出边")
                     }
                 }
 
-                is EndNodeData, is MergeNodeData -> Unit
+                is EndNodeData, is MergeNodeData -> {
+                    Unit
+                }
 
-                is StartNodeData -> Unit
+                is StartNodeData -> {
+                    Unit
+                }
 
                 else -> {
                     if (ins > 1) issues += error("$.nodes[id=${node.id}]", "节点只允许一条入边（当前 $ins 条）")
@@ -258,16 +279,19 @@ class DslValidator(
             .filter { outEdgesBySource[it.id].isNullOrEmpty() }
             .forEach { issues += warning("$.nodes[id=${it.id}]", "节点没有出边，流程在此中断，建议连接到结束节点") }
 
-        // 条件节点分支覆盖：出边需同时覆盖 conditionMet=true / false
+        // 条件节点分支覆盖：每个条件分支与兜底出口都建议有出边（缺失执行时中断）
         graph.nodes
             .filter { it.data is ConditionNodeData }
             .forEach { node ->
-                val marks = outEdgesBySource[node.id].orEmpty().mapNotNull { it.data?.conditionMet }
-                if (true !in marks || false !in marks) {
+                val conditionData = node.data as ConditionNodeData
+                val handles = outEdgesBySource[node.id].orEmpty().map { it.sourceHandle }
+                val missing =
+                    branchesHandleIds(conditionData).filter { it !in handles }
+                if (missing.isNotEmpty()) {
                     issues +=
                         warning(
                             "$.nodes[id=${node.id}]",
-                            "条件节点出边未同时覆盖满足/不满足两个分支（conditionMet=true 与 false）",
+                            "条件节点的以下分支缺少出边（执行时将中断）: ${missing.joinToString(", ")}",
                         )
                 }
             }
@@ -331,6 +355,9 @@ class DslValidator(
 
         return ValidationResult(issues)
     }
+
+    /** 条件节点全部出口 handle：各分支 id + 兜底 */
+    private fun branchesHandleIds(data: ConditionNodeData): List<String> = data.effectiveBranches.map { it.id } + data.elseHandle
 
     private fun error(
         path: String,

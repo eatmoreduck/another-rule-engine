@@ -581,7 +581,11 @@
     "resolvingFeature": "Resolving feature…",
     "featureMetadata": "Feature Metadata",
     "exampleValueHint": "Example",
-    "thresholdNumberHint": "Enter a number"
+    "thresholdNumberHint": "Enter a number",
+    "branchListHint": "Condition branches (evaluated top-down, first match wins)",
+    "branchN": "Condition {{n}}",
+    "addBranch": "Add Branch",
+    "branchMatchHint": "Branches are evaluated top-down: the first match routes to its outlet; if none match, the fallback outlet is taken."
   },
   "scriptPreview": {
     "title": "Groovy Script Preview",

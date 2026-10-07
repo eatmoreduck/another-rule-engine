@@ -9,6 +9,7 @@ import { getDecisionFlow, createDecisionFlow, updateDecisionFlow } from '../api/
 import { validateFeatureDefinitions } from '../api/featureCatalog';
 import type { DecisionFlow } from '../types/decisionFlow';
 import type { FlowNode, FlowEdge, ConditionNodeData, ActionNodeData, EndNodeData, RuleSetNodeData, BlacklistNodeData, WhitelistNodeData, MergeNodeData } from '../types/flowConfig';
+import { normalizeConditionBranches } from '../types/flowConfig';
 import { withDefaultPositions } from '../utils/flowGraphLayout';
 import type { FeatureValidationResponse } from '../types/featureCatalog';
 import { createInitialNodes, createInitialEdges } from '../types/flowConfig';
@@ -21,12 +22,37 @@ const { Title } = Typography;
 function collectFlowFeatureItems(nodes: FlowNode[]) {
   return nodes
     .filter((node) => node.data?.nodeType === 'condition')
-    .map((node) => ({
-      fieldName: String(node.data?.fieldName ?? '').trim(),
-      operator: String(node.data?.operator ?? ''),
-      threshold: node.data?.threshold,
-    }))
+    .flatMap((node) => {
+      const data = node.data as ConditionNodeData;
+      return normalizeConditionBranches(data).map((branch) => ({
+        fieldName: String(branch.fieldName ?? '').trim(),
+        operator: String(branch.operator ?? ''),
+        threshold: branch.threshold,
+      }));
+    })
     .filter((item) => item.fieldName.length > 0);
+}
+
+/** 加载旧图归一化：条件节点补 branches，并把旧兜底边 sourceHandle false→else（执行语义不变） */
+function normalizeLoadedGraph(
+  nodes: FlowNode[],
+  edges: FlowEdge[],
+): { nodes: FlowNode[]; edges: FlowEdge[] } {
+  const legacyConds = new Set<string>();
+  const nextNodes = nodes.map((node) => {
+    if (node.type !== 'condition' && node.data?.nodeType !== 'condition') return node;
+    const data = node.data as ConditionNodeData;
+    if (data.branches?.length) return node;
+    legacyConds.add(node.id);
+    return { ...node, data: { ...data, branches: normalizeConditionBranches(data) } } as FlowNode;
+  });
+  // 旧单条件图的兜底边 sourceHandle=false；归一化后兜底 handle 变为 else，同步迁移
+  const nextEdges = edges.map((edge) =>
+    legacyConds.has(edge.source) && edge.sourceHandle === 'false'
+      ? { ...edge, sourceHandle: 'else' }
+      : edge,
+  );
+  return { nodes: nextNodes, edges: nextEdges };
 }
 
 function confirmFeatureWarnings(
@@ -97,8 +123,9 @@ function FlowEditorInner() {
           setFlowDescription(flow.flowDescription ?? '');
           try {
             const graph = JSON.parse(flow.flowGraph);
-            if (graph.nodes) setNodes(withDefaultPositions(graph.nodes as FlowNode[]));
-            if (graph.edges) setEdges(graph.edges as FlowEdge[]);
+            const normalized = normalizeLoadedGraph(graph.nodes as FlowNode[], graph.edges as FlowEdge[]);
+            if (graph.nodes) setNodes(withDefaultPositions(normalized.nodes));
+            if (graph.edges) setEdges(normalized.edges);
           } catch { /* ignore parse error */ }
         })
         .catch(() => message.error(t('flows.loadFailed')))

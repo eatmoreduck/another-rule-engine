@@ -36,6 +36,13 @@ export default function FeatureFieldInput({
   const requestIdRef = useRef(0);
   const keyword = value?.trim() ?? '';
 
+  // 回调经 latest-ref 使用：父组件常传内联箭头（每次渲染新引用），
+  // 若进入 effect 依赖会引发「回调→setState→重渲染→新回调→effect 重跑」死循环
+  const onFeatureResolvedRef = useRef(onFeatureResolved);
+  onFeatureResolvedRef.current = onFeatureResolved;
+  const onResolvingChangeRef = useRef(onResolvingChange);
+  onResolvingChangeRef.current = onResolvingChange;
+
   useEffect(() => {
     let cancelled = false;
     const timer = window.setTimeout(async () => {
@@ -65,19 +72,19 @@ export default function FeatureFieldInput({
   useEffect(() => {
     const input = value?.trim() ?? '';
     if (!input) {
-      onFeatureResolved?.(null);
-      onResolvingChange?.(false);
+      onFeatureResolvedRef.current?.(null);
+      onResolvingChangeRef.current?.(false);
       return;
     }
 
     const normalizedInput = normalizeText(input);
     const direct = options.find((item) => normalizeText(item.code) === normalizedInput);
     if (direct) {
-      onFeatureResolved?.({
+      onFeatureResolvedRef.current?.({
         feature: direct,
         matchedByAlias: false,
       });
-      onResolvingChange?.(false);
+      onResolvingChangeRef.current?.(false);
       return;
     }
 
@@ -85,17 +92,17 @@ export default function FeatureFieldInput({
       item.aliases.some((alias) => normalizeText(alias) === normalizedInput));
     if (aliasMatch) {
       const matchedAlias = aliasMatch.aliases.find((alias) => normalizeText(alias) === normalizedInput);
-      onFeatureResolved?.({
+      onFeatureResolvedRef.current?.({
         feature: aliasMatch,
         matchedByAlias: true,
         matchedAlias,
       });
-      onResolvingChange?.(false);
+      onResolvingChangeRef.current?.(false);
       return;
     }
 
     if (input.length < 2) {
-      onFeatureResolved?.(null);
+      onFeatureResolvedRef.current?.(null);
       return;
     }
 
@@ -103,20 +110,20 @@ export default function FeatureFieldInput({
     const currentId = ++requestIdRef.current;
     const timer = window.setTimeout(async () => {
       setResolving(true);
-      onResolvingChange?.(true);
+      onResolvingChangeRef.current?.(true);
       try {
         const resolved = await resolveFeatureField(input);
         if (!cancelled && currentId === requestIdRef.current) {
-          onFeatureResolved?.(resolved);
+          onFeatureResolvedRef.current?.(resolved);
         }
       } catch {
         if (!cancelled && currentId === requestIdRef.current) {
-          onFeatureResolved?.(null);
+          onFeatureResolvedRef.current?.(null);
         }
       } finally {
         if (!cancelled && currentId === requestIdRef.current) {
           setResolving(false);
-          onResolvingChange?.(false);
+          onResolvingChangeRef.current?.(false);
         }
       }
     }, 250);
@@ -125,7 +132,8 @@ export default function FeatureFieldInput({
       cancelled = true;
       window.clearTimeout(timer);
     };
-  }, [onFeatureResolved, onResolvingChange, options, value]);
+    // 回调经 ref 使用，不进依赖
+  }, [options, value]);
 
   const handleSelect = (selectedCode: string) => {
     const normalized = normalizeText(selectedCode);

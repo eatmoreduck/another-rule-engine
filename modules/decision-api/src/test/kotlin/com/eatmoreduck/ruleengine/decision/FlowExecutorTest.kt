@@ -304,6 +304,32 @@ class FlowExecutorTest {
     // ---------- 动作节点收口 ----------
 
     @Test
+    fun `multi branch condition routes by first match with else fallback`() {
+        val graph =
+            """
+            {"nodes":[
+              {"id":"s","type":"start","data":{"label":"开始","nodeType":"start"}},
+              {"id":"c","type":"condition","data":{"label":"多分支","nodeType":"condition","branches":[
+                {"id":"b1","fieldName":"amount","operator":"GT","threshold":1000},
+                {"id":"b2","fieldName":"region","operator":"CONTAINS","threshold":"US"}
+              ]}},
+              {"id":"a1","type":"action","data":{"label":"大额","nodeType":"action","action":"REJECT","reason":"大额"}},
+              {"id":"a2","type":"action","data":{"label":"受限地区","nodeType":"action","action":"REJECT","reason":"受限地区"}},
+              {"id":"e","type":"end","data":{"label":"结束","nodeType":"end","defaultAction":"PASS","defaultReason":"通过"}}
+            ],"edges":[
+              {"id":"e0","source":"s","target":"c"},
+              {"id":"eb1","source":"c","target":"a1","sourceHandle":"b1"},
+              {"id":"eb2","source":"c","target":"a2","sourceHandle":"b2"},
+              {"id":"ee","source":"c","target":"e","sourceHandle":"else"}
+            ]}
+            """.trimIndent()
+        // b1 顺序匹配优先：amount 命中即走 b1，不再看 b2
+        assertEquals("大额", run(graph, mapOf("amount" to 2000, "region" to "US East")).reason)
+        assertEquals("受限地区", run(graph, mapOf("amount" to 100, "region" to "US East")).reason)
+        assertEquals("通过", run(graph, mapOf("amount" to 100, "region" to "CN")).reason)
+    }
+
+    @Test
     fun `action reject travels to end node and keeps action result`() {
         val graph =
             """

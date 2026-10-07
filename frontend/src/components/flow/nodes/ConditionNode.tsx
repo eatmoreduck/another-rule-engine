@@ -1,7 +1,6 @@
 /**
  * ConditionNode - 条件节点组件
- * 菱形风格矩形，背景淡黄色
- * 左侧 target Handle，右侧两个 source Handle（true/false 分支）
+ * 多分支顺序匹配：每个分支一个右侧输出（按序标注），全部不命中走底部「兜底」出口
  */
 
 import { memo } from 'react';
@@ -9,6 +8,7 @@ import { Handle, Position } from '@xyflow/react';
 import type { NodeProps, Node } from '@xyflow/react';
 import { QuestionCircleOutlined } from '@ant-design/icons';
 import type { ConditionNodeData } from '../../../types/flowConfig';
+import { conditionElseHandle, normalizeConditionBranches } from '../../../types/flowConfig';
 
 type ConditionNodeProps = NodeProps<Node<ConditionNodeData, 'condition'>>;
 
@@ -27,7 +27,14 @@ const OPERATOR_SYMBOLS: Record<string, string> = {
 };
 
 function ConditionNodeComponent({ data, isConnectable }: ConditionNodeProps) {
-  const opSymbol = OPERATOR_SYMBOLS[data.operator] ?? data.operator;
+  const branches = normalizeConditionBranches(data);
+  const elseId = conditionElseHandle(data);
+  const total = branches.length + 1;
+  const slotTop = (index: number) => `${((index + 1) / (total + 1)) * 100}%`;
+  const summary = (b: (typeof branches)[number]) => {
+    const op = OPERATOR_SYMBOLS[b.operator] ?? b.operator;
+    return `${b.fieldName || '?'} ${op} ${b.threshold}`;
+  };
 
   return (
     <div className="custom-node custom-node-condition">
@@ -42,52 +49,54 @@ function ConditionNodeComponent({ data, isConnectable }: ConditionNodeProps) {
         <QuestionCircleOutlined style={{ color: '#1890ff' }} />
         {data.label}
       </div>
-      <div className="custom-node-detail">
-        {data.fieldName
-          ? `${data.fieldName} ${opSymbol} ${data.threshold}`
-          : '未配置条件'}
-      </div>
+      {branches.length === 0 ? (
+        <div className="custom-node-detail">未配置条件</div>
+      ) : (
+        branches.map((branch, i) => (
+          <div key={branch.id} className="custom-node-detail" style={{ textAlign: 'left', padding: '0 4px' }}>
+            {i + 1}. {summary(branch)}
+          </div>
+        ))
+      )}
 
-      {/* True 分支输出 - 上方 */}
+      {branches.map((branch, i) => (
+        <Handle
+          key={branch.id}
+          type="source"
+          position={Position.Right}
+          id={branch.id}
+          style={{ top: slotTop(i), background: '#52c41a', width: 10, height: 10 }}
+          isConnectable={isConnectable}
+        />
+      ))}
+      {branches.map((_, i) => (
+        <span
+          key={`lbl-${i}`}
+          style={{ position: 'absolute', right: -30, top: `calc(${slotTop(i)} - 6px)`, fontSize: 10, color: '#52c41a', fontWeight: 600 }}
+        >
+          条件{i + 1}
+        </span>
+      ))}
+
+      {/* 兜底出口：所有条件都不命中时走这里 */}
       <Handle
         type="source"
         position={Position.Right}
-        id="true"
-        style={{ top: '30%', background: '#52c41a', width: 10, height: 10 }}
+        id={elseId}
+        style={{ top: slotTop(branches.length), background: '#faad14', width: 10, height: 10 }}
         isConnectable={isConnectable}
       />
       <span
         style={{
           position: 'absolute',
-          right: -28,
-          top: '22%',
+          right: -30,
+          top: `calc(${slotTop(branches.length)} - 6px)`,
           fontSize: 10,
-          color: '#52c41a',
+          color: '#faad14',
           fontWeight: 600,
         }}
       >
-        是
-      </span>
-
-      {/* False 分支输出 - 下方 */}
-      <Handle
-        type="source"
-        position={Position.Right}
-        id="false"
-        style={{ top: '70%', background: '#ff4d4f', width: 10, height: 10 }}
-        isConnectable={isConnectable}
-      />
-      <span
-        style={{
-          position: 'absolute',
-          right: -28,
-          top: '62%',
-          fontSize: 10,
-          color: '#ff4d4f',
-          fontWeight: 600,
-        }}
-      >
-        否
+        兜底
       </span>
     </div>
   );

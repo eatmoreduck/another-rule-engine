@@ -44,7 +44,17 @@ class FlowGraphPayloadValidator {
                     FlowGraphValidation.Valid(parsed.value)
                 } else {
                     // 全图级问题（路径 "$"）不带 JSONPath 前缀，避免对用户展示噪音
-                    FlowGraphValidation.Invalid(errors.joinToString("; ") { if (it.path == "$") it.message else "${it.path}: ${it.message}" })
+                    FlowGraphValidation.Invalid(
+                        errors.joinToString("; ") {
+                            if (it.path ==
+                                "$"
+                            ) {
+                                it.message
+                            } else {
+                                "${it.path}: ${it.message}"
+                            }
+                        },
+                    )
                 }
             }
 

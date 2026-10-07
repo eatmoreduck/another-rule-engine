@@ -4,7 +4,7 @@
  */
 
 import { useCallback, useState, useEffect } from 'react';
-import { Select, Input, Divider, Typography, Tag, message, Alert } from 'antd';
+import { Select, Input, Divider, Typography, Tag, message, Alert, Button } from 'antd';
 import { useTranslation } from 'react-i18next';
 import type {
   FlowNode,
@@ -15,7 +15,8 @@ import type {
   BlacklistNodeData,
   WhitelistNodeData,
 } from '../../types/flowConfig';
-import { KEY_TYPE_LABELS } from '../../types/flowConfig';
+import { KEY_TYPE_LABELS, normalizeConditionBranches, type ConditionBranch } from '../../types/flowConfig';
+import { DeleteOutlined, PlusOutlined } from '@ant-design/icons';
 import { OPERATOR_LABELS, ACTION_LABELS, type Operator, type Action } from '../../types/ruleConfig';
 import { getRulesForSelect } from '../../api/rules';
 import { getListKeys } from '../../api/nameList';
@@ -64,30 +65,22 @@ function ConditionConfig({
   onUpdate: (updates: Partial<ConditionNodeData>) => void;
 }) {
   const { t } = useTranslation();
-  const [resolvedFeature, setResolvedFeature] = useState<FeatureResolvedInfo | null>(null);
-  const [resolvingFeature, setResolvingFeature] = useState(false);
+  const branches = normalizeConditionBranches(data);
+  const [resolvedByBranch, setResolvedByBranch] = useState<Record<string, FeatureResolvedInfo | null>>({});
 
-  const recommendedOperators = getRecommendedOperators(resolvedFeature?.feature.dataType);
-  const isOperatorCompatible = !recommendedOperators || recommendedOperators.includes(data.operator);
-
-  const operatorOptions = Object.entries(OPERATOR_LABELS).map(([key, label]) => {
-    const operatorKey = key as Operator;
-    const disabled = !!recommendedOperators && !recommendedOperators.includes(operatorKey);
-    const suffix = disabled ? ` (${t('nodeConfig.operatorNotRecommended')})` : '';
-    return {
-      value: key,
-      label: `${label}${suffix}`,
-      disabled,
-    };
-  });
-
-  const thresholdPlaceholder = (() => {
-    const dataType = resolvedFeature?.feature.dataType;
-    if (!dataType) return t('nodeConfig.thresholdPlaceholder');
-    if (isNumericDataType(dataType)) return t('nodeConfig.thresholdNumberHint');
-    if (isBooleanDataType(dataType)) return t('nodeConfig.thresholdBooleanHint');
-    return t('nodeConfig.thresholdTextHint');
-  })();
+  const updateBranch = (id: string, patch: Partial<ConditionBranch>) => {
+    onUpdate({ branches: branches.map((b) => (b.id === id ? { ...b, ...patch } : b)) });
+  };
+  const addBranch = () => {
+    let n = branches.length + 1;
+    let id = `b${n}`;
+    while (branches.some((b) => b.id === id)) id = `b${++n}`;
+    onUpdate({ branches: [...branches, { id, fieldName: '', operator: 'GT', threshold: 0 }] });
+  };
+  const removeBranch = (id: string) => {
+    if (branches.length <= 1) return;
+    onUpdate({ branches: branches.filter((b) => b.id !== id) });
+  };
 
   return (
     <>
@@ -101,82 +94,80 @@ function ConditionConfig({
         />
       </div>
       <Divider style={{ margin: '8px 0' }} />
-      <div style={{ marginBottom: 12 }}>
-        <Text type="secondary" style={{ fontSize: 12 }}>{t('nodeConfig.featureField')}</Text>
-        <FeatureFieldInput
-          value={data.fieldName}
-          onChange={(value) => onUpdate({ fieldName: value })}
-          onFeatureResolved={setResolvedFeature}
-          onResolvingChange={setResolvingFeature}
-          placeholder={t('nodeConfig.featureFieldPlaceholder')}
-          style={{ marginTop: 4, width: '100%' }}
-        />
+      <div style={{ marginBottom: 6 }}>
+        <Text type="secondary" style={{ fontSize: 12 }}>{t('nodeConfig.branchListHint')}</Text>
       </div>
-      {resolvingFeature && !resolvedFeature && (
-        <div style={{ marginBottom: 12, fontSize: 12, color: '#8c8c8c' }}>
-          {t('nodeConfig.resolvingFeature')}
-        </div>
-      )}
-      {!resolvingFeature && data.fieldName.trim() && !resolvedFeature && (
-        <Alert
-          style={{ marginBottom: 12 }}
-          type="warning"
-          showIcon
-          message={t('nodeConfig.featureNotRegistered')}
-          description={t('nodeConfig.featureNotRegisteredDesc')}
-        />
-      )}
-      {resolvedFeature && (
-        <div style={{ marginBottom: 12, padding: '8px 10px', background: '#fafafa', border: '1px solid #f0f0f0', borderRadius: 6 }}>
-          <div style={{ fontSize: 12, fontWeight: 600, marginBottom: 6 }}>{t('nodeConfig.featureMetadata')}</div>
-          <div style={{ marginBottom: 6 }}>
-            <Tag color="blue" style={{ marginInlineEnd: 0 }}>{resolvedFeature.feature.dataType}</Tag>
+      {branches.map((branch, index) => {
+        const resolved = resolvedByBranch[branch.id] ?? null;
+        const recommendedOperators = getRecommendedOperators(resolved?.feature.dataType);
+        const operatorOptions = Object.entries(OPERATOR_LABELS).map(([key, label]) => {
+          const operatorKey = key as Operator;
+          const disabled = !!recommendedOperators && !recommendedOperators.includes(operatorKey);
+          const suffix = disabled ? ` (${t('nodeConfig.operatorNotRecommended')})` : '';
+          return { value: key, label: `${label}${suffix}`, disabled };
+        });
+        const thresholdPlaceholder = (() => {
+          const dataType = resolved?.feature.dataType;
+          if (!dataType) return t('nodeConfig.thresholdPlaceholder');
+          if (isNumericDataType(dataType)) return t('nodeConfig.thresholdNumberHint');
+          if (isBooleanDataType(dataType)) return t('nodeConfig.thresholdBooleanHint');
+          return t('nodeConfig.thresholdTextHint');
+        })();
+
+        return (
+          <div key={branch.id} style={{ border: '1px solid #f0f0f0', borderRadius: 6, padding: 8, marginBottom: 8 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+              <Text strong style={{ fontSize: 12 }}>{t('nodeConfig.branchN', { n: index + 1 })}</Text>
+              <Button
+                size="small"
+                type="text"
+                danger
+                icon={<DeleteOutlined />}
+                disabled={branches.length <= 1}
+                onClick={() => removeBranch(branch.id)}
+              />
+            </div>
+            <Text type="secondary" style={{ fontSize: 12 }}>{t('nodeConfig.featureField')}</Text>
+            <FeatureFieldInput
+              value={branch.fieldName}
+              onChange={(value) => updateBranch(branch.id, { fieldName: value })}
+              onFeatureResolved={(info) => setResolvedByBranch((prev) => ({ ...prev, [branch.id]: info }))}
+              placeholder={t('nodeConfig.featureFieldPlaceholder')}
+              size="small"
+              style={{ width: '100%', marginTop: 4 }}
+            />
+            <div style={{ marginTop: 6 }}>
+              <Text type="secondary" style={{ fontSize: 12 }}>{t('nodeConfig.comparisonOperator')}</Text>
+              <Select
+                value={branch.operator}
+                onChange={(v: Operator) => updateBranch(branch.id, { operator: v })}
+                size="small"
+                style={{ width: '100%', marginTop: 4 }}
+                options={operatorOptions}
+              />
+            </div>
+            {resolved && !recommendedOperators?.includes(branch.operator) && (
+              <div style={{ marginTop: 4, fontSize: 12, color: '#ad6800' }}>
+                {t('nodeConfig.operatorMismatchHint', { dataType: resolved.feature.dataType })}
+              </div>
+            )}
+            <div style={{ marginTop: 6 }}>
+              <Text type="secondary" style={{ fontSize: 12 }}>{t('nodeConfig.threshold')}</Text>
+              <Input
+                value={String(branch.threshold)}
+                onChange={(e) => updateBranch(branch.id, { threshold: e.target.value })}
+                placeholder={thresholdPlaceholder}
+                size="small"
+                style={{ marginTop: 4 }}
+              />
+            </div>
           </div>
-          {resolvedFeature.matchedByAlias && (
-            <div style={{ fontSize: 12, color: '#ad6800', marginBottom: 4 }}>
-              {t('nodeConfig.aliasMappedHint', {
-                alias: resolvedFeature.matchedAlias ?? data.fieldName,
-                canonical: resolvedFeature.feature.code,
-              })}
-            </div>
-          )}
-          {resolvedFeature.feature.exampleValue && (
-            <div style={{ fontSize: 12, color: '#8c8c8c', marginBottom: 4 }}>
-              {t('nodeConfig.exampleValueHint')}: {resolvedFeature.feature.exampleValue}
-            </div>
-          )}
-          {resolvedFeature.feature.description && (
-            <div style={{ fontSize: 12, color: '#8c8c8c' }}>
-              {resolvedFeature.feature.description}
-            </div>
-          )}
-        </div>
-      )}
-      <div style={{ marginBottom: 12 }}>
-        <Text type="secondary" style={{ fontSize: 12 }}>{t('nodeConfig.comparisonOperator')}</Text>
-        <Select
-          value={data.operator}
-          onChange={(v: Operator) => onUpdate({ operator: v })}
-          size="small"
-          style={{ width: '100%', marginTop: 4 }}
-          options={operatorOptions}
-        />
-      </div>
-      {resolvedFeature && !isOperatorCompatible && (
-        <div style={{ marginBottom: 10, fontSize: 12, color: '#ad6800' }}>
-          {t('nodeConfig.operatorMismatchHint', { dataType: resolvedFeature.feature.dataType })}
-        </div>
-      )}
-      <div style={{ marginBottom: 12 }}>
-        <Text type="secondary" style={{ fontSize: 12 }}>{t('nodeConfig.threshold')}</Text>
-        <Input
-          value={String(data.threshold)}
-          onChange={(e) => onUpdate({ threshold: e.target.value })}
-          placeholder={thresholdPlaceholder}
-          size="small"
-          style={{ marginTop: 4 }}
-        />
-      </div>
+        );
+      })}
+      <Button block size="small" type="dashed" icon={<PlusOutlined />} onClick={addBranch}>
+        {t('nodeConfig.addBranch')}
+      </Button>
+      <div style={{ marginTop: 8, fontSize: 12, color: '#8c8c8c' }}>{t('nodeConfig.branchMatchHint')}</div>
     </>
   );
 }

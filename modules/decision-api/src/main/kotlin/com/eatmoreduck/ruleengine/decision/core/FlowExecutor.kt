@@ -32,9 +32,9 @@ fun interface RuleSetPayloadSource {
  * 决策流图解释执行器（节点语义照搬旧 DecisionFlowExecutionService.traverseNode）。
  *
  * 节点种类：start / condition / action / end / ruleset / blacklist / whitelist / merge。
- * 分支选择：条件满足走 sourceHandle "true"/"pass"（兼容前端 data.conditionMet=true），
- * 不满足走 "false"（conditionMet=false）；无条件分支优先 "pass"/null 手柄，回退第一条出边
- * （旧 getNextNode 语义逐字保留）。
+ * 分支选择：条件节点为多分支顺序匹配（branches 依次评估，第一个命中走 sourceHandle=分支
+ * id 的出边，全不命中走兜底 elseHandle；旧单条件图归一化为 id=`true` 单分支 + `false` 兜底）；
+ * 无条件分支节点（start/merge）优先 "pass"/null 手柄，回退第一条出边（旧 getNextNode 语义）。
  *
  * 与旧实现的差异点：
  * - 递归遍历改为迭代 + 步数上限（[DecisionProperties.flowMaxSteps]，默认 1000），
@@ -95,10 +95,13 @@ class FlowExecutor(
                         }
 
                         is ConditionNodeData -> {
-                            advance(
-                                nextNode(current.id, graph, evaluateOperator(features[data.fieldName], data.operator.name, data.threshold)),
-                                "条件分支无后续节点",
-                            )
+                            // 多分支顺序匹配：第一个命中的条件走对应分支，全不命中走兜底
+                            val matched =
+                                data.effectiveBranches.firstOrNull {
+                                    evaluateOperator(features[it.fieldName], it.operator.name, it.threshold)
+                                }
+                            val handle = matched?.id ?: data.elseHandle
+                            advance(nextNodeByHandle(current.id, graph, handle), "条件分支无后续节点")
                         }
 
                         is ActionNodeData -> {
@@ -233,12 +236,21 @@ class FlowExecutor(
             )
 
     /**
-     * 分支选择（旧 getNextNode 语义）：
-     * - conditionMet == null：优先 sourceHandle == "pass" 或无手柄的出边；
-     * - conditionMet == true：sourceHandle ∈ {"true","pass"} 或 data.conditionMet == true；
-     * - conditionMet == false：sourceHandle == "false" 或 data.conditionMet == false；
-     * - 全部不匹配 → 回退第一条出边（旧 fallback 行为）。
+     * 条件分支路由（sourceHandle=id）：优先精确匹配同名出边；旧版边未写 sourceHandle
+     * 而以 data.conditionMet 表达真假时按布尔兜底；仍无匹配回退第一条出边（旧 fallback）。
      */
+    private fun nextNodeByHandle(
+        sourceId: String,
+        graph: FlowGraph,
+        handle: String,
+    ): FlowNode? {
+        val outgoing = graph.edges.filter { it.source == sourceId }
+        outgoing.firstOrNull { it.sourceHandle == handle }?.let { return findNode(it.target, graph) }
+        val expected = handle == "true"
+        outgoing.firstOrNull { it.data?.conditionMet == expected }?.let { return findNode(it.target, graph) }
+        return outgoing.firstOrNull()?.let { findNode(it.target, graph) }
+    }
+
     private fun nextNode(
         sourceId: String,
         graph: FlowGraph,
