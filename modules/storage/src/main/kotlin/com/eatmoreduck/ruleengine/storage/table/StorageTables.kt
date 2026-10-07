@@ -105,6 +105,9 @@ object FeatureDefinitionsTable : Table("feature_definition") {
     val dataType = varchar("data_type", 50)
     val sourceType = varchar("source_type", 50)
     val exampleValue = text("example_value").nullable()
+
+    /** 衍生特征公式（Aviator 表达式，仅 source_type=DERIVED 时有值） */
+    val expression = text("expression").nullable()
     val description = text("description").nullable()
     val status = varchar("status", 20)
     val owner = varchar("owner", 100).nullable()

@@ -163,6 +163,11 @@ class FakeFeatureCatalogRepository : FeatureCatalogRepository {
         return true
     }
 
+    override fun findActiveWithExpression(): List<Pair<String, String>> =
+        definitions.values
+            .filter { !isDeleted(it.code) && it.sourceType == "DERIVED" && it.status == "ACTIVE" && !it.expression.isNullOrBlank() }
+            .map { it.code to it.expression!! }
+
     override fun searchDefinitions(query: FeatureDefinitionQuery): List<FeatureDefinition> =
         definitions.values
             .asSequence()

@@ -139,7 +139,9 @@
     "thresholdTypeWarning": "Threshold value may be incompatible with the field type",
     "thresholdPlaceholderNumber": "Enter numeric threshold, e.g. 100",
     "thresholdPlaceholderBoolean": "Enter true / false",
-    "thresholdPlaceholderText": "Enter string or list value"
+    "thresholdPlaceholderText": "Enter string or list value",
+    "expression": "Expression (Aviator)",
+    "expressionTooltip": "Derived feature formula; variables are request features; evaluated lazily at decision time, failures degrade to missing"
   },
   "login": {
     "title": "Rule Engine",

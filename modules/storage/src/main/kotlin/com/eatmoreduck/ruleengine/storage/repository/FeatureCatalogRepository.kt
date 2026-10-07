@@ -28,6 +28,9 @@ interface FeatureCatalogRepository {
     /** 组合条件分页查询（管理端目录检索）；条件全部可选；已软删除的行不返回 */
     fun searchDefinitions(query: FeatureDefinitionQuery): List<FeatureDefinition>
 
+    /** 活跃的衍生特征公式列表（code → expression，sourceType=DERIVED 且 expression 非空） */
+    fun findActiveWithExpression(): List<Pair<String, String>>
+
     /**
      * 软删除特征（deleted = TRUE，仅作用于未删除行），并物理清理其全部别名行
      * （兼容映射随特征失效，也释放别名占用供后续特征使用）。

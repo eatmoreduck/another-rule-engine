@@ -173,8 +173,11 @@ class DecisionService(
                     }
                 }
 
+            // 2.5 特征解析（别名归一 + 衍生特征 Aviator 惰性补算，失败按缺失降级）
+            val resolvedFeatures = featureResolution.resolve(features, null, properties.executionTimeoutMs)
+
             // 3. 解释执行（规则集内单条规则按配置兜底超时）
-            val result = flowExecutor.execute(graph, requestFeatures, properties.executionTimeoutMs)
+            val result = flowExecutor.execute(graph, resolvedFeatures, properties.executionTimeoutMs)
             val final = result.copy(executionTimeMs = elapsedMs(startedAt))
 
             // 4. 灰度日志 + 执行日志 + 指标
@@ -185,7 +188,7 @@ class DecisionService(
                     targetKey = flowKey,
                     versionUsed = snapshot.pinnedVersion,
                     isCanary = snapshot.fromCanary,
-                    requestFeatures = requestFeatures,
+                    requestFeatures = resolvedFeatures,
                     decisionResult = final.action.name,
                     executionTimeMs = final.executionTimeMs,
                 )
@@ -193,7 +196,7 @@ class DecisionService(
             executionLogService.logSuccess(
                 flowKey,
                 snapshot.pinnedVersion,
-                requestFeatures,
+                resolvedFeatures,
                 final.action.name,
                 final.reason,
                 final.executionTimeMs,

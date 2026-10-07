@@ -439,6 +439,8 @@ CREATE TABLE feature_definition (
     data_type VARCHAR(50) NOT NULL,
     source_type VARCHAR(50) NOT NULL,
     example_value TEXT,
+    -- 衍生特征公式（Aviator 表达式，source_type=DERIVED 时使用；求值环境为请求特征 Map）
+    expression TEXT,
     description TEXT,
     status VARCHAR(20) NOT NULL DEFAULT 'ACTIVE',
     owner VARCHAR(100),

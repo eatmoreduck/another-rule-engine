@@ -20,6 +20,8 @@ data class FeatureDefinition(
     /** 来源类型（旧值域：INPUT / DERIVED ...） */
     val sourceType: String,
     val exampleValue: String? = null,
+    /** 衍生特征公式（Aviator 表达式；仅 DERIVED 语义使用，求值环境为请求特征 Map） */
+    val expression: String? = null,
     val description: String? = null,
     /** 目录状态（旧默认 ACTIVE） */
     val status: String = "ACTIVE",

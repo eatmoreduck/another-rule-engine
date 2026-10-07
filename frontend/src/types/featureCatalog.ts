@@ -11,6 +11,7 @@ export interface FeatureDefinition {
   dataType: string;
   sourceType: string;
   exampleValue: string | null;
+  expression: string | null;
   description: string | null;
   status: string;
   owner: string | null;
@@ -36,6 +37,7 @@ export interface FeatureDefinitionRequest {
   dataType: string;
   sourceType: string;
   exampleValue?: string;
+  expression?: string;
   description?: string;
   status?: string;
   owner?: string;

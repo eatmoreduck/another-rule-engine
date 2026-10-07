@@ -11,6 +11,7 @@ import org.jetbrains.exposed.v1.core.SortOrder
 import org.jetbrains.exposed.v1.core.and
 import org.jetbrains.exposed.v1.core.eq
 import org.jetbrains.exposed.v1.core.inList
+import org.jetbrains.exposed.v1.core.isNotNull
 import org.jetbrains.exposed.v1.core.like
 import org.jetbrains.exposed.v1.core.lowerCase
 import org.jetbrains.exposed.v1.core.or
@@ -46,6 +47,7 @@ internal class ExposedFeatureCatalogRepository : FeatureCatalogRepository {
                 statement[dataType] = definition.dataType
                 statement[sourceType] = definition.sourceType
                 statement[exampleValue] = definition.exampleValue
+                statement[expression] = definition.expression
                 statement[description] = definition.description
                 statement[status] = definition.status
                 statement[owner] = definition.owner
@@ -67,6 +69,7 @@ internal class ExposedFeatureCatalogRepository : FeatureCatalogRepository {
                 statement[dataType] = definition.dataType
                 statement[sourceType] = definition.sourceType
                 statement[exampleValue] = definition.exampleValue
+                statement[expression] = definition.expression
                 statement[description] = definition.description
                 statement[status] = definition.status
                 statement[owner] = definition.owner
@@ -122,6 +125,23 @@ internal class ExposedFeatureCatalogRepository : FeatureCatalogRepository {
             .offset(query.offset)
             .map(::toDefinition)
     }
+
+    override fun findActiveWithExpression(): List<Pair<String, String>> =
+        FeatureDefinitionsTable
+            .selectAll()
+            .where {
+                notDeleted() and
+                    (FeatureDefinitionsTable.sourceType eq "DERIVED") and
+                    (FeatureDefinitionsTable.status eq "ACTIVE") and
+                    FeatureDefinitionsTable.expression.isNotNull()
+            }.map { row ->
+                val expression =
+                    row[FeatureDefinitionsTable.expression]
+                        ?: throw StorageDataCorruptionException(
+                            "feature_definition.expression 为 NULL（code=${row[FeatureDefinitionsTable.code]}）",
+                        )
+                row[FeatureDefinitionsTable.code] to expression
+            }
 
     override fun saveAlias(alias: FeatureAlias): FeatureAlias {
         FeatureAliasesTable.insert { statement ->
@@ -199,6 +219,7 @@ internal class ExposedFeatureCatalogRepository : FeatureCatalogRepository {
                 dataType = row[FeatureDefinitionsTable.dataType],
                 sourceType = row[FeatureDefinitionsTable.sourceType],
                 exampleValue = row[FeatureDefinitionsTable.exampleValue],
+                expression = row[FeatureDefinitionsTable.expression],
                 description = row[FeatureDefinitionsTable.description],
                 status = row[FeatureDefinitionsTable.status],
                 owner = row[FeatureDefinitionsTable.owner],

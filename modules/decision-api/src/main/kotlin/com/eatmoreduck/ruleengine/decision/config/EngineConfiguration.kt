@@ -1,6 +1,7 @@
 package com.eatmoreduck.ruleengine.decision.config
 
 import com.eatmoreduck.ruleengine.engine.GroovyScriptEngine
+import com.eatmoreduck.ruleengine.engine.expression.AviatorExpressionService
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import java.time.Duration
@@ -22,4 +23,8 @@ class EngineConfiguration {
         GroovyScriptEngine(
             defaultExecutionTimeout = Duration.ofMillis(properties.executionTimeoutMs),
         )
+
+    /** 衍生特征公式求值（Aviator，编译缓存 + BigDecimal 精度） */
+    @Bean
+    fun aviatorExpressionService(): AviatorExpressionService = AviatorExpressionService()
 }

@@ -61,6 +61,7 @@ export default function FeatureCatalogPage() {
   const [filters, setFilters] = useState<FeatureCatalogQueryParams>({ status: 'ACTIVE' });
   const [searchForm] = Form.useForm();
   const [editForm] = Form.useForm<FeatureDefinitionRequest>();
+  const watchSourceType = Form.useWatch('sourceType', editForm);
 
   const loadData = useCallback(async (nextFilters?: FeatureCatalogQueryParams, nextPage?: { current?: number; pageSize?: number }) => {
     const mergedFilters = nextFilters ?? filters;
@@ -121,6 +122,7 @@ export default function FeatureCatalogPage() {
       dataType: feature.dataType,
       sourceType: feature.sourceType,
       exampleValue: feature.exampleValue ?? '',
+      expression: feature.expression ?? '',
       description: feature.description ?? '',
       status: feature.status,
       owner: feature.owner ?? '',
@@ -384,6 +386,19 @@ export default function FeatureCatalogPage() {
               </Form.Item>
             </Col>
           </Row>
+          {watchSourceType === 'DERIVED' && (
+            <Form.Item
+              name="expression"
+              label={t('featureCatalog.expression')}
+              tooltip={t('featureCatalog.expressionTooltip')}
+            >
+              <Input.TextArea
+                rows={3}
+                placeholder="amount * 0.8 + riskScore * 0.2"
+                style={{ fontFamily: 'monospace' }}
+              />
+            </Form.Item>
+          )}
           <Form.Item name="aliases" label={t('featureCatalog.aliases')}>
             <Select mode="tags" tokenSeparators={[',']} placeholder={t('featureCatalog.aliasesPlaceholder')} />
           </Form.Item>

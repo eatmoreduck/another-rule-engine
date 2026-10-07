@@ -1,6 +1,7 @@
 package com.eatmoreduck.ruleengine.decision.core
 
 import com.eatmoreduck.ruleengine.decision.config.DecisionProperties
+import com.eatmoreduck.ruleengine.engine.expression.AviatorExpressionService
 import com.eatmoreduck.ruleengine.storage.repository.FeatureCatalogRepository
 import com.github.benmanes.caffeine.cache.Caffeine
 import kotlinx.coroutines.Dispatchers
@@ -31,8 +32,12 @@ import java.time.Duration
 class FeatureResolutionService(
     private val featureCatalogRepository: FeatureCatalogRepository,
     properties: DecisionProperties,
+    private val expressionEngine: AviatorExpressionService,
 ) {
     private val log = LoggerFactory.getLogger(FeatureResolutionService::class.java)
+
+    /** 衍生公式全量缓存的固定 key（缓存容量按条目计，全量列表存于单条目） */
+    private val derivedExpressionCacheKey = "all"
 
     /** 特征编码 → 规范编码（别名兼容链路；目录变更经 TTL 后生效） */
     private val canonicalCodeCache =
@@ -58,10 +63,24 @@ class FeatureResolutionService(
             .expireAfterWrite(Duration.ofSeconds(properties.featureCacheExpireAfterWriteSeconds))
             .build<String, Any>()
 
+    /** 衍生特征公式缓存（全量列表，code → expression；目录变更经 TTL 后生效） */
+    private val derivedExpressionCache =
+        Caffeine
+            .newBuilder()
+            .expireAfterWrite(Duration.ofSeconds(properties.featureCodeCacheExpireAfterWriteSeconds))
+            .build<String, List<Pair<String, String>>>()
+
     private val externalClient: RestClient? =
         properties.featureExternalUrl
             ?.takeIf { it.isNotBlank() }
             ?.let { RestClient.builder().baseUrl(it).build() }
+
+    /** 全量衍生公式（缓存穿透单 key，TTL 内不查库） */
+    private fun derivedExpressions(): List<Pair<String, String>> =
+        derivedExpressionCache.get(derivedExpressionCacheKey) {
+            // 决策热路径的 Exposed 查询统一在事务上下文内（同 GrayscaleRouter 模式）
+            transaction { featureCatalogRepository.findActiveWithExpression() }
+        }
 
     /**
      * 解析决策可用的特征集合。
@@ -116,6 +135,19 @@ class FeatureResolutionService(
                 putResolvedValue(result, canonical, value, populateCache = true)
             }
             canonicalMissing.removeAll { result.containsKey(it) }
+        }
+
+        // 4.5 衍生特征补算（Aviator 公式，env = 当前已解析特征）；
+        // 求值失败按缺失降级（fail-safe），不阻断决策
+        derivedExpressions().forEach { (code, expression) ->
+            if (!result.containsKey(code)) {
+                try {
+                    val value = expressionEngine.evaluate(expression, result)
+                    if (value != null) putResolvedValue(result, code, value, populateCache = false)
+                } catch (e: Exception) {
+                    log.warn("衍生特征求值失败，按缺失处理: code={}, 原因={}", code, e.message)
+                }
+            }
         }
 
         // 5. 默认值兜底，仍缺补 NULL

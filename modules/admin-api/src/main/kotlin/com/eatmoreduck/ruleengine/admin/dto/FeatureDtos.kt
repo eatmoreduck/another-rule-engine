@@ -17,6 +17,8 @@ data class FeatureDefinitionRequest(
     @field:NotBlank(message = "特征来源不能为空")
     val sourceType: String = "",
     val exampleValue: String? = null,
+    /** 衍生特征公式（Aviator 表达式，sourceType=DERIVED 时使用） */
+    val expression: String? = null,
     val description: String? = null,
     val status: String = "ACTIVE",
     val owner: String? = null,
@@ -33,6 +35,7 @@ data class FeatureDefinitionResponse(
     val dataType: String,
     val sourceType: String,
     val exampleValue: String?,
+    val expression: String?,
     val description: String?,
     val status: String,
     val owner: String?,
