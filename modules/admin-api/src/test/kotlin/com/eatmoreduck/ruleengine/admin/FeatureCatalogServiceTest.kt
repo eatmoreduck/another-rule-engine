@@ -1,5 +1,7 @@
 package com.eatmoreduck.ruleengine.admin
 
+import com.eatmoreduck.ruleengine.admin.dto.FeatureExpressionTestRequest
+import com.eatmoreduck.ruleengine.engine.expression.AviatorExpressionService
 import com.eatmoreduck.ruleengine.admin.dto.FeatureDefinitionRequest
 import com.eatmoreduck.ruleengine.admin.dto.FeatureValidationRequest
 import com.eatmoreduck.ruleengine.admin.feature.FeatureCatalogService
@@ -39,7 +41,7 @@ class FeatureCatalogServiceTest {
         ruleRepository = FakeRuleRepository()
         versionRepository = FakeRuleVersionRepository()
         flowSupport = FakeDecisionFlowSupportRepository()
-        service = FeatureCatalogService(featureRepository, ruleRepository, versionRepository, flowSupport, eventPublisher)
+        service = FeatureCatalogService(featureRepository, ruleRepository, versionRepository, flowSupport, eventPublisher, AviatorExpressionService())
     }
 
     private fun createRequest(
@@ -319,5 +321,39 @@ class FeatureCatalogServiceTest {
         service.deleteDefinition("order_amount")
         val ex2 = assertThrows<IllegalArgumentException> { service.deleteDefinition("ORDER_AMOUNT") }
         assertEquals("特征不存在: ORDER_AMOUNT", ex2.message)
+    }
+
+    @Test
+    fun `公式试算返回变量名与求值结果`() {
+        val response =
+            service.testExpression(
+                FeatureExpressionTestRequest(
+                    expression = "amount * 2 + 100",
+                    sampleValues = mapOf("amount" to 400),
+                ),
+            )
+        assertEquals(true, response.ok)
+        assertEquals(listOf("amount"), response.variables)
+        assertEquals(900.0, (response.result as Number).toDouble(), 0.0001)
+    }
+
+    @Test
+    fun `公式试算语法错误以可读 error 返回`() {
+        val response = service.testExpression(FeatureExpressionTestRequest(expression = "amount >="))
+        assertEquals(false, response.ok)
+        assertTrue(!response.error.isNullOrBlank())
+    }
+
+    @Test
+    fun `公式试算求值错误以可读 error 返回`() {
+        val response =
+            service.testExpression(
+                FeatureExpressionTestRequest(
+                    expression = "noSuchVariable * 2",
+                    sampleValues = mapOf("amount" to 1),
+                ),
+            )
+        assertEquals(false, response.ok)
+        assertTrue(!response.error.isNullOrBlank())
     }
 }

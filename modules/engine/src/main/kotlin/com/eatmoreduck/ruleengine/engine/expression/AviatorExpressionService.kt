@@ -28,6 +28,12 @@ class AviatorExpressionService {
     private val compiledCache = ConcurrentHashMap<String, Expression>()
     private val evaluator = AviatorEvaluator.getInstance()
 
+    /** 变量名提取专用引擎：字节码编译模式（COMPILE）下 Aviator 不保留变量元数据，需无优化实例 */
+    private val metadataEvaluator =
+        AviatorEvaluator.newInstance().apply {
+            setOption(Options.ALWAYS_PARSE_FLOATING_POINT_NUMBER_INTO_DECIMAL, true)
+        }
+
     init {
         evaluator.setOption(Options.ALWAYS_PARSE_FLOATING_POINT_NUMBER_INTO_DECIMAL, true)
         evaluator.setOption(Options.OPTIMIZE_LEVEL, AviatorEvaluator.COMPILE)
@@ -58,7 +64,7 @@ class AviatorExpressionService {
      */
     fun variables(expression: String): List<String> =
         try {
-            compile(expression).variableNames
+            metadataEvaluator.compile(expression, false).variableNames
         } catch (e: ExpressionEvaluationException) {
             throw e
         } catch (e: Exception) {

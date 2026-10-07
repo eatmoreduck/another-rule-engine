@@ -25,6 +25,21 @@ data class FeatureDefinitionRequest(
     val aliases: List<String> = emptyList(),
 )
 
+/** 衍生特征公式试算请求：sampleValues 为变量采样值，非空时执行求值 */
+data class FeatureExpressionTestRequest(
+    @field:NotBlank(message = "表达式不能为空")
+    val expression: String = "",
+    val sampleValues: Map<String, Any?> = emptyMap(),
+)
+
+/** 衍生特征公式试算响应：variables 为表达式引用的变量名；有错误时 ok=false 且 error 可读 */
+data class FeatureExpressionTestResponse(
+    val ok: Boolean,
+    val variables: List<String>,
+    val result: Any? = null,
+    val error: String? = null,
+)
+
 /**
  * 特征定义响应体（对应旧 FeatureDefinitionResponse，前端 frontend/src/types/featureCatalog.ts）。
  */

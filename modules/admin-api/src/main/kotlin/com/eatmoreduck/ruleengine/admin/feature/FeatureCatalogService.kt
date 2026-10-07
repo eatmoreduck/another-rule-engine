@@ -1,6 +1,8 @@
 package com.eatmoreduck.ruleengine.admin.feature
 
 import com.eatmoreduck.ruleengine.admin.cache.publishInvalidation
+import com.eatmoreduck.ruleengine.admin.dto.FeatureExpressionTestRequest
+import com.eatmoreduck.ruleengine.admin.dto.FeatureExpressionTestResponse
 import com.eatmoreduck.ruleengine.admin.dto.FeatureDefinitionRequest
 import com.eatmoreduck.ruleengine.admin.dto.FeatureDefinitionResponse
 import com.eatmoreduck.ruleengine.admin.dto.FeatureValidationRequest
@@ -9,6 +11,7 @@ import com.eatmoreduck.ruleengine.admin.dto.PageResponse
 import com.eatmoreduck.ruleengine.admin.dto.RuleReferenceResponse
 import com.eatmoreduck.ruleengine.admin.grayscale.DecisionFlowSupportRepository
 import com.eatmoreduck.ruleengine.dsl.ConditionNodeData
+import com.eatmoreduck.ruleengine.engine.expression.AviatorExpressionService
 import com.eatmoreduck.ruleengine.dsl.DslParser
 import com.eatmoreduck.ruleengine.dsl.ParseResult
 import com.eatmoreduck.ruleengine.shared.cache.CacheInvalidationType
@@ -44,6 +47,7 @@ class FeatureCatalogService(
     private val versionRepository: RuleVersionRepository,
     private val decisionFlowSupportRepository: DecisionFlowSupportRepository,
     private val eventPublisher: ApplicationEventPublisher,
+    private val expressionEngine: AviatorExpressionService,
 ) {
     @Transactional(readOnly = true)
     fun searchDefinitions(
@@ -169,6 +173,28 @@ class FeatureCatalogService(
 
     /** 批量字段校验（告警文案与 valid 判定照搬旧实现） */
     @Transactional(readOnly = true)
+    /**
+     * 衍生特征公式试算：提取表达式变量名；提供采样值时执行求值。
+     * 语法/求值错误以 ok=false + 可读 error 返回（不抛异常，供前端直接展示）。
+     */
+    fun testExpression(request: FeatureExpressionTestRequest): FeatureExpressionTestResponse {
+        val variables =
+            try {
+                expressionEngine.variables(request.expression)
+            } catch (e: Exception) {
+                return FeatureExpressionTestResponse(ok = false, variables = emptyList(), error = e.message)
+            }
+        if (request.sampleValues.isEmpty()) {
+            return FeatureExpressionTestResponse(ok = true, variables = variables)
+        }
+        return try {
+            val result = expressionEngine.evaluate(request.expression, request.sampleValues)
+            FeatureExpressionTestResponse(ok = true, variables = variables, result = result)
+        } catch (e: Exception) {
+            FeatureExpressionTestResponse(ok = false, variables = variables, error = e.message)
+        }
+    }
+
     fun validate(request: FeatureValidationRequest): FeatureValidationResponse {
         val itemResults = mutableListOf<FeatureValidationResponse.ItemResult>()
         val warnings = mutableListOf<String>()

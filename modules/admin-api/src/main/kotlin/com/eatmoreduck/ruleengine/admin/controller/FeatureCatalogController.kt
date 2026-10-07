@@ -4,6 +4,8 @@ import cn.dev33.satoken.annotation.SaCheckLogin
 import cn.dev33.satoken.annotation.SaCheckPermission
 import com.eatmoreduck.ruleengine.admin.dto.FeatureDefinitionRequest
 import com.eatmoreduck.ruleengine.admin.dto.FeatureDefinitionResponse
+import com.eatmoreduck.ruleengine.admin.dto.FeatureExpressionTestRequest
+import com.eatmoreduck.ruleengine.admin.dto.FeatureExpressionTestResponse
 import com.eatmoreduck.ruleengine.admin.dto.FeatureValidationRequest
 import com.eatmoreduck.ruleengine.admin.dto.FeatureValidationResponse
 import com.eatmoreduck.ruleengine.admin.dto.PageResponse
@@ -85,6 +87,13 @@ class FeatureCatalogController(
     fun validate(
         @Valid @RequestBody request: FeatureValidationRequest,
     ): ResponseEntity<FeatureValidationResponse> = ResponseEntity.ok(featureCatalogService.validate(request))
+
+    /** 衍生特征公式试算：提取变量名；携带 sampleValues 时执行求值。POST /api/v1/features/catalog/test-expression */
+    @PostMapping("/test-expression")
+    @SaCheckPermission("api:feature-catalog:view")
+    fun testExpression(
+        @Valid @RequestBody request: FeatureExpressionTestRequest,
+    ): ResponseEntity<FeatureExpressionTestResponse> = ResponseEntity.ok(featureCatalogService.testExpression(request))
 
     /** 特征被哪些规则/决策流引用：GET /api/v1/features/catalog/{code}/references */
     @GetMapping("/{code}/references")
